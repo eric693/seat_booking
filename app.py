@@ -35,6 +35,14 @@ LINE_CHANNEL_SECRET       = os.environ.get('LINE_CHANNEL_SECRET', '')
 LINE_PUSH_URL  = 'https://api.line.me/v2/bot/message/push'
 LINE_REPLY_URL = 'https://api.line.me/v2/bot/message/reply'
 
+# ── Cloudinary（選用）────────────────────────
+# 設定後照片上傳至 Cloudinary，Render 重啟也不會消失
+# 未設定則 fallback 存本地 static/uploads/
+CLOUDINARY_CLOUD_NAME = os.environ.get('CLOUDINARY_CLOUD_NAME', '')
+CLOUDINARY_API_KEY    = os.environ.get('CLOUDINARY_API_KEY', '')
+CLOUDINARY_API_SECRET = os.environ.get('CLOUDINARY_API_SECRET', '')
+USE_CLOUDINARY = all([CLOUDINARY_CLOUD_NAME, CLOUDINARY_API_KEY, CLOUDINARY_API_SECRET])
+
 
 # ─────────────────────────────────────────────
 # LINE Helpers
@@ -645,10 +653,47 @@ def upload_photo():
     f = request.files['photo']
     if f.filename == '' or not allowed_file(f.filename):
         return jsonify({'error': '不支援的檔案格式（支援 PNG/JPG/GIF/WEBP）'}), 400
-    ext      = f.filename.rsplit('.', 1)[1].lower()
-    filename = f'{uuid.uuid4().hex}.{ext}'
-    f.save(os.path.join(UPLOAD_FOLDER, filename))
-    return jsonify({'success': True, 'photo_url': f'/static/uploads/{filename}'})
+
+    if USE_CLOUDINARY:
+        # ── 上傳至 Cloudinary ──
+        photo_url = _upload_to_cloudinary(f)
+        if not photo_url:
+            return jsonify({'error': 'Cloudinary 上傳失敗，請確認設定'}), 500
+    else:
+        # ── 存本地 ──
+        ext      = f.filename.rsplit('.', 1)[1].lower()
+        filename = f'{uuid.uuid4().hex}.{ext}'
+        f.save(os.path.join(UPLOAD_FOLDER, filename))
+        photo_url = f'/static/uploads/{filename}'
+
+    return jsonify({'success': True, 'photo_url': photo_url})
+
+
+def _upload_to_cloudinary(file_storage) -> str:
+    """上傳檔案至 Cloudinary，回傳安全 URL；失敗回傳空字串"""
+    import hmac as _hmac, hashlib as _hashlib, time
+    timestamp = str(int(time.time()))
+    folder    = 'meeting_rooms'
+    # 簽章
+    params_to_sign = f'folder={folder}&timestamp={timestamp}'
+    sig = _hashlib.sha1(
+        (params_to_sign + CLOUDINARY_API_SECRET).encode()
+    ).hexdigest()
+
+    upload_url = f'https://api.cloudinary.com/v1_1/{CLOUDINARY_CLOUD_NAME}/image/upload'
+    try:
+        resp = http_requests.post(upload_url, data={
+            'api_key':   CLOUDINARY_API_KEY,
+            'timestamp': timestamp,
+            'folder':    folder,
+            'signature': sig,
+        }, files={'file': (file_storage.filename, file_storage.stream, file_storage.mimetype)},
+        timeout=30)
+        data = resp.json()
+        return data.get('secure_url', '')
+    except Exception as e:
+        print(f'[Cloudinary error] {e}')
+        return ''
 
 
 # ─────────────────────────────────────────────

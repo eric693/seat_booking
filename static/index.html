@@ -1237,6 +1237,10 @@ footer {
 
 <script data-cfasync="false" src="/cdn-cgi/scripts/5c5dd728/cloudflare-static/email-decode.min.js"></script><script>
 const API = '';
+
+// Escape single quotes for use in HTML attributes
+function esc(s) { return String(s).replace(/'/g, '&#39;').replace(/"/g, '&quot;'); }
+
 const state = {
   room: null,
   roomId: null,
@@ -1314,7 +1318,7 @@ async function loadRooms() {
         ? `<div class="room-photo"><img src="${r.photo_url}" alt="${r.name}" onerror="this.parentElement.innerHTML='${icon}'"></div>`
         : `<div class="room-photo-placeholder">${icon}</div>`;
       return `
-        <div class="room-card" data-id="${r.id}" data-name="${r.name}" data-rate="${r.hourly_rate}" data-type="${r.room_type}" onclick="selectRoom(this, ${r.id}, '${r.name.replace(/'/g,'\\'')}', ${r.hourly_rate}, '${r.room_type}')">
+        <div class="room-card" data-id="${r.id}" data-name="${esc(r.name)}" data-rate="${r.hourly_rate}" data-type="${esc(r.room_type)}" onclick="selectRoom(this)">
           <div class="selected-check">&#10003;</div>
           ${photoHTML}
           <div class="room-body">
@@ -1334,7 +1338,11 @@ async function loadRooms() {
   }
 }
 
-function selectRoom(el, id, name, rate, type) {
+function selectRoom(el) {
+  const id   = parseInt(el.dataset.id);
+  const name = el.dataset.name;
+  const rate = parseFloat(el.dataset.rate);
+  const type = el.dataset.type;
   document.querySelectorAll('.room-card').forEach(c => c.classList.remove('selected'));
   el.classList.add('selected');
   state.roomId = id;
@@ -1439,7 +1447,7 @@ async function selectDate(ds, el) {
       const e = timeToSlot(b.end); // end slot is exclusive
       for (let i = s; i < e; i++) blockedSlots.add(i);
     });
-  } catch { bookedSlots = []; blockedSlots = new Set(); }
+  } catch(e) { bookedSlots = []; blockedSlots = new Set(); }
 
   // Show grid
   document.getElementById('timeGridWrap').style.display = 'block';
@@ -1802,7 +1810,7 @@ async function doQuery() {
           <div class="ct-row"><span class="ct-key">狀態</span><span class="ct-val">${statusMap[data.status] || data.status}</span></div>
         </div>`;
     } else {
-      document.getElementById('queryResult').innerHTML = `<div style="color:var(--red);padding:12px;text-align:center;">${data.error}</div>\`;
+      document.getElementById('queryResult').innerHTML = '<div style="color:var(--red);padding:12px;text-align:center;">' + data.error + '</div>';
     }
   } catch (e) {
     document.getElementById('queryResult').innerHTML = `<div style="color:var(--red);padding:12px;text-align:center;">查詢失敗，請稍後再試</div>`;
@@ -1813,7 +1821,7 @@ async function doQuery() {
 document.addEventListener('DOMContentLoaded', function() {
   loadContent();
   loadRooms();
-  buildCalendar();
+  renderCal();
   loadHeroStats();
 });
 

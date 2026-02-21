@@ -1407,6 +1407,15 @@ with app.app_context():
     db.create_all()
     seed()
 
+# ─────────────────────────────────────────────
+# Health Check（供 UptimeRobot / Render ping 用）
+# ─────────────────────────────────────────────
+
+@app.route('/health')
+def health_check():
+    return jsonify({'status': 'ok', 'time': datetime.now().strftime('%Y-%m-%d %H:%M:%S')}), 200
+
+
 if __name__ == '__main__':
     print('\n會議室預約系統啟動中...')
     print('   前台預約：http://localhost:5000')

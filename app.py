@@ -21,8 +21,11 @@ import sys
 _default_db = 'sqlite:///meeting_rooms.db'
 DATABASE_URL = os.environ.get('DATABASE_URL', _default_db)
 # Render PostgreSQL URL 開頭是 postgres://，SQLAlchemy 2.x 要求 postgresql://
+# 使用 psycopg3 (psycopg)，dialect 為 postgresql+psycopg
 if DATABASE_URL.startswith('postgres://'):
-    DATABASE_URL = DATABASE_URL.replace('postgres://', 'postgresql://', 1)
+    DATABASE_URL = DATABASE_URL.replace('postgres://', 'postgresql+psycopg://', 1)
+elif DATABASE_URL.startswith('postgresql://') and '+' not in DATABASE_URL.split('://')[0]:
+    DATABASE_URL = DATABASE_URL.replace('postgresql://', 'postgresql+psycopg://', 1)
 app.config['SQLALCHEMY_DATABASE_URI'] = DATABASE_URL
 app.config['SQLALCHEMY_TRACK_MODIFICATIONS'] = False
 app.config['MAX_CONTENT_LENGTH'] = 16 * 1024 * 1024  # 16MB

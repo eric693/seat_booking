@@ -7,4 +7,4 @@ requests==2.32.3
 gunicorn==22.0.0
 twilio==9.3.2
 sendgrid==6.11.0
-psycopg2-binary==2.9.9
+psycopg[binary]==3.2.4

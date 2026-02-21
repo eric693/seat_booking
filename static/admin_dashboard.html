@@ -559,6 +559,17 @@ tr:hover td { background: #fafafa; }
 .rac-body { padding: 16px; }
 .rac-type { font-size: 11px; font-weight: 600; text-transform: uppercase; letter-spacing: 0.08em; color: var(--gold); margin-bottom: 4px; }
 .rac-name { font-family: 'DM Serif Display', serif; font-size: 18px; margin-bottom: 6px; }
+.rac-desc {
+  font-size: 12px;
+  color: var(--ink-60);
+  line-height: 1.5;
+  margin-top: 4px;
+  display: -webkit-box;
+  -webkit-line-clamp: 2;
+  -webkit-box-orient: vertical;
+  overflow: hidden;
+}
+
 .rac-meta { font-size: 13px; color: var(--ink-60); margin-bottom: 12px; }
 .rac-actions { display: flex; gap: 8px; border-top: 1px solid var(--border); padding-top: 14px; }
 
@@ -841,6 +852,25 @@ tr:hover td { background: #fafafa; }
           <div style="margin-top:20px;text-align:right;">
             <button class="btn btn-primary" onclick="saveContent()" style="padding:12px 28px;font-size:15px;">儲存所有變更</button>
           </div>
+
+          <!-- 通知設定說明 -->
+          <div style="margin-top:28px;padding:20px;background:var(--paper);border-radius:8px;border:1px solid var(--border);">
+            <div style="font-size:13px;font-weight:700;text-transform:uppercase;letter-spacing:.08em;color:var(--ink);margin-bottom:12px;">通知服務設定（Render 環境變數）</div>
+            <div style="font-size:13px;color:var(--ink-60);line-height:1.9;">
+              以下設定需在 <strong>Render → Environment</strong> 頁面填入：<br>
+              <strong style="color:var(--ink);">Email（二選一）</strong><br>
+              <code style="background:#e8e8e8;padding:2px 6px;border-radius:3px;font-size:12px;">SENDGRID_API_KEY</code> — SendGrid API Key（推薦，免費方案每天 100 封）<br>
+              <code style="background:#e8e8e8;padding:2px 6px;border-radius:3px;font-size:12px;">MAIL_FROM</code> — 寄件人地址（需與 SendGrid 驗證的寄件人一致）<br>
+              <span style="color:#888;font-size:12px;">— 或 —</span><br>
+              <code style="background:#e8e8e8;padding:2px 6px;border-radius:3px;font-size:12px;">GMAIL_USER</code> — Gmail 帳號（備用方案）<br>
+              <code style="background:#e8e8e8;padding:2px 6px;border-radius:3px;font-size:12px;">GMAIL_APP_PASS</code> — Gmail 應用程式密碼（需先開啟 2FA）<br>
+              <br><strong style="color:var(--ink);">SMS 簡訊</strong><br>
+              <code style="background:#e8e8e8;padding:2px 6px;border-radius:3px;font-size:12px;">TWILIO_SID</code> — Twilio Account SID（免費試用可用）<br>
+              <code style="background:#e8e8e8;padding:2px 6px;border-radius:3px;font-size:12px;">TWILIO_TOKEN</code> — Twilio Auth Token<br>
+              <code style="background:#e8e8e8;padding:2px 6px;border-radius:3px;font-size:12px;">TWILIO_FROM</code> — Twilio 發送號碼，例：+15005550006<br>
+              <span style="color:var(--green);font-size:12px;">未填入則略過該通知，不影響預約功能。</span>
+            </div>
+          </div>
         </div>
       </div>
     </div>
@@ -908,7 +938,7 @@ tr:hover td { background: #fafafa; }
 
     <div class="fg">
       <label>描述說明</label>
-      <textarea class="ftarea" id="rm-desc" placeholder="會議室詳細說明..."></textarea>
+      <textarea class="ftarea" id="rm-desc" placeholder="詳細描述此會議室的特色、適用場景、注意事項..." rows="4" style="min-height:100px;"></textarea>
     </div>
 
     <div class="fg">
@@ -1119,6 +1149,7 @@ async function loadRoomsAdmin() {
             <div class="rac-type">${r.room_type}</div>
             <div class="rac-name">${r.name}</div>
             <div class="rac-meta">容納 ${r.capacity} 人 · ${r.floor || 'F—'} · NT$ ${r.hourly_rate.toLocaleString()}/hr</div>
+            ${r.description ? `<div class="rac-desc">${r.description.length > 60 ? r.description.slice(0,60) + '…' : r.description}</div>` : ''}
             <div class="rac-actions">
               <button class="btn btn-outline btn-sm" onclick="editRoom(${r.id})" style="flex:1;">編輯</button>
               <button class="btn btn-outline btn-sm" onclick="toggleRoomStatus(${r.id}, ${!r.is_active})" style="flex:1;">${r.is_active ? '停用' : '啟用'}</button>

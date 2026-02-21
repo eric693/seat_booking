@@ -35,6 +35,21 @@ LINE_CHANNEL_SECRET       = os.environ.get('LINE_CHANNEL_SECRET', '')
 LINE_PUSH_URL  = 'https://api.line.me/v2/bot/message/push'
 LINE_REPLY_URL = 'https://api.line.me/v2/bot/message/reply'
 
+# ── Email 通知（SendGrid 優先，fallback Gmail SMTP）────────
+SENDGRID_API_KEY = os.environ.get('SENDGRID_API_KEY', '')
+GMAIL_USER       = os.environ.get('GMAIL_USER', '')
+GMAIL_APP_PASS   = os.environ.get('GMAIL_APP_PASS', '')
+MAIL_FROM        = os.environ.get('MAIL_FROM', GMAIL_USER)  # 寄件人地址
+USE_SENDGRID     = bool(SENDGRID_API_KEY)
+USE_GMAIL        = bool(GMAIL_USER and GMAIL_APP_PASS)
+USE_EMAIL        = USE_SENDGRID or USE_GMAIL
+
+# ── Twilio SMS（選用）───────────────────────────
+TWILIO_SID    = os.environ.get('TWILIO_SID', '')
+TWILIO_TOKEN  = os.environ.get('TWILIO_TOKEN', '')
+TWILIO_FROM   = os.environ.get('TWILIO_FROM', '')       # 例：+15005550006
+USE_TWILIO    = bool(TWILIO_SID and TWILIO_TOKEN and TWILIO_FROM)
+
 # ── Cloudinary（選用）────────────────────────
 # 設定後照片上傳至 Cloudinary，Render 重啟也不會消失
 # 未設定則 fallback 存本地 static/uploads/
@@ -82,6 +97,183 @@ def reply_line(reply_token: str, messages: list):
                            timeout=10)
     except Exception as e:
         print(f'[LINE reply error] {e}')
+
+# ─────────────────────────────────────────────
+# Gmail + SMS Helpers
+# ─────────────────────────────────────────────
+
+def send_email(to_addr: str, subject: str, body_html: str):
+    """寄送 HTML 信件：優先 SendGrid，fallback Gmail SMTP"""
+    if not to_addr:
+        return
+    if USE_SENDGRID:
+        _send_via_sendgrid(to_addr, subject, body_html)
+    elif USE_GMAIL:
+        _send_via_gmail(to_addr, subject, body_html)
+    else:
+        print('[Email] 未設定 SENDGRID_API_KEY 或 GMAIL，略過寄信')
+
+
+def _send_via_sendgrid(to_addr: str, subject: str, body_html: str):
+    """透過 SendGrid API 寄信"""
+    from_addr = MAIL_FROM or 'noreply@example.com'
+    payload = {
+        'personalizations': [{'to': [{'email': to_addr}]}],
+        'from': {'email': from_addr},
+        'subject': subject,
+        'content': [{'type': 'text/html', 'value': body_html}],
+    }
+    try:
+        resp = http_requests.post(
+            'https://api.sendgrid.com/v3/mail/send',
+            headers={
+                'Authorization': f'Bearer {SENDGRID_API_KEY}',
+                'Content-Type': 'application/json',
+            },
+            json=payload,
+            timeout=15
+        )
+        if resp.status_code in (200, 202):
+            print(f'[SendGrid] sent to {to_addr}')
+        else:
+            print(f'[SendGrid error] {resp.status_code}: {resp.text[:200]}')
+    except Exception as e:
+        print(f'[SendGrid error] {e}')
+
+
+def _send_via_gmail(to_addr: str, subject: str, body_html: str):
+    """透過 Gmail SMTP SSL 寄信（備用）"""
+    import smtplib
+    from email.mime.multipart import MIMEMultipart
+    from email.mime.text import MIMEText
+    from_addr = MAIL_FROM or GMAIL_USER
+    try:
+        msg = MIMEMultipart('alternative')
+        msg['Subject'] = subject
+        msg['From']    = from_addr
+        msg['To']      = to_addr
+        msg.attach(MIMEText(body_html, 'html', 'utf-8'))
+        with smtplib.SMTP_SSL('smtp.gmail.com', 465, timeout=15) as s:
+            s.login(GMAIL_USER, GMAIL_APP_PASS)
+            s.sendmail(from_addr, to_addr, msg.as_string())
+        print(f'[Gmail] sent to {to_addr}')
+    except Exception as e:
+        print(f'[Gmail error] {e}')
+
+
+def send_sms(to_phone: str, body: str):
+    """透過 Twilio 發送 SMS，未設定則略過"""
+    if not USE_TWILIO or not to_phone:
+        return
+    # 台灣 09xx → +886 9xx
+    phone = to_phone.strip().replace('-', '').replace(' ', '')
+    if phone.startswith('0'):
+        phone = '+886' + phone[1:]
+    elif not phone.startswith('+'):
+        phone = '+886' + phone
+    try:
+        resp = http_requests.post(
+            f'https://api.twilio.com/2010-04-01/Accounts/{TWILIO_SID}/Messages.json',
+            auth=(TWILIO_SID, TWILIO_TOKEN),
+            data={'From': TWILIO_FROM, 'To': phone, 'Body': body},
+            timeout=15
+        )
+        data = resp.json()
+        if resp.status_code >= 400:
+            print(f'[Twilio error] {data}')
+        else:
+            print(f'[Twilio] SMS sent to {phone}')
+    except Exception as e:
+        print(f'[Twilio error] {e}')
+
+
+def _booking_email_html(booking) -> str:
+    """預約確認 Email HTML 內容"""
+    room = booking.room.name if booking.room else '—'
+    from datetime import datetime as dt
+    try:
+        d = dt.strptime(booking.date, '%Y-%m-%d')
+        weekdays = ['一','二','三','四','五','六','日']
+        date_fmt = f'{d.year}/{d.month}/{d.day}（週{weekdays[d.weekday()]}）'
+    except Exception:
+        date_fmt = booking.date
+    dur_str = _fmt_duration(booking.duration)
+    price_str = f'NT$ {booking.total_price:,}'
+    return f'''<!DOCTYPE html>
+<html lang="zh-TW"><head><meta charset="UTF-8">
+<style>
+  body{{font-family:sans-serif;background:#f5f2ed;margin:0;padding:20px;}}
+  .wrap{{max-width:540px;margin:0 auto;background:#fff;border-radius:8px;overflow:hidden;box-shadow:0 4px 20px rgba(0,0,0,.1);}}
+  .hd{{background:#1a3333;padding:28px 32px;}}
+  .hd-chip{{display:inline-block;background:#2A6B6B;color:#fff;font-size:12px;font-weight:700;padding:4px 14px;border-radius:20px;margin-bottom:12px;}}
+  .hd h1{{color:#fff;font-size:22px;margin:0 0 4px;}}
+  .hd p{{color:rgba(255,255,255,.6);font-size:13px;margin:0;}}
+  .bd{{padding:24px 32px;}}
+  .row{{display:flex;justify-content:space-between;padding:10px 0;border-bottom:1px solid #eee;font-size:14px;}}
+  .row:last-child{{border-bottom:none;}}
+  .lbl{{color:#999;}}
+  .val{{color:#111;font-weight:600;}}
+  .price{{background:#1a1a1a;border-radius:8px;padding:16px 20px;margin-top:16px;display:flex;justify-content:space-between;align-items:center;}}
+  .price .pl{{color:#888;font-size:12px;}}
+  .price .pv{{color:#B8965A;font-size:22px;font-weight:700;}}
+  .ft{{text-align:center;padding:16px;color:#aaa;font-size:12px;background:#f8f8f8;}}
+</style></head><body>
+<div class="wrap">
+  <div class="hd">
+    <div class="hd-chip">預約已確認</div>
+    <h1>{room}</h1>
+    <p>預約編號：{booking.booking_number}</p>
+  </div>
+  <div class="bd">
+    <div class="row"><span class="lbl">日期</span><span class="val">{date_fmt}</span></div>
+    <div class="row"><span class="lbl">時段</span><span class="val">{booking.start_time} – {booking.end_time}</span></div>
+    <div class="row"><span class="lbl">時長</span><span class="val">{dur_str}</span></div>
+    <div class="row"><span class="lbl">聯絡人</span><span class="val">{booking.customer_name}</span></div>
+    <div class="row"><span class="lbl">手機</span><span class="val">{booking.customer_phone}</span></div>
+    <div class="row"><span class="lbl">目的</span><span class="val">{booking.purpose or '—'}</span></div>
+    <div class="price">
+      <span class="pl">總費用</span>
+      <span class="pv">{price_str}</span>
+    </div>
+  </div>
+  <div class="ft">如需取消請提前 2 小時聯繫，謝謝您的預約。</div>
+</div>
+</body></html>'''
+
+
+def _booking_sms_body(booking) -> str:
+    """預約確認 SMS 內文"""
+    room = booking.room.name if booking.room else '—'
+    return (f'【預約確認】{room}\n'
+            f'日期：{booking.date} {booking.start_time}–{booking.end_time}\n'
+            f'編號：{booking.booking_number}\n'
+            f'如需取消請提前 2 小時告知。')
+
+
+def _cancel_sms_body(booking) -> str:
+    room = booking.room.name if booking.room else '—'
+    return (f'【預約取消】{room}\n'
+            f'日期：{booking.date} {booking.start_time}–{booking.end_time}\n'
+            f'編號：{booking.booking_number}\n'
+            f'預約已取消，如有疑問請聯繫管理員。')
+
+
+def _cancel_email_html(booking) -> str:
+    room = booking.room.name if booking.room else '—'
+    return f'''<!DOCTYPE html><html lang="zh-TW"><head><meta charset="UTF-8">
+<style>body{{font-family:sans-serif;background:#f5f2ed;margin:0;padding:20px;}}
+.wrap{{max-width:540px;margin:0 auto;background:#fff;border-radius:8px;overflow:hidden;box-shadow:0 4px 20px rgba(0,0,0,.1);}}
+.hd{{background:#2d0f0f;padding:28px 32px;}}
+.hd-chip{{display:inline-block;background:#C44B3A;color:#fff;font-size:12px;font-weight:700;padding:4px 14px;border-radius:20px;margin-bottom:12px;}}
+.hd h1{{color:#fff;font-size:22px;margin:0 0 4px;}}
+.hd p{{color:rgba(255,255,255,.6);font-size:13px;margin:0;}}
+.bd{{padding:24px 32px;font-size:14px;color:#555;line-height:1.7;}}
+.ft{{text-align:center;padding:16px;color:#aaa;font-size:12px;background:#f8f8f8;}}</style></head><body>
+<div class="wrap">
+  <div class="hd"><div class="hd-chip">預約已取消</div><h1>{room}</h1><p>編號：{booking.booking_number}</p></div>
+  <div class="bd">您的預約（{booking.date} {booking.start_time}–{booking.end_time}）已取消。<br>如有疑問請聯繫管理員。</div>
+  <div class="ft">感謝您的使用。</div>
+</div></body></html>'''
 
 
 # ─────────────────────────────────────────────
@@ -757,6 +949,12 @@ def create_booking():
         if lu:
             line_uid = lu.line_user_id
 
+    # 手機與 Email 都必填
+    if not data.get('phone', '').strip():
+        return jsonify({'error': '請填寫手機號碼'}), 400
+    if not data.get('email', '').strip():
+        return jsonify({'error': '請填寫 Email，用於接收預約確認信'}), 400
+
     booking = Booking(
         booking_number=generate_booking_number(),
         room_id=room.id,
@@ -778,11 +976,20 @@ def create_booking():
     db.session.commit()
     booking = Booking.query.get(booking.id)
 
-    # LINE 推播：使用者確認 + 所有管理員通知
+    # ── 通知：LINE + Email + SMS ──
     if booking.line_user_id:
         push_line(booking.line_user_id, [flex_booking_confirm(booking)])
     for aid in admin_line_ids():
         push_line(aid, [flex_admin_notify(booking)])
+    # Email 確認信
+    if booking.customer_email:
+        send_email(
+            booking.customer_email,
+            f'【預約確認】{booking.room.name} – {booking.date}',
+            _booking_email_html(booking)
+        )
+    # SMS 確認簡訊
+    send_sms(booking.customer_phone, _booking_sms_body(booking))
 
     return jsonify({'success': True, 'booking': booking.to_dict()}), 201
 
@@ -1036,6 +1243,15 @@ def admin_cancel_booking(bid):
     db.session.commit()
     if b.line_user_id:
         push_line(b.line_user_id, [flex_booking_cancel(b)])
+    # Email 取消通知
+    if b.customer_email:
+        send_email(
+            b.customer_email,
+            f'【預約取消】{b.room.name if b.room else ""} – {b.date}',
+            _cancel_email_html(b)
+        )
+    # SMS 取消通知
+    send_sms(b.customer_phone, _cancel_sms_body(b))
     return jsonify({'success': True})
 
 @app.route('/admin/api/bookings/<int:bid>/complete', methods=['POST'])

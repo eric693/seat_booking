@@ -5,6 +5,7 @@
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>會議室預約系統</title>
 <link href="https://fonts.googleapis.com/css2?family=DM+Serif+Display:ital@0;1&family=DM+Sans:wght@300;400;500;600&display=swap" rel="stylesheet">
+<script src="https://static.line-scdn.net/liff/edge/2/sdk.js"></script>
 <style>
 :root {
   --ink: #0F0F0F;
@@ -993,6 +994,10 @@ footer {
     </div>
     <div class="header-actions">
       <span id="hdr-phone">02-1234-5678</span>
+      <div id="liff-user-bar" style="display:none;align-items:center;gap:8px;">
+        <img id="liff-avatar" src="" style="width:28px;height:28px;border-radius:50%;object-fit:cover;border:2px solid var(--teal);" alt="">
+        <span id="liff-name" style="font-size:13px;font-weight:600;color:var(--teal);max-width:80px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;"></span>
+      </div>
       <a class="header-link" onclick="openQueryModal()">查詢預約</a>
     </div>
   </div>
@@ -1237,6 +1242,58 @@ footer {
 
 <script data-cfasync="false" src="/cdn-cgi/scripts/5c5dd728/cloudflare-static/email-decode.min.js"></script><script>
 const API = '';
+const LIFF_ID = '2009193434-BpOSKuw9';  // LIFF App ID
+
+// ── LIFF 初始化 ──────────────────────────────────────────
+window._liffUserId    = '';
+window._liffProfile   = null;
+
+async function initLiff() {
+  if (!LIFF_ID) return; // 未設定 LIFF ID 則跳過，不影響一般使用
+  try {
+    await liff.init({ liffId: LIFF_ID });
+    if (!liff.isLoggedIn()) {
+      // 只有在 LIFF 瀏覽器內才自動登入，一般瀏覽器跳過
+      if (liff.isInClient()) liff.login();
+      return;
+    }
+    const profile = await liff.getProfile();
+    window._liffUserId  = profile.userId;
+    window._liffProfile = profile;
+
+    // 顯示使用者資訊列
+    const bar = document.getElementById('liff-user-bar');
+    if (bar) {
+      document.getElementById('liff-avatar').src = profile.pictureUrl || '';
+      document.getElementById('liff-name').textContent = profile.displayName || '';
+      bar.style.display = 'flex';
+    }
+
+    // 自動填入姓名（若尚未填寫）
+    const nameEl = document.getElementById('fName');
+    if (nameEl && !nameEl.value.trim()) {
+      nameEl.value = profile.displayName || '';
+      updateSummary();
+    }
+
+    // 傳送 LINE User ID 給後端綁定
+    try {
+      await fetch(`${API}/api/line/bind-profile`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          line_user_id: profile.userId,
+          display_name: profile.displayName,
+          picture_url:  profile.pictureUrl || '',
+        })
+      });
+    } catch(e) { /* 非關鍵，忽略 */ }
+
+  } catch(e) {
+    console.warn('LIFF init failed:', e.message);
+    // 不影響一般預約流程
+  }
+}
 
 // Escape single quotes for use in HTML attributes
 function esc(s) { return String(s).replace(/'/g, '&#39;').replace(/"/g, '&quot;'); }
@@ -1812,6 +1869,7 @@ async function submitBooking() {
         attendees: parseInt(document.getElementById('fAttendees').value),
         purpose: document.getElementById('fPurpose').value,
         note: document.getElementById('fNote').value,
+        line_user_id: window._liffUserId || '',
       })
     });
     const data = await res.json();
@@ -1897,6 +1955,7 @@ async function doQuery() {
 
 // ── Init ──
 document.addEventListener('DOMContentLoaded', function() {
+  initLiff();
   loadContent();
   loadRooms();
   renderCal();

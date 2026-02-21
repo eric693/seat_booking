@@ -16,10 +16,13 @@ from werkzeug.utils import secure_filename
 app = Flask(__name__)
 app.secret_key = os.environ.get('SECRET_KEY', 'meeting-room-booking-2026')
 
-# Render 持久磁碟 /data/meeting_rooms.db；本地開發用 sqlite:///meeting_rooms.db
+# 資料庫：優先用環境變數 DATABASE_URL（PostgreSQL），否則本地 SQLite
 import sys
-_default_db = 'sqlite:////data/meeting_rooms.db' if not sys.platform.startswith('win') and os.path.isdir('/data') else 'sqlite:///meeting_rooms.db'
+_default_db = 'sqlite:///meeting_rooms.db'
 DATABASE_URL = os.environ.get('DATABASE_URL', _default_db)
+# Render PostgreSQL URL 開頭是 postgres://，SQLAlchemy 2.x 要求 postgresql://
+if DATABASE_URL.startswith('postgres://'):
+    DATABASE_URL = DATABASE_URL.replace('postgres://', 'postgresql://', 1)
 app.config['SQLALCHEMY_DATABASE_URI'] = DATABASE_URL
 app.config['SQLALCHEMY_TRACK_MODIFICATIONS'] = False
 app.config['MAX_CONTENT_LENGTH'] = 16 * 1024 * 1024  # 16MB
@@ -37,6 +40,8 @@ LINE_CHANNEL_SECRET       = os.environ.get('LINE_CHANNEL_SECRET', '')
 LINE_PUSH_URL  = 'https://api.line.me/v2/bot/message/push'
 LINE_REPLY_URL = 'https://api.line.me/v2/bot/message/reply'
 SITE_URL       = os.environ.get('SITE_URL', 'https://seat-booking-rlf2.onrender.com')
+LIFF_URL       = os.environ.get('LIFF_URL', 'https://liff.line.me/2009193434-BpOSKuw9')
+LIFF_ID        = os.environ.get('LIFF_ID', '')
 
 # ── Email 通知（SendGrid 優先，fallback Gmail SMTP）────────
 SENDGRID_API_KEY = os.environ.get('SENDGRID_API_KEY', '')
@@ -532,7 +537,7 @@ def flex_main_menu() -> dict:
                 'backgroundColor': _C['bg'],
                 'paddingAll': '12px', 'spacing': 'sm',
                 'contents': [
-                    _btn('前往預約網站', 'uri', SITE_URL),
+                    _btn('在 LINE 內預約', 'uri', LIFF_URL),
                     _btn('我的預約', 'message', '我的預約',
                          bg='#2D2D2D'),
                 ]
@@ -621,7 +626,7 @@ def flex_timeslot(date_str: str, rooms_data: list) -> dict:
                 'backgroundColor': _C['bg'],
                 'paddingAll': '12px',
                 'contents': [
-                    _btn('前往預約網站', 'uri', SITE_URL),
+                    _btn('在 LINE 內預約', 'uri', LIFF_URL),
                 ]
             }
         }
@@ -652,7 +657,7 @@ def flex_bind_success(phone: str) -> dict:
                 'type': 'box', 'layout': 'vertical',
                 'backgroundColor': _C['bg'],
                 'paddingAll': '12px',
-                'contents': [_btn('前往預約', 'uri', SITE_URL)]
+                'contents': [_btn('在 LINE 內預約', 'uri', LIFF_URL)]
             }
         }
     }
@@ -728,7 +733,7 @@ def flex_welcome() -> dict:
                 'backgroundColor': _C['bg'],
                 'paddingAll': '12px', 'spacing': 'sm',
                 'contents': [
-                    _btn('前往預約網站', 'uri', SITE_URL),
+                    _btn('在 LINE 內預約', 'uri', LIFF_URL),
                     _btn('查看所有指令', 'message', '說明', bg='#2D2D2D'),
                 ]
             }
@@ -1278,6 +1283,25 @@ def room_availability(room_id):
     if not date:
         return jsonify({'error': 'Missing date'}), 400
     return jsonify({'booked_slots': get_booked_slots(room_id, date)})
+
+
+@app.route('/api/line/bind-profile', methods=['POST'])
+def line_bind_profile():
+    """LIFF 自動傳入 LINE 用戶資訊，建立或更新 LineUser 記錄"""
+    data = request.get_json() or {}
+    uid  = data.get('line_user_id', '').strip()
+    if not uid:
+        return jsonify({'error': 'missing line_user_id'}), 400
+    lu = LineUser.query.filter_by(line_user_id=uid).first()
+    if not lu:
+        lu = LineUser(line_user_id=uid,
+                      display_name=data.get('display_name', ''))
+        db.session.add(lu)
+    else:
+        if data.get('display_name'):
+            lu.display_name = data['display_name']
+    db.session.commit()
+    return jsonify({'success': True})
 
 
 @app.route('/api/book', methods=['POST'])

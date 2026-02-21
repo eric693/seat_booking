@@ -4,23 +4,23 @@ services:
     runtime: python
     buildCommand: pip install -r requirements.txt
     startCommand: gunicorn app:app --bind 0.0.0.0:$PORT --workers 1 --timeout 120
-    disk:
-      name: meeting-room-data
-      mountPath: /data
-      sizeGB: 1
     envVars:
       - key: SECRET_KEY
         generateValue: true
       - key: ADMIN_PASSWORD
         sync: false
       - key: DATABASE_URL
-        value: sqlite:////data/meeting_rooms.db   # 掛載在持久磁碟上
+        sync: false  # 填入 Render PostgreSQL 的 Internal Database URL
       - key: LINE_CHANNEL_ACCESS_TOKEN
         sync: false
       - key: LINE_CHANNEL_SECRET
         sync: false
       - key: SITE_URL              # 你的 Render 網址，例：https://seat-booking-rlf2.onrender.com
         sync: false
+      - key: LIFF_ID                 # LINE LIFF App ID
+        value: 2009193434-BpOSKuw9
+      - key: LIFF_URL
+        value: https://liff.line.me/2009193434-BpOSKuw9
       - key: SENDGRID_API_KEY
         sync: false
       - key: MAIL_FROM

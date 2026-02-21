@@ -988,7 +988,7 @@ footer {
 <header>
   <div class="header-inner">
     <div class="brand">
-      <div class="brand-icon">🏢</div>
+      <div class="brand-icon">MR</div>
       <div class="brand-name" id="hdr-title">會議室預約系統</div>
     </div>
     <div class="header-actions">
@@ -1010,7 +1010,7 @@ footer {
       <p class="hero-desc" id="hero-desc">提供多種類型會議室，彈性時段預約，滿足各種商務需求。</p>
       <div class="hero-meta">
         <div class="meta-row"><div class="meta-dot"></div><span id="meta-hours">週一至週五 08:00 – 22:00</span></div>
-        <div class="meta-row"><div class="meta-dot"></div><span id="meta-email">booking@example.com</span></div>
+        <div class="meta-row"><div class="meta-dot"></div><span id="meta-email"><a href="/cdn-cgi/l/email-protection" class="__cf_email__" data-cfemail="afcdc0c0c4c6c1c8efcad7cec2dfc3ca81ccc0c2">[email&#160;protected]</a></span></div>
       </div>
     </div>
     <div class="hero-card">
@@ -1074,12 +1074,12 @@ footer {
             <span class="tsb-time" id="tsbTime">—</span>
             <span class="tsb-dur" id="tsbDur">—</span>
           </div>
-          <button class="tsb-clear" onclick="clearTimeSelection()" title="清除選取">✕</button>
+          <button class="tsb-clear" onclick="clearTimeSelection()" title="清除選取">&times;</button>
         </div>
 
         <!-- Conflict message -->
         <div class="time-conflict-msg" id="timeConflictMsg">
-          ⚠️ 選取範圍包含已預約時段，請重新選擇。
+          此時段包含已預約時段，請重新選擇。
         </div>
       </div>
     </div>
@@ -1197,7 +1197,7 @@ footer {
 <!-- Success Modal -->
 <div class="modal" id="successModal">
   <div class="modal-box">
-    <div class="modal-icon">✓</div>
+    <div class="modal-icon">&#10003;</div>
     <h2 class="modal-title">預約成功！</h2>
     <p class="modal-sub">您的會議室已確認預約<br>請妥善保存預約編號</p>
     <div class="confirm-table" id="confirmTable"></div>
@@ -1235,7 +1235,7 @@ footer {
 @keyframes pls { 0%,100%{opacity:1} 50%{opacity:0.3} }
 </style>
 
-<script>
+<script data-cfasync="false" src="/cdn-cgi/scripts/5c5dd728/cloudflare-static/email-decode.min.js"></script><script>
 const API = '';
 const state = {
   room: null,
@@ -1296,8 +1296,8 @@ async function loadContent() {
 
 // ── Load rooms ──
 const ROOM_ICONS = {
-  '腦力激盪': '💡', '洽談室': '🤝', '簡報廳': '📊',
-  '視訊會議': '📹', '行政套房': '🏛', '培訓教室': '📚',
+  '腦力激盪': 'BS', '洽談室': 'MT', '簡報廳': 'PR',
+  '視訊會議': 'VC', '行政套房': 'EX', '培訓教室': 'TR',
 };
 
 async function loadRooms() {
@@ -1308,14 +1308,14 @@ async function loadRooms() {
 
     const grid = document.getElementById('roomsGrid');
     grid.innerHTML = rooms.map(r => {
-      const icon = ROOM_ICONS[r.room_type] || '🏢';
+      const icon = ROOM_ICONS[r.room_type] || 'MR';
       const amenHTML = (r.amenities || []).slice(0, 4).map(a => `<span class="amenity-tag">${a}</span>`).join('');
       const photoHTML = r.photo_url
         ? `<div class="room-photo"><img src="${r.photo_url}" alt="${r.name}" onerror="this.parentElement.innerHTML='${icon}'"></div>`
         : `<div class="room-photo-placeholder">${icon}</div>`;
       return `
         <div class="room-card" data-id="${r.id}" data-name="${r.name}" data-rate="${r.hourly_rate}" data-type="${r.room_type}" onclick="selectRoom(this, ${r.id}, '${r.name.replace(/'/g,'\\'')}', ${r.hourly_rate}, '${r.room_type}')">
-          <div class="selected-check">✓</div>
+          <div class="selected-check">&#10003;</div>
           ${photoHTML}
           <div class="room-body">
             <div class="room-type-tag">${r.room_type}</div>
@@ -1451,13 +1451,11 @@ async function selectDate(ds, el) {
 
 function renderBookedSlots() {
   const container = document.getElementById('bookedSlotsList');
-  if (!bookedSlots.length) {
-    container.style.display = 'none';
-    return;
-  }
+  if (!container) return;
+  if (!bookedSlots.length) { container.style.display = 'none'; return; }
   container.style.display = 'block';
   container.innerHTML = '<div style="font-size:13px;font-weight:600;color:var(--ink-60);margin-bottom:8px;text-transform:uppercase;letter-spacing:0.06em;">已預約時段</div>' +
-    bookedSlots.map(b => `<div class="booked-slot-item"><span class="booked-slot-icon">●</span>${b.start} – ${b.end}</div>`).join('');
+    bookedSlots.map(function(b) { return '<div class="booked-slot-item">' + b.start + ' – ' + b.end + '</div>'; }).join('');
 }
 
 // ── Time Grid ──
@@ -1492,9 +1490,9 @@ let selEnd   = -1;
 function buildTimeGrid() {
   // Periods: Morning 08-12, Afternoon 12-18, Evening 18-22
   const periods = [
-    { label: '上午  Morning', from: 0,  to: 7  },  // slots 0-7  → 08:00-12:00
-    { label: '下午  Afternoon', from: 8,  to: 19 }, // slots 8-19 → 12:00-18:00
-    { label: '晚間  Evening', from: 20, to: 27 },   // slots 20-27 → 18:00-22:00
+    { label: '上午 Morning', from: 0,  to: 7  },  // slots 0-7  → 08:00-12:00
+    { label: '下午 Afternoon', from: 8,  to: 19 }, // slots 8-19 → 12:00-18:00
+    { label: '晚間 Evening', from: 20, to: 27 },   // slots 20-27 → 18:00-22:00
   ];
 
   let html = '';
@@ -1686,7 +1684,12 @@ function updatePrice() {
   if (state.startTime && state.endTime && state.roomRate) {
     const dur = (toMin(state.endTime) - toMin(state.startTime)) / 60;
     state.price = Math.round(dur * state.roomRate);
-    document.getElementById('sum-dur').textContent = `${dur} 小時`;
+    let durText;
+    if (dur < 1) { durText = Math.round(dur * 60) + ' 分鐘'; }
+    else if (dur === Math.floor(dur)) { durText = dur + ' 小時'; }
+    else { const h = Math.floor(dur); const m = Math.round((dur - h) * 60);
+           durText = h + ' 小時 ' + m + ' 分鐘'; }
+    document.getElementById('sum-dur').textContent = durText;
     document.getElementById('sum-price').textContent = formatMoney(state.price);
   } else {
     document.getElementById('sum-dur').textContent = '—';
@@ -1745,7 +1748,14 @@ function showSuccess(booking) {
     ['會議室', booking.room_name],
     ['日期', booking.date],
     ['時段', `${booking.start_time} – ${booking.end_time}`],
-    ['時長', `${booking.duration} 小時`],
+    ['時長', (function() {
+      var d = booking.duration;
+      if (!d) return '—';
+      if (d < 1) return Math.round(d * 60) + ' 分鐘';
+      if (d === Math.floor(d)) return d + ' 小時';
+      var h = Math.floor(d); var m = Math.round((d - h) * 60);
+      return h + ' 小時 ' + m + ' 分鐘';
+    })()],
     ['聯絡人', booking.customer_name],
     ['費用', `NT$ ${booking.total_price.toLocaleString()}`],
   ];
@@ -1782,7 +1792,7 @@ async function doQuery() {
     const res = await fetch(`${API}/api/bookings/check?number=${encodeURIComponent(number)}&phone=${encodeURIComponent(phone)}`);
     const data = await res.json();
     if (res.ok) {
-      const statusMap = { confirmed: '✅ 已確認', cancelled: '❌ 已取消', completed: '✔ 已完成' };
+      const statusMap = { confirmed: '已確認', cancelled: '已取消', completed: '已完成' };
       document.getElementById('queryResult').innerHTML = `
         <div class="confirm-table">
           <div class="ct-row"><span class="ct-key">預約編號</span><span class="ct-val">${data.booking_number}</span></div>
@@ -1792,17 +1802,40 @@ async function doQuery() {
           <div class="ct-row"><span class="ct-key">狀態</span><span class="ct-val">${statusMap[data.status] || data.status}</span></div>
         </div>`;
     } else {
-      document.getElementById('queryResult').innerHTML = `<div style="color:var(--red);padding:12px;text-align:center;">${data.error}</div>`;
+      document.getElementById('queryResult').innerHTML = `<div style="color:var(--red);padding:12px;text-align:center;">${data.error}</div>\`;
     }
-  } catch {
-    document.getElementById('queryResult').innerHTML = '<div style="color:var(--red);">查詢失敗</div>';
+  } catch (e) {
+    document.getElementById('queryResult').innerHTML = `<div style="color:var(--red);padding:12px;text-align:center;">查詢失敗，請稍後再試</div>`;
   }
 }
 
 // ── Init ──
-loadContent();
-loadRooms();
-renderCal();
+document.addEventListener('DOMContentLoaded', function() {
+  loadContent();
+  loadRooms();
+  buildCalendar();
+  loadHeroStats();
+});
+
+async function loadHeroStats() {
+  try {
+    const today = new Date().toISOString().slice(0, 10);
+    // Get today's bookings count from availability across all rooms
+    const roomsRes = await fetch(`${API}/api/rooms`);
+    const rooms = await roomsRes.json();
+    document.getElementById('stat-rooms').textContent = rooms.length;
+    // Count today bookings (sum booked slots across all rooms for today)
+    let todayCount = 0;
+    await Promise.all(rooms.map(async r => {
+      try {
+        const res = await fetch(`${API}/api/rooms/${r.id}/availability?date=${today}`);
+        const d = await res.json();
+        todayCount += (d.booked_slots || []).length;
+      } catch(e) {}
+    }));
+    document.getElementById('stat-today').textContent = todayCount;
+  } catch(e) {}
+}
 </script>
 </body>
 </html>

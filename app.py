@@ -84,86 +84,331 @@ def reply_line(reply_token: str, messages: list):
         print(f'[LINE reply error] {e}')
 
 
-def _row(label, value, bold=False, color='#333333'):
+# ─────────────────────────────────────────────
+# Flex Message 元件
+# ─────────────────────────────────────────────
+
+def _info_row(label: str, value: str, value_color: str = '#1a1a1a', bold: bool = False):
+    """兩欄資訊列"""
     return {
-        'type': 'box', 'layout': 'horizontal', 'paddingTop': '4px',
+        'type': 'box', 'layout': 'horizontal',
         'contents': [
-            {'type': 'text', 'text': label, 'size': 'sm', 'color': '#888888', 'flex': 2},
-            {'type': 'text', 'text': str(value), 'size': 'sm', 'color': color,
-             'flex': 4, 'wrap': True, 'weight': 'bold' if bold else 'regular'},
+            {'type': 'text', 'text': label,
+             'size': 'sm', 'color': '#aaaaaa', 'flex': 3, 'gravity': 'center'},
+            {'type': 'text', 'text': str(value),
+             'size': 'sm', 'color': value_color, 'flex': 7,
+             'wrap': True, 'weight': 'bold' if bold else 'regular', 'gravity': 'center'},
         ]
     }
 
 
-def _sep():
-    return {'type': 'separator', 'margin': 'sm'}
+def _divider():
+    return {'type': 'box', 'layout': 'vertical', 'margin': 'md',
+            'contents': [{'type': 'separator', 'color': '#eeeeee'}]}
 
+
+def _chip(text: str, bg: str = '#e8f4f4', color: str = '#2A6B6B') -> dict:
+    """小標籤膠囊"""
+    return {
+        'type': 'box', 'layout': 'vertical',
+        'backgroundColor': bg, 'cornerRadius': '20px',
+        'paddingAll': '6px', 'paddingStart': '14px', 'paddingEnd': '14px',
+        'contents': [{'type': 'text', 'text': text,
+                      'size': 'xs', 'color': color, 'weight': 'bold'}]
+    }
+
+
+def _hero_gradient_box(top_label: str, top_color: str, title: str,
+                        subtitle: str, bg: str) -> dict:
+    """頂部視覺 box（模擬漸層 header）"""
+    return {
+        'type': 'box', 'layout': 'vertical',
+        'backgroundColor': bg, 'paddingAll': '24px', 'paddingBottom': '20px',
+        'contents': [
+            {'type': 'box', 'layout': 'horizontal', 'contents': [
+                {'type': 'box', 'layout': 'vertical',
+                 'backgroundColor': top_color, 'cornerRadius': '4px',
+                 'paddingAll': '4px', 'paddingStart': '10px', 'paddingEnd': '10px',
+                 'contents': [{'type': 'text', 'text': top_label,
+                               'size': 'xs', 'color': '#ffffff', 'weight': 'bold'}]},
+            ]},
+            {'type': 'text', 'text': title,
+             'color': '#ffffff', 'size': 'xl', 'weight': 'bold', 'margin': 'md', 'wrap': True},
+            {'type': 'text', 'text': subtitle,
+             'color': 'rgba(255,255,255,0.7)', 'size': 'sm', 'margin': 'sm', 'wrap': True},
+        ]
+    }
+
+
+def _time_badge(start: str, end: str) -> dict:
+    """時段高亮顯示"""
+    return {
+        'type': 'box', 'layout': 'horizontal',
+        'backgroundColor': '#f0f9f9', 'cornerRadius': '8px',
+        'paddingAll': '12px', 'margin': 'md',
+        'contents': [
+            {'type': 'box', 'layout': 'vertical', 'flex': 1, 'alignItems': 'center',
+             'contents': [
+                 {'type': 'text', 'text': '開始', 'size': 'xxs', 'color': '#aaaaaa'},
+                 {'type': 'text', 'text': start, 'size': 'xl',
+                  'color': '#2A6B6B', 'weight': 'bold'},
+             ]},
+            {'type': 'box', 'layout': 'vertical', 'flex': 0,
+             'justifyContent': 'center', 'paddingStart': '8px', 'paddingEnd': '8px',
+             'contents': [
+                 {'type': 'text', 'text': '→', 'size': 'md', 'color': '#cccccc'}
+             ]},
+            {'type': 'box', 'layout': 'vertical', 'flex': 1, 'alignItems': 'center',
+             'contents': [
+                 {'type': 'text', 'text': '結束', 'size': 'xxs', 'color': '#aaaaaa'},
+                 {'type': 'text', 'text': end, 'size': 'xl',
+                  'color': '#2A6B6B', 'weight': 'bold'},
+             ]},
+        ]
+    }
+
+
+def _fmt_duration(duration) -> str:
+    """Format duration in hours to readable string"""
+    if not duration:
+        return '—'
+    if duration < 1:
+        return f'{int(duration * 60)} 分鐘'
+    if duration == int(duration):
+        return f'{int(duration)} 小時'
+    # e.g. 1.5 -> 1 小時 30 分鐘
+    h = int(duration)
+    m = int((duration - h) * 60)
+    return f'{h} 小時 {m} 分鐘' if m else f'{h} 小時'
+
+
+def _price_block(price: int, duration) -> dict:
+    """費用顯示區塊"""
+    dur_str = _fmt_duration(duration)
+    return {
+        'type': 'box', 'layout': 'horizontal',
+        'backgroundColor': '#1a1a1a', 'cornerRadius': '8px',
+        'paddingAll': '14px', 'margin': 'md',
+        'contents': [
+            {'type': 'box', 'layout': 'vertical', 'flex': 1,
+             'contents': [
+                 {'type': 'text', 'text': '總費用', 'size': 'xs', 'color': '#888888'},
+                 {'type': 'text', 'text': f'NT$ {price:,}',
+                  'size': 'xl', 'color': '#B8965A', 'weight': 'bold'},
+             ]},
+            {'type': 'box', 'layout': 'vertical', 'flex': 0,
+             'justifyContent': 'center', 'alignItems': 'flex-end',
+             'contents': [
+                 {'type': 'text', 'text': dur_str, 'size': 'sm',
+                  'color': '#cccccc', 'align': 'end'},
+             ]},
+        ]
+    }
+
+
+# ─────────────────────────────────────────────
+# 三種 Flex Message
+# ─────────────────────────────────────────────
 
 def flex_booking_confirm(booking) -> dict:
-    """預約成立 Flex Message"""
-    room  = booking.room.name if booking.room else '—'
-    smap  = {'confirmed': '✅ 已確認', 'cancelled': '❌ 已取消', 'completed': '✔ 已完成'}
+    """
+    預約成立通知（給使用者）
+    ┌──────────────────────────┐
+    │   深青色 header        │
+    │  預約成立 · 編號          │
+    ├──────────────────────────┤
+    │  會議室名稱 (大字)        │
+    │   日期   人數   樓層│
+    │  ┌── 時段視覺化 ──┐      │
+    │  │  09:00  →  12:00     │
+    │  └──────────────┘       │
+    │  ─────────────          │
+    │  資訊列 × 4             │
+    │  ─────────────          │
+    │  NT$ 3,000  /  3 小時   │
+    ├──────────────────────────┤
+    │  [查詢預約] 按鈕          │
+    └──────────────────────────┘
+    """
+    room     = booking.room.name if booking.room else '—'
+    floor    = (booking.room.floor or '') if booking.room else ''
+    room_type= (booking.room.room_type or '') if booking.room else ''
+    site_url = SiteContent.get('site_url', 'https://your-app.onrender.com')
+
+    # 日期格式化
+    try:
+        from datetime import datetime as dt
+        d = dt.strptime(booking.date, '%Y-%m-%d')
+        weekdays = ['一', '二', '三', '四', '五', '六', '日']
+        date_fmt = f'{d.month}/{d.day}（週{weekdays[d.weekday()]}）'
+    except Exception:
+        date_fmt = booking.date
+
     return {
         'type': 'flex',
-        'altText': f'【預約確認】{room} {booking.date} {booking.start_time}–{booking.end_time}',
+        'altText': f'【預約確認】{room}｜{booking.date} {booking.start_time}–{booking.end_time}｜編號 {booking.booking_number}',
         'contents': {
             'type': 'bubble',
+            'size': 'kilo',
             'header': {
                 'type': 'box', 'layout': 'vertical',
-                'backgroundColor': '#2A6B6B', 'paddingAll': '20px',
+                'backgroundColor': '#1a3333',
+                'paddingAll': '0px',
                 'contents': [
-                    {'type': 'text', 'text': '🏢 會議室預約確認',
-                     'color': '#FFFFFF', 'size': 'lg', 'weight': 'bold'},
-                    {'type': 'text', 'text': smap.get(booking.status, booking.status),
-                     'color': '#B8E0E0', 'size': 'sm', 'margin': 'sm'},
+                    # 頂部色條
+                    {'type': 'box', 'layout': 'vertical',
+                     'backgroundColor': '#2A6B6B', 'height': '4px',
+                     'contents': []},
+                    # 主 header 內容
+                    {'type': 'box', 'layout': 'vertical',
+                     'paddingAll': '20px',
+                     'contents': [
+                         # 狀態標籤
+                         {'type': 'box', 'layout': 'horizontal', 'contents': [
+                             {'type': 'box', 'layout': 'vertical',
+                              'backgroundColor': '#2A6B6B', 'cornerRadius': '20px',
+                              'paddingAll': '4px', 'paddingStart': '12px', 'paddingEnd': '12px',
+                              'contents': [{'type': 'text', 'text': '預約已確認',
+                                            'size': 'xs', 'color': '#ffffff', 'weight': 'bold'}]},
+                             {'type': 'filler'},
+                             {'type': 'text', 'text': booking.booking_number,
+                              'size': 'xs', 'color': 'rgba(255,255,255,0.4)', 'gravity': 'center'},
+                         ]},
+                         # 會議室名稱
+                         {'type': 'text', 'text': room,
+                          'size': 'xl', 'color': '#ffffff', 'weight': 'bold',
+                          'margin': 'lg', 'wrap': True},
+                         # 副標籤列
+                         {'type': 'box', 'layout': 'horizontal', 'margin': 'sm',
+                          'contents': [
+                              {'type': 'text', 'text': f'{room_type}',
+                               'size': 'xs', 'color': 'rgba(255,255,255,0.55)'},
+                              {'type': 'text', 'text': floor or '',
+                               'size': 'xs', 'color': 'rgba(255,255,255,0.55)'},
+                          ]},
+                     ]},
                 ]
             },
             'body': {
-                'type': 'box', 'layout': 'vertical', 'spacing': 'sm',
+                'type': 'box', 'layout': 'vertical',
+                'backgroundColor': '#ffffff',
+                'paddingAll': '18px', 'spacing': 'none',
                 'contents': [
-                    _row('預約編號', booking.booking_number),
-                    _row('會議室',   room),
-                    _row('日期',     booking.date),
-                    _row('時段',     f'{booking.start_time} – {booking.end_time}'),
-                    _row('時長',     f'{booking.duration} 小時'),
-                    _row('出席人數', f'{booking.attendees} 人'),
-                    _sep(),
-                    _row('聯絡人', booking.customer_name, bold=True),
-                    _row('費用',   f'NT$ {booking.total_price:,}', bold=True, color='#2A6B6B'),
+                    # 日期 + 人數 chips
+                    {'type': 'box', 'layout': 'horizontal', 'spacing': 'sm', 'contents': [
+                        _chip(f'{date_fmt}'),
+                        _chip(f'{booking.attendees} 人'),
+                    ]},
+                    # 時段視覺化
+                    _time_badge(booking.start_time, booking.end_time),
+                    _divider(),
+                    # 資訊列
+                    {'type': 'box', 'layout': 'vertical', 'spacing': 'sm',
+                     'margin': 'md', 'contents': [
+                         _info_row('聯絡人', booking.customer_name, bold=True),
+                         _info_row('部門',   booking.department or '—'),
+                         _info_row('目的',   booking.purpose or '—'),
+                     ]},
+                    # 費用區塊
+                    _price_block(booking.total_price, booking.duration),
                 ]
             },
             'footer': {
-                'type': 'box', 'layout': 'vertical', 'paddingAll': '16px',
-                'backgroundColor': '#F5F2ED',
-                'contents': [{'type': 'text',
-                    'text': '如需取消或更改，請提前 2 小時聯繫管理員',
-                    'color': '#888888', 'size': 'xs', 'wrap': True}]
+                'type': 'box', 'layout': 'vertical',
+                'backgroundColor': '#f8f8f8',
+                'paddingAll': '14px', 'spacing': 'sm',
+                'contents': [
+                    # CTA 按鈕
+                    {'type': 'button',
+                     'action': {'type': 'message', 'label': '查詢此預約',
+                                'text': f'查詢 {booking.booking_number}'},
+                     'style': 'primary', 'color': '#2A6B6B',
+                     'height': 'sm'},
+                    {'type': 'text',
+                     'text': '如需取消或更改，請提前 2 小時聯繫管理員',
+                     'size': 'xxs', 'color': '#aaaaaa', 'wrap': True, 'align': 'center',
+                     'margin': 'sm'},
+                ]
             }
         }
     }
 
 
 def flex_booking_cancel(booking) -> dict:
-    """取消通知 Flex Message"""
-    room = booking.room.name if booking.room else '—'
+    """
+    預約取消通知（給使用者）
+    ┌──────────────────────────┐
+    │   深紅 header          │
+    │  預約已取消              │
+    ├──────────────────────────┤
+    │  會議室 / 日期 / 時段     │
+    │  編號                    │
+    ├──────────────────────────┤
+    │  重新預約 按鈕            │
+    └──────────────────────────┘
+    """
+    room     = booking.room.name if booking.room else '—'
+    floor    = (booking.room.floor or '') if booking.room else ''
+    site_url = SiteContent.get('site_url', 'https://your-app.onrender.com')
+
+    try:
+        from datetime import datetime as dt
+        d = dt.strptime(booking.date, '%Y-%m-%d')
+        weekdays = ['一', '二', '三', '四', '五', '六', '日']
+        date_fmt = f'{d.month}/{d.day}（週{weekdays[d.weekday()]}）'
+    except Exception:
+        date_fmt = booking.date
+
     return {
         'type': 'flex',
-        'altText': f'【預約取消】{room} {booking.date}',
+        'altText': f'【預約取消】{room}｜{booking.date}｜編號 {booking.booking_number}',
         'contents': {
             'type': 'bubble',
+            'size': 'kilo',
             'header': {
                 'type': 'box', 'layout': 'vertical',
-                'backgroundColor': '#C44B3A', 'paddingAll': '20px',
-                'contents': [{'type': 'text', 'text': '❌ 預約已取消',
-                              'color': '#FFFFFF', 'size': 'lg', 'weight': 'bold'}]
+                'backgroundColor': '#2d0f0f',
+                'paddingAll': '0px',
+                'contents': [
+                    {'type': 'box', 'layout': 'vertical',
+                     'backgroundColor': '#C44B3A', 'height': '4px', 'contents': []},
+                    {'type': 'box', 'layout': 'vertical', 'paddingAll': '20px',
+                     'contents': [
+                         {'type': 'box', 'layout': 'horizontal', 'contents': [
+                             {'type': 'box', 'layout': 'vertical',
+                              'backgroundColor': '#C44B3A', 'cornerRadius': '20px',
+                              'paddingAll': '4px', 'paddingStart': '12px', 'paddingEnd': '12px',
+                              'contents': [{'type': 'text', 'text': '預約已取消',
+                                            'size': 'xs', 'color': '#ffffff', 'weight': 'bold'}]},
+                         ]},
+                         {'type': 'text', 'text': room,
+                          'size': 'xl', 'color': '#ffffff', 'weight': 'bold',
+                          'margin': 'lg', 'wrap': True},
+                         {'type': 'text', 'text': f'{date_fmt} {booking.start_time}–{booking.end_time}',
+                          'size': 'sm', 'color': 'rgba(255,255,255,0.55)', 'margin': 'sm'},
+                     ]},
+                ]
             },
             'body': {
-                'type': 'box', 'layout': 'vertical', 'spacing': 'sm',
+                'type': 'box', 'layout': 'vertical',
+                'backgroundColor': '#ffffff', 'paddingAll': '18px', 'spacing': 'sm',
                 'contents': [
-                    _row('預約編號', booking.booking_number),
-                    _row('會議室',   room),
-                    _row('日期',     booking.date),
-                    _row('時段',     f'{booking.start_time} – {booking.end_time}'),
+                    _info_row('預約編號', booking.booking_number),
+                    _info_row('樓層',     floor or '—'),
+                    _divider(),
+                    {'type': 'text',
+                     'text': '此預約已由管理員取消，如有疑問請聯繫管理員。',
+                     'size': 'xs', 'color': '#aaaaaa', 'wrap': True, 'margin': 'md'},
+                ]
+            },
+            'footer': {
+                'type': 'box', 'layout': 'vertical',
+                'backgroundColor': '#f8f8f8', 'paddingAll': '14px',
+                'contents': [
+                    {'type': 'button',
+                     'action': {'type': 'uri', 'label': '重新預約',
+                                'uri': site_url},
+                     'style': 'primary', 'color': '#2A6B6B', 'height': 'sm'},
                 ]
             }
         }
@@ -171,38 +416,110 @@ def flex_booking_cancel(booking) -> dict:
 
 
 def flex_admin_notify(booking) -> dict:
-    """新預約管理員通知 Flex Message"""
-    room = booking.room.name if booking.room else '—'
+    """
+    新預約管理員通知
+    ┌──────────────────────────┐
+    │   金色 header          │
+    │   新預約通知  時間戳   │
+    ├──────────────────────────┤
+    │  姓名（大字）部門         │
+    │  電話                    │
+    │  ─────                  │
+    │  會議室 / 日期 / 時段     │
+    │  時段視覺化              │
+    │  ─────                  │
+    │  人數 / 目的 / 備註       │
+    │  費用區塊                │
+    └──────────────────────────┘
+    """
+    room      = booking.room.name if booking.room else '—'
+    floor     = (booking.room.floor or '') if booking.room else ''
+    room_type = (booking.room.room_type or '') if booking.room else ''
+    created   = booking.created_at.strftime('%m/%d %H:%M') if booking.created_at else ''
+
+    try:
+        from datetime import datetime as dt
+        d = dt.strptime(booking.date, '%Y-%m-%d')
+        weekdays = ['一', '二', '三', '四', '五', '六', '日']
+        date_fmt = f'{d.month}/{d.day}（週{weekdays[d.weekday()]}）'
+    except Exception:
+        date_fmt = booking.date
+
+    note_contents = []
+    if booking.note and booking.note.strip():
+        note_contents = [
+            _divider(),
+            {'type': 'box', 'layout': 'vertical', 'margin': 'md',
+             'backgroundColor': '#fffbf0', 'cornerRadius': '8px', 'paddingAll': '10px',
+             'contents': [
+                 {'type': 'text', 'text': '備註', 'size': 'xs',
+                  'color': '#B8965A', 'weight': 'bold'},
+                 {'type': 'text', 'text': booking.note, 'size': 'sm',
+                  'color': '#555555', 'wrap': True, 'margin': 'sm'},
+             ]},
+        ]
+
     return {
         'type': 'flex',
-        'altText': f'[新預約] {booking.customer_name} · {room} {booking.date}',
+        'altText': f'【新預約】{booking.customer_name}・{room}｜{booking.date} {booking.start_time}–{booking.end_time}',
         'contents': {
             'type': 'bubble',
+            'size': 'kilo',
             'header': {
                 'type': 'box', 'layout': 'vertical',
-                'backgroundColor': '#B8965A', 'paddingAll': '20px',
+                'backgroundColor': '#1f1600',
+                'paddingAll': '0px',
                 'contents': [
-                    {'type': 'text', 'text': '🔔 新預約通知',
-                     'color': '#FFFFFF', 'size': 'lg', 'weight': 'bold'},
-                    {'type': 'text',
-                     'text': booking.created_at.strftime('%Y-%m-%d %H:%M') if booking.created_at else '',
-                     'color': '#FFF3D6', 'size': 'xs'},
+                    {'type': 'box', 'layout': 'vertical',
+                     'backgroundColor': '#B8965A', 'height': '4px', 'contents': []},
+                    {'type': 'box', 'layout': 'vertical', 'paddingAll': '20px',
+                     'contents': [
+                         {'type': 'box', 'layout': 'horizontal', 'contents': [
+                             {'type': 'box', 'layout': 'vertical',
+                              'backgroundColor': '#B8965A', 'cornerRadius': '20px',
+                              'paddingAll': '4px', 'paddingStart': '12px', 'paddingEnd': '12px',
+                              'contents': [{'type': 'text', 'text': '新預約通知',
+                                            'size': 'xs', 'color': '#ffffff', 'weight': 'bold'}]},
+                             {'type': 'filler'},
+                             {'type': 'text', 'text': created,
+                              'size': 'xs', 'color': 'rgba(255,255,255,0.4)', 'gravity': 'center'},
+                         ]},
+                         # 顧客姓名
+                         {'type': 'text', 'text': booking.customer_name,
+                          'size': 'xl', 'color': '#ffffff', 'weight': 'bold', 'margin': 'lg'},
+                         {'type': 'box', 'layout': 'horizontal', 'margin': 'sm', 'contents': [
+                             {'type': 'text', 'text': booking.customer_phone,
+                              'size': 'xs', 'color': 'rgba(255,255,255,0.6)'},
+                             {'type': 'text', 'text': booking.department or '',
+                              'size': 'xs', 'color': 'rgba(255,255,255,0.4)'},
+                         ]},
+                     ]},
                 ]
             },
             'body': {
-                'type': 'box', 'layout': 'vertical', 'spacing': 'sm',
+                'type': 'box', 'layout': 'vertical',
+                'backgroundColor': '#ffffff', 'paddingAll': '18px', 'spacing': 'none',
                 'contents': [
-                    _row('預約人', booking.customer_name, bold=True),
-                    _row('電話',   booking.customer_phone),
-                    _row('部門',   booking.department or '—'),
-                    _sep(),
-                    _row('會議室', room),
-                    _row('日期',   booking.date),
-                    _row('時段',   f'{booking.start_time} – {booking.end_time}'),
-                    _row('人數',   f'{booking.attendees} 人'),
-                    _row('目的',   booking.purpose or '—'),
-                    _sep(),
-                    _row('費用', f'NT$ {booking.total_price:,}', bold=True, color='#2A6B6B'),
+                    # 會議室資訊
+                    {'type': 'box', 'layout': 'horizontal', 'spacing': 'sm', 'contents': [
+                        _chip(f'{room}', bg='#e8f4f4', color='#2A6B6B'),
+                        _chip(f'{date_fmt}', bg='#f5f2ed', color='#B8965A'),
+                    ]},
+                    # 時段視覺化
+                    _time_badge(booking.start_time, booking.end_time),
+                    _divider(),
+                    # 詳細資訊
+                    {'type': 'box', 'layout': 'vertical', 'spacing': 'sm',
+                     'margin': 'md', 'contents': [
+                         _info_row('會議室',   f'{room} {floor}'),
+                         _info_row('出席人數', f'{booking.attendees} 人'),
+                         _info_row('會議目的', booking.purpose or '—'),
+                         _info_row('預約編號', booking.booking_number),
+                     ]},
+                    # 備註（有才顯示）
+                    *note_contents,
+                    # 費用
+                    _price_block(booking.total_price, booking.duration),
                 ]
             }
         }
@@ -507,7 +824,7 @@ def line_webhook():
         if etype == 'follow':
             upsert_line_user(uid)
             reply_line(rtok, [{'type': 'text', 'text': (
-                '👋 歡迎使用會議室預約系統！\n\n'
+                '歡迎使用會議室預約系統！\n\n'
                 '可用指令：\n'
                 '• 查詢 [預約編號] — 查詢預約狀態\n'
                 '• 我的預約 — 查詢最近 3 筆\n'
@@ -526,7 +843,7 @@ def _handle_line_text(uid, rtok, text):
 
     if lower in ('說明', 'help', '指令', '?', '？'):
         reply_line(rtok, [{'type': 'text', 'text': (
-            '📋 可用指令：\n\n'
+            '可用指令：\n\n'
             '查詢 [預約編號]\n  範例：查詢 MR202601010001\n\n'
             '我的預約\n  顯示最近 3 筆預約\n\n'
             '綁定 [手機號碼]\n  範例：綁定 0912345678\n  綁定後預約成立／取消將自動通知\n\n'
@@ -539,7 +856,7 @@ def _handle_line_text(uid, rtok, text):
         b = Booking.query.filter_by(booking_number=number).first() if number else None
         if not b:
             reply_line(rtok, [{'type': 'text',
-                'text': f'❌ 找不到預約編號 {number}，請確認後再試。'}])
+                'text': f'找不到預約編號 {number}，請確認後再試。'}])
         else:
             reply_line(rtok, [flex_booking_confirm(b)])
         return
@@ -571,7 +888,7 @@ def _handle_line_text(uid, rtok, text):
             {'line_user_id': uid})
         db.session.commit()
         reply_line(rtok, [{'type': 'text',
-            'text': f'✅ 已綁定 {phone}\n往後預約通知將自動推播給您。'}])
+            'text': f'已成功綁定 {phone}，往後預約通知將自動推播給您。'}])
         return
 
     reply_line(rtok, [{'type': 'text', 'text': '收到！輸入「說明」查看可用指令。'}])
@@ -879,5 +1196,5 @@ if __name__ == '__main__':
     print('   前台預約：http://localhost:5000')
     print('   管理後台：http://localhost:5000/admin')
     print('   LINE Webhook：http://localhost:5000/webhook/line')
-    print(f'   管理密碼：{ADMIN_PASSWORD}\n')
+    print(f'  管理密碼：{ADMIN_PASSWORD}\n')
     app.run(debug=True, port=5000)

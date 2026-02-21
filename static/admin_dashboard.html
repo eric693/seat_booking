@@ -608,7 +608,7 @@ tr:hover td { background: #fafafa; }
 <!-- Sidebar -->
 <div class="sidebar">
   <div class="sidebar-logo">
-    <div class="sidebar-logo-icon">🏢</div>
+    <div class="sidebar-logo-icon">MR</div>
     <div class="sidebar-logo-text">
       會議室系統
       <small>Admin Panel</small>
@@ -621,17 +621,17 @@ tr:hover td { background: #fafafa; }
     </div>
     <div class="nav-section">管理</div>
     <div class="nav-item" onclick="showPage('bookings',this)">
-      <span class="nav-icon">📅</span> 預約管理
+      <span class="nav-icon">&#9700;</span> 預約管理
     </div>
     <div class="nav-item" onclick="showPage('rooms',this)">
-      <span class="nav-icon">🏛</span> 會議室管理
+      <span class="nav-icon">&#9632;</span> 會議室管理
     </div>
     <div class="nav-section">前台設定</div>
     <div class="nav-item" onclick="showPage('content',this)">
-      <span class="nav-icon">✏️</span> 文字內容編輯
+      <span class="nav-icon">&#9998;</span> 文字內容編輯
     </div>
     <div class="nav-item" onclick="showPage('photos',this)">
-      <span class="nav-icon">📷</span> 照片管理
+      <span class="nav-icon">&#9728;</span> 照片管理
     </div>
   </nav>
   <div class="sidebar-bottom">
@@ -644,7 +644,7 @@ tr:hover td { background: #fafafa; }
   <div class="topbar">
     <div class="topbar-title" id="topbarTitle">儀表板</div>
     <div class="topbar-right">
-      <button class="preview-btn" onclick="window.open('/', '_blank')">🔗 查看前台</button>
+      <button class="preview-btn" onclick="window.open('/', '_blank')">查看前台</button>
     </div>
   </div>
 
@@ -764,13 +764,13 @@ tr:hover td { background: #fafafa; }
       <div class="card">
         <div class="card-head">
           <div class="card-title">前台文字內容編輯</div>
-          <button class="btn btn-primary" onclick="saveContent()">💾 儲存所有變更</button>
+          <button class="btn btn-primary" onclick="saveContent()">儲存所有變更</button>
         </div>
         <div class="card-body">
           <div class="content-sections">
 
             <div class="content-section">
-              <div class="cs-head">🏠 主頁基本資訊</div>
+              <div class="cs-head">主頁基本資訊</div>
               <div class="cs-body">
                 <div class="cs-field">
                   <label class="cs-label">網站標題</label>
@@ -788,7 +788,7 @@ tr:hover td { background: #fafafa; }
             </div>
 
             <div class="content-section">
-              <div class="cs-head">📞 聯絡與服務資訊</div>
+              <div class="cs-head">聯絡與服務資訊</div>
               <div class="cs-body">
                 <div class="cs-field">
                   <label class="cs-label">服務時間</label>
@@ -806,7 +806,7 @@ tr:hover td { background: #fafafa; }
             </div>
 
             <div class="content-section" style="grid-column:1/-1;">
-              <div class="cs-head">📋 預約須知（顯示於側邊欄）</div>
+              <div class="cs-head">預約須知（顯示於側邊欄）</div>
               <div class="cs-body">
                 <div class="fgrid">
                   <div class="cs-field">
@@ -839,7 +839,7 @@ tr:hover td { background: #fafafa; }
 
           </div>
           <div style="margin-top:20px;text-align:right;">
-            <button class="btn btn-primary" onclick="saveContent()" style="padding:12px 28px;font-size:15px;">💾 儲存所有變更</button>
+            <button class="btn btn-primary" onclick="saveContent()" style="padding:12px 28px;font-size:15px;">儲存所有變更</button>
           </div>
         </div>
       </div>
@@ -929,7 +929,7 @@ tr:hover td { background: #fafafa; }
       </div>
       <div class="photo-upload-area" id="modalUploadArea" onclick="triggerModalFileInput()">
         <input type="file" id="modalPhotoInput" accept="image/*" onchange="handleModalPhotoSelect(event)" style="position:absolute;inset:0;opacity:0;cursor:pointer;">
-        <div class="photo-upload-icon">🖼️</div>
+        <div class="photo-upload-icon">&#9728;</div>
         <div class="photo-upload-text">
           <strong>點擊選擇照片</strong> 或拖曳到此處<br>
           <small style="color:var(--ink-60);">支援 JPG、PNG、GIF、WEBP，最大 16MB</small>
@@ -962,7 +962,7 @@ let allRooms = [];
 
 function toast(msg, type = 'success') {
   const el = document.getElementById('toast');
-  el.textContent = (type === 'success' ? '✓ ' : '✗ ') + msg;
+  el.textContent = (type === 'success' ? '' : '') + msg;
   el.className = `toast show ${type}`;
   setTimeout(() => el.classList.remove('show'), 3000);
 }
@@ -1079,8 +1079,8 @@ async function loadBookings() {
         <td>${badgeHtml(b.status)}</td>
         <td>
           ${b.status === 'confirmed' ? `
-            <button class="btn btn-outline btn-sm" onclick="completeBooking(${b.id})" title="完成">✔</button>
-            <button class="btn btn-danger btn-sm" onclick="cancelBooking(${b.id})" title="取消">✕</button>
+            <button class="btn btn-outline btn-sm" onclick="completeBooking(${b.id})" title="完成">完成</button>
+            <button class="btn btn-danger btn-sm" onclick="cancelBooking(${b.id})" title="取消">取消</button>
           ` : '—'}
         </td>
       </tr>`).join('');
@@ -1106,9 +1106,9 @@ async function loadRoomsAdmin() {
   try {
     const res = await fetch('/admin/api/rooms', { headers: H });
     allRooms = await res.json();
-    const ICONS = {'腦力激盪':'💡','洽談室':'🤝','簡報廳':'📊','視訊會議':'📹','行政套房':'🏛','培訓教室':'📚'};
+    const ICONS = {'腦力激盪':'BS','洽談室':'MT','簡報廳':'PR','視訊會議':'VC','行政套房':'EX','培訓教室':'TR'};
     document.getElementById('roomAdminGrid').innerHTML = allRooms.map(r => {
-      const icon = ICONS[r.room_type] || '🏢';
+      const icon = ICONS[r.room_type] || 'MR';
       const photoHTML = r.photo_url
         ? `<div class="rac-photo" style="position:relative;"><img src="${r.photo_url}" alt="${r.name}" onerror="this.parentElement.innerHTML='<div class=rac-photo-placeholder>${icon}</div>'"><span class="rac-status ${r.is_active ? 'badge-green' : 'badge-red'}">${r.is_active ? '啟用中' : '已停用'}</span></div>`
         : `<div class="rac-photo-placeholder" style="position:relative;">${icon}<span class="rac-status badge-gray" style="position:absolute;top:8px;right:8px;">${r.is_active ? '啟用中' : '已停用'}</span></div>`;
@@ -1120,7 +1120,7 @@ async function loadRoomsAdmin() {
             <div class="rac-name">${r.name}</div>
             <div class="rac-meta">容納 ${r.capacity} 人 · ${r.floor || 'F—'} · NT$ ${r.hourly_rate.toLocaleString()}/hr</div>
             <div class="rac-actions">
-              <button class="btn btn-outline btn-sm" onclick="editRoom(${r.id})" style="flex:1;">✏️ 編輯</button>
+              <button class="btn btn-outline btn-sm" onclick="editRoom(${r.id})" style="flex:1;">編輯</button>
               <button class="btn btn-outline btn-sm" onclick="toggleRoomStatus(${r.id}, ${!r.is_active})" style="flex:1;">${r.is_active ? '停用' : '啟用'}</button>
             </div>
           </div>
@@ -1320,7 +1320,7 @@ async function saveContent() {
       headers: { ...H, 'Content-Type': 'application/json' },
       body: JSON.stringify(payload)
     });
-    if (res.ok) toast('✅ 已儲存，前台將即時更新');
+    if (res.ok) toast('已儲存，前台將即時更新');
     else toast('儲存失敗', 'error');
   } catch { toast('儲存失敗', 'error'); }
 }
@@ -1330,10 +1330,10 @@ async function loadPhotos() {
   try {
     const res = await fetch('/admin/api/rooms', { headers: H });
     allRooms = await res.json();
-    const ICONS = {'腦力激盪':'💡','洽談室':'🤝','簡報廳':'📊','視訊會議':'📹','行政套房':'🏛','培訓教室':'📚'};
+    const ICONS = {'腦力激盪':'BS','洽談室':'MT','簡報廳':'PR','視訊會議':'VC','行政套房':'EX','培訓教室':'TR'};
 
     document.getElementById('photoRoomList').innerHTML = allRooms.map(r => {
-      const icon = ICONS[r.room_type] || '🏢';
+      const icon = ICONS[r.room_type] || 'MR';
       return `
       <div class="card" style="margin-bottom:20px;">
         <div class="card-head">
@@ -1354,14 +1354,14 @@ async function loadPhotos() {
                 ? `<img src="${r.photo_url}" alt="${r.name}" style="width:100%;height:160px;object-fit:cover;border-radius:8px;border:1px solid var(--border);" id="photo-thumb-${r.id}" onerror="this.outerHTML='<div style=width:100%;height:160px;border-radius:8px;background:linear-gradient(135deg,#1a1a2e,#16213e);display:flex;align-items:center;justify-content:center;font-size:40px;>${icon}</div>'">`
                 : `<div style="width:100%;height:160px;border-radius:8px;background:linear-gradient(135deg,#1a1a2e,#16213e);display:flex;align-items:center;justify-content:center;font-size:40px;color:rgba(255,255,255,0.2);" id="photo-thumb-${r.id}">${icon}</div>`
               }
-              ${r.photo_url ? `<div style="margin-top:8px;"><button class="btn btn-outline btn-sm" onclick="removeRoomPhoto(${r.id})" style="width:100%;">🗑 移除照片</button></div>` : ''}
+              ${r.photo_url ? `<div style="margin-top:8px;"><button class="btn btn-outline btn-sm" onclick="removeRoomPhoto(${r.id})" style="width:100%;"> 移除照片</button></div>` : ''}
             </div>
             <div>
               <div style="font-size:12px;font-weight:600;text-transform:uppercase;letter-spacing:0.08em;color:var(--ink-60);margin-bottom:10px;">上傳新照片</div>
               <div class="photo-upload-area" style="position:relative;" id="drop-${r.id}"
                 ondragover="dragover(event,${r.id})" ondragleave="dragleave(event,${r.id})" ondrop="handleDrop(event,${r.id})">
                 <input type="file" accept="image/*" onchange="uploadRoomPhoto(event,${r.id})" style="position:absolute;inset:0;opacity:0;cursor:pointer;">
-                <div class="photo-upload-icon">🖼️</div>
+                <div class="photo-upload-icon">&#9728;</div>
                 <div class="photo-upload-text">
                   <strong>點擊選擇照片</strong>，或拖曳至此<br>
                   <small>JPG、PNG、GIF、WEBP，最大 16MB</small>
@@ -1422,7 +1422,7 @@ async function uploadRoomPhotoFile(file, roomId) {
     bar.style.width = '100%';
 
     if (updateRes.ok) {
-      toast(`✅ 照片已更新`);
+      toast('照片已更新');
       // Update thumb live
       const thumb = document.getElementById(`photo-thumb-${roomId}`);
       if (thumb) {

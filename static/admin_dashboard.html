@@ -1,0 +1,1474 @@
+<!DOCTYPE html>
+<html lang="zh-TW">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>管理後台 — 會議室預約系統</title>
+<link href="https://fonts.googleapis.com/css2?family=DM+Serif+Display:ital@0;1&family=DM+Sans:wght@300;400;500;600&display=swap" rel="stylesheet">
+<style>
+:root {
+  --ink: #0F0F0F;
+  --ink-60: rgba(15,15,15,0.6);
+  --ink-20: rgba(15,15,15,0.1);
+  --paper: #F5F2ED;
+  --white: #FFFFFF;
+  --gold: #B8965A;
+  --gold-light: #F2E8D5;
+  --teal: #2A6B6B;
+  --teal-light: #E8F2F2;
+  --red: #C44B3A;
+  --red-light: #FFF0EE;
+  --green: #3A7C55;
+  --green-light: #EEF7F2;
+  --border: rgba(15,15,15,0.1);
+  --sidebar: 240px;
+}
+*,*::before,*::after{margin:0;padding:0;box-sizing:border-box;}
+
+body { font-family:'DM Sans',sans-serif; background:var(--paper); color:var(--ink); display:flex; min-height:100vh; }
+
+/* ── SIDEBAR ── */
+.sidebar {
+  width: var(--sidebar);
+  background: var(--ink);
+  color: white;
+  position: fixed;
+  top:0; left:0; bottom:0;
+  display: flex;
+  flex-direction: column;
+  overflow-y: auto;
+}
+
+.sidebar-logo {
+  padding: 20px 20px 16px;
+  border-bottom: 1px solid rgba(255,255,255,0.08);
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+
+.sidebar-logo-icon {
+  width: 32px; height: 32px;
+  background: var(--gold);
+  border-radius: 4px;
+  display: flex; align-items: center; justify-content: center;
+  font-size: 16px;
+  flex-shrink: 0;
+}
+
+.sidebar-logo-text {
+  font-family: 'DM Serif Display', serif;
+  font-size: 15px;
+  line-height: 1.2;
+}
+
+.sidebar-logo-text small {
+  display: block;
+  font-family: 'DM Sans', sans-serif;
+  font-size: 10px;
+  color: rgba(255,255,255,0.4);
+  text-transform: uppercase;
+  letter-spacing: 0.1em;
+}
+
+nav { padding: 12px 0; flex: 1; }
+
+.nav-section {
+  padding: 8px 16px 4px;
+  font-size: 10px;
+  text-transform: uppercase;
+  letter-spacing: 0.12em;
+  color: rgba(255,255,255,0.3);
+  font-weight: 600;
+}
+
+.nav-item {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 10px 20px;
+  cursor: pointer;
+  font-size: 14px;
+  color: rgba(255,255,255,0.6);
+  transition: all 0.2s;
+  border-left: 3px solid transparent;
+}
+
+.nav-item:hover { color: white; background: rgba(255,255,255,0.05); }
+.nav-item.active { color: white; background: rgba(184,150,90,0.15); border-left-color: var(--gold); }
+.nav-icon { font-size: 16px; width: 20px; text-align: center; }
+
+.sidebar-bottom {
+  padding: 16px 20px;
+  border-top: 1px solid rgba(255,255,255,0.08);
+}
+
+.logout-btn {
+  width: 100%;
+  padding: 9px;
+  background: rgba(255,255,255,0.07);
+  border: 1px solid rgba(255,255,255,0.1);
+  color: rgba(255,255,255,0.6);
+  border-radius: 4px;
+  cursor: pointer;
+  font-size: 13px;
+  font-family: inherit;
+  transition: all 0.2s;
+}
+.logout-btn:hover { background: rgba(196,75,58,0.2); color: #ff8a80; border-color: rgba(196,75,58,0.3); }
+
+/* ── MAIN ── */
+.main {
+  margin-left: var(--sidebar);
+  flex: 1;
+  min-height: 100vh;
+  display: flex;
+  flex-direction: column;
+}
+
+.topbar {
+  background: white;
+  border-bottom: 1px solid var(--border);
+  padding: 0 32px;
+  height: 60px;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  position: sticky;
+  top: 0;
+  z-index: 50;
+}
+
+.topbar-title {
+  font-family: 'DM Serif Display', serif;
+  font-size: 18px;
+}
+
+.topbar-right {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+
+.preview-btn {
+  padding: 8px 16px;
+  background: var(--teal);
+  color: white;
+  border: none;
+  border-radius: 4px;
+  font-size: 13px;
+  cursor: pointer;
+  font-family: inherit;
+  font-weight: 500;
+  transition: all 0.2s;
+}
+.preview-btn:hover { background: #1e5050; }
+
+.content { padding: 32px; flex: 1; }
+
+.page { display: none; }
+.page.active { display: block; }
+
+/* ── STAT CARDS ── */
+.stats-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+  gap: 16px;
+  margin-bottom: 28px;
+}
+
+.stat-card {
+  background: white;
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  padding: 22px 24px;
+  position: relative;
+  overflow: hidden;
+}
+
+.stat-card::before {
+  content: '';
+  position: absolute;
+  top: 0; left: 0; right: 0;
+  height: 3px;
+  background: var(--gold);
+}
+
+.stat-lbl {
+  font-size: 11px;
+  text-transform: uppercase;
+  letter-spacing: 0.1em;
+  color: var(--ink-60);
+  font-weight: 600;
+  margin-bottom: 8px;
+}
+
+.stat-val {
+  font-family: 'DM Serif Display', serif;
+  font-size: 36px;
+  color: var(--ink);
+  line-height: 1;
+  margin-bottom: 4px;
+}
+
+.stat-sub { font-size: 12px; color: var(--ink-60); }
+
+/* ── CARD ── */
+.card {
+  background: white;
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  margin-bottom: 24px;
+}
+
+.card-head {
+  padding: 18px 24px;
+  border-bottom: 1px solid var(--border);
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+}
+
+.card-title {
+  font-family: 'DM Serif Display', serif;
+  font-size: 18px;
+}
+
+.card-body { padding: 24px; }
+
+/* ── BUTTONS ── */
+.btn {
+  padding: 9px 18px;
+  border: none;
+  border-radius: 4px;
+  cursor: pointer;
+  font-size: 13px;
+  font-weight: 600;
+  font-family: inherit;
+  transition: all 0.2s;
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+}
+.btn-primary { background: var(--teal); color: white; }
+.btn-primary:hover { background: #1e5050; }
+.btn-gold { background: var(--gold); color: white; }
+.btn-gold:hover { background: #9a7a48; }
+.btn-danger { background: var(--red); color: white; }
+.btn-danger:hover { background: #a33d2e; }
+.btn-outline { background: none; border: 1.5px solid var(--border); color: var(--ink); }
+.btn-outline:hover { border-color: var(--ink); }
+.btn-sm { padding: 6px 12px; font-size: 12px; }
+
+/* ── TABLE ── */
+.tbl-wrap { overflow-x: auto; }
+
+table { width: 100%; border-collapse: collapse; }
+th {
+  background: var(--paper);
+  padding: 10px 14px;
+  text-align: left;
+  font-size: 11px;
+  font-weight: 600;
+  color: var(--ink-60);
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+  border-bottom: 1px solid var(--border);
+}
+td { padding: 13px 14px; border-bottom: 1px solid #f5f5f5; font-size: 14px; }
+tr:hover td { background: #fafafa; }
+
+/* ── BADGE ── */
+.badge {
+  display: inline-block;
+  padding: 3px 10px;
+  border-radius: 100px;
+  font-size: 12px;
+  font-weight: 500;
+}
+.badge-green { background: var(--green-light); color: var(--green); }
+.badge-red { background: var(--red-light); color: var(--red); }
+.badge-gold { background: var(--gold-light); color: #8a6e3e; }
+.badge-gray { background: #f0f0f0; color: #666; }
+
+/* ── FILTERS ── */
+.filters {
+  display: flex;
+  gap: 12px;
+  margin-bottom: 18px;
+  flex-wrap: wrap;
+}
+
+.filter-group {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.filter-lbl { font-size: 13px; color: var(--ink-60); }
+
+.filter-input, .filter-select {
+  padding: 7px 12px;
+  border: 1.5px solid var(--border);
+  border-radius: 4px;
+  font-size: 13px;
+  font-family: inherit;
+  color: var(--ink);
+  background: white;
+}
+.filter-input:focus, .filter-select:focus { outline: none; border-color: var(--teal); }
+
+/* ── MODAL ── */
+.modal {
+  display: none;
+  position: fixed;
+  inset: 0;
+  background: rgba(0,0,0,0.5);
+  z-index: 200;
+  align-items: center;
+  justify-content: center;
+  backdrop-filter: blur(4px);
+}
+.modal.show { display: flex; }
+
+.modal-box {
+  background: white;
+  border-radius: 10px;
+  padding: 32px;
+  max-width: 600px;
+  width: 92%;
+  max-height: 90vh;
+  overflow-y: auto;
+}
+
+.modal-title {
+  font-family: 'DM Serif Display', serif;
+  font-size: 22px;
+  margin-bottom: 24px;
+}
+
+.modal-footer {
+  margin-top: 24px;
+  display: flex;
+  gap: 10px;
+  justify-content: flex-end;
+}
+
+/* ── FORM ── */
+.fg { margin-bottom: 18px; }
+.fg label {
+  display: block;
+  margin-bottom: 6px;
+  font-size: 13px;
+  font-weight: 500;
+  color: var(--ink);
+}
+.fg label span { font-weight: 400; color: var(--ink-60); font-size: 12px; }
+.finput, .fselect, .ftarea {
+  width: 100%;
+  padding: 10px 13px;
+  border: 1.5px solid var(--border);
+  border-radius: 4px;
+  font-size: 14px;
+  font-family: inherit;
+  color: var(--ink);
+  background: white;
+  transition: border-color 0.2s;
+}
+.finput:focus, .fselect:focus, .ftarea:focus { outline: none; border-color: var(--teal); }
+.ftarea { resize: vertical; min-height: 90px; }
+.fselect { appearance: none; background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='8' viewBox='0 0 12 8'%3E%3Cpath d='M1 1l5 5 5-5' stroke='%23666' stroke-width='1.5' fill='none'/%3E%3C/svg%3E"); background-repeat: no-repeat; background-position: right 12px center; padding-right: 32px; cursor: pointer; }
+.fgrid { display: grid; grid-template-columns: 1fr 1fr; gap: 16px; }
+
+/* ── PHOTO UPLOAD ── */
+.photo-upload-area {
+  border: 2px dashed var(--border);
+  border-radius: 8px;
+  padding: 28px;
+  text-align: center;
+  cursor: pointer;
+  transition: all 0.2s;
+  background: var(--paper);
+  position: relative;
+}
+.photo-upload-area:hover { border-color: var(--teal); background: var(--teal-light); }
+.photo-upload-area.dragover { border-color: var(--gold); background: var(--gold-light); }
+.photo-upload-icon { font-size: 32px; margin-bottom: 10px; }
+.photo-upload-text { font-size: 14px; color: var(--ink-60); }
+.photo-upload-text strong { color: var(--teal); }
+#photoFileInput { position: absolute; inset: 0; opacity: 0; cursor: pointer; }
+
+.photo-preview {
+  position: relative;
+  display: inline-block;
+  margin-top: 12px;
+}
+.photo-preview img {
+  max-width: 100%;
+  max-height: 200px;
+  border-radius: 6px;
+  object-fit: cover;
+  border: 2px solid var(--border);
+}
+.photo-preview-remove {
+  position: absolute;
+  top: -8px; right: -8px;
+  width: 24px; height: 24px;
+  background: var(--red);
+  color: white;
+  border: none;
+  border-radius: 50%;
+  cursor: pointer;
+  font-size: 14px;
+  display: flex; align-items: center; justify-content: center;
+}
+
+.current-photo-row {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 10px;
+  background: var(--paper);
+  border: 1px solid var(--border);
+  border-radius: 6px;
+  margin-bottom: 12px;
+}
+.current-photo-row img {
+  width: 60px; height: 45px;
+  object-fit: cover;
+  border-radius: 4px;
+}
+.current-photo-row span { font-size: 13px; color: var(--ink-60); }
+
+/* ── AMENITIES ── */
+.amenity-input-row {
+  display: flex;
+  gap: 8px;
+  margin-bottom: 10px;
+}
+.amenity-tags {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+}
+.amenity-tag {
+  background: var(--gold-light);
+  color: #8a6e3e;
+  border: 1px solid rgba(184,150,90,0.3);
+  padding: 4px 10px;
+  border-radius: 100px;
+  font-size: 12px;
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+.amenity-remove { cursor: pointer; color: var(--gold); font-weight: bold; font-size: 14px; line-height: 1; }
+.amenity-remove:hover { color: var(--red); }
+
+/* ── SITE CONTENT PAGE ── */
+.content-sections {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 20px;
+}
+
+.content-section {
+  background: white;
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  overflow: hidden;
+}
+
+.cs-head {
+  background: var(--paper);
+  padding: 14px 18px;
+  font-size: 13px;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+  color: var(--ink-60);
+  border-bottom: 1px solid var(--border);
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.cs-body { padding: 16px; }
+
+.cs-field { margin-bottom: 14px; }
+.cs-field:last-child { margin-bottom: 0; }
+.cs-label {
+  font-size: 12px;
+  font-weight: 500;
+  color: var(--ink-60);
+  margin-bottom: 5px;
+  display: block;
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+}
+
+/* ── ROOM CARDS ADMIN ── */
+.room-admin-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(300px, 1fr));
+  gap: 20px;
+}
+
+.room-admin-card {
+  background: white;
+  border: 1.5px solid var(--border);
+  border-radius: 8px;
+  overflow: hidden;
+  transition: box-shadow 0.2s;
+}
+.room-admin-card:hover { box-shadow: 0 4px 20px rgba(0,0,0,0.08); }
+.room-admin-card.inactive { opacity: 0.5; }
+
+.rac-photo {
+  width: 100%; height: 140px;
+  object-fit: cover;
+  background: linear-gradient(135deg, #1a1a2e, #16213e);
+  display: flex; align-items: center; justify-content: center;
+  font-size: 36px;
+  color: rgba(255,255,255,0.2);
+  position: relative;
+}
+
+.rac-photo img {
+  width: 100%; height: 100%;
+  object-fit: cover;
+}
+
+.rac-photo-placeholder {
+  width: 100%; height: 140px;
+  background: linear-gradient(135deg, #1a1a2e, #16213e);
+  display: flex; align-items: center; justify-content: center;
+  font-size: 36px;
+  color: rgba(255,255,255,0.2);
+}
+
+.rac-status {
+  position: absolute;
+  top: 8px; right: 8px;
+  padding: 3px 8px;
+  border-radius: 100px;
+  font-size: 11px;
+  font-weight: 600;
+}
+
+.rac-body { padding: 16px; }
+.rac-type { font-size: 11px; font-weight: 600; text-transform: uppercase; letter-spacing: 0.08em; color: var(--gold); margin-bottom: 4px; }
+.rac-name { font-family: 'DM Serif Display', serif; font-size: 18px; margin-bottom: 6px; }
+.rac-meta { font-size: 13px; color: var(--ink-60); margin-bottom: 12px; }
+.rac-actions { display: flex; gap: 8px; border-top: 1px solid var(--border); padding-top: 14px; }
+
+/* upload progress */
+.upload-progress {
+  height: 4px;
+  background: var(--border);
+  border-radius: 2px;
+  overflow: hidden;
+  margin-top: 8px;
+  display: none;
+}
+.upload-progress-bar {
+  height: 100%;
+  background: var(--teal);
+  border-radius: 2px;
+  transition: width 0.3s;
+}
+
+/* ── TOAST ── */
+.toast {
+  position: fixed;
+  bottom: 24px;
+  right: 24px;
+  background: var(--ink);
+  color: white;
+  padding: 14px 20px;
+  border-radius: 8px;
+  font-size: 14px;
+  z-index: 9999;
+  transform: translateY(80px);
+  opacity: 0;
+  transition: all 0.3s;
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  max-width: 360px;
+  box-shadow: 0 8px 24px rgba(0,0,0,0.2);
+}
+.toast.show { transform: translateY(0); opacity: 1; }
+.toast.success { background: var(--teal); }
+.toast.error { background: var(--red); }
+</style>
+</head>
+<body>
+
+<!-- Sidebar -->
+<div class="sidebar">
+  <div class="sidebar-logo">
+    <div class="sidebar-logo-icon">🏢</div>
+    <div class="sidebar-logo-text">
+      會議室系統
+      <small>Admin Panel</small>
+    </div>
+  </div>
+  <nav>
+    <div class="nav-section">總覽</div>
+    <div class="nav-item active" onclick="showPage('dashboard',this)">
+      <span class="nav-icon">■</span> 儀表板
+    </div>
+    <div class="nav-section">管理</div>
+    <div class="nav-item" onclick="showPage('bookings',this)">
+      <span class="nav-icon">📅</span> 預約管理
+    </div>
+    <div class="nav-item" onclick="showPage('rooms',this)">
+      <span class="nav-icon">🏛</span> 會議室管理
+    </div>
+    <div class="nav-section">前台設定</div>
+    <div class="nav-item" onclick="showPage('content',this)">
+      <span class="nav-icon">✏️</span> 文字內容編輯
+    </div>
+    <div class="nav-item" onclick="showPage('photos',this)">
+      <span class="nav-icon">📷</span> 照片管理
+    </div>
+  </nav>
+  <div class="sidebar-bottom">
+    <button class="logout-btn" onclick="logout()">登出後台</button>
+  </div>
+</div>
+
+<!-- Main -->
+<div class="main">
+  <div class="topbar">
+    <div class="topbar-title" id="topbarTitle">儀表板</div>
+    <div class="topbar-right">
+      <button class="preview-btn" onclick="window.open('/', '_blank')">🔗 查看前台</button>
+    </div>
+  </div>
+
+  <div class="content">
+
+    <!-- ── DASHBOARD ── -->
+    <div class="page active" id="page-dashboard">
+      <div class="stats-grid">
+        <div class="stat-card">
+          <div class="stat-lbl">有效預約</div>
+          <div class="stat-val" id="st-total">—</div>
+          <div class="stat-sub">累計確認</div>
+        </div>
+        <div class="stat-card">
+          <div class="stat-lbl">今日預約</div>
+          <div class="stat-val" id="st-today">—</div>
+          <div class="stat-sub">今天</div>
+        </div>
+        <div class="stat-card">
+          <div class="stat-lbl">可用會議室</div>
+          <div class="stat-val" id="st-rooms">—</div>
+          <div class="stat-sub">已啟用</div>
+        </div>
+        <div class="stat-card">
+          <div class="stat-lbl">累計營收</div>
+          <div class="stat-val" id="st-revenue">—</div>
+          <div class="stat-sub">NT$</div>
+        </div>
+        <div class="stat-card">
+          <div class="stat-lbl">已取消</div>
+          <div class="stat-val" id="st-cancelled">—</div>
+          <div class="stat-sub">取消數</div>
+        </div>
+        <div class="stat-card">
+          <div class="stat-lbl">已完成</div>
+          <div class="stat-val" id="st-completed">—</div>
+          <div class="stat-sub">完成數</div>
+        </div>
+      </div>
+
+      <div class="card">
+        <div class="card-head">
+          <div class="card-title">最新預約</div>
+          <button class="btn btn-outline btn-sm" onclick="showPage('bookings', document.querySelector('.nav-item:nth-child(4)'))">查看全部</button>
+        </div>
+        <div class="card-body">
+          <div class="tbl-wrap">
+            <table>
+              <thead><tr>
+                <th>預約編號</th><th>聯絡人</th><th>會議室</th><th>日期</th><th>時段</th><th>狀態</th>
+              </tr></thead>
+              <tbody id="dash-bookings"></tbody>
+            </table>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- ── BOOKINGS ── -->
+    <div class="page" id="page-bookings">
+      <div class="card">
+        <div class="card-head">
+          <div class="card-title">預約管理</div>
+        </div>
+        <div class="card-body">
+          <div class="filters">
+            <div class="filter-group">
+              <span class="filter-lbl">日期</span>
+              <input type="date" class="filter-input" id="fil-date" onchange="loadBookings()">
+            </div>
+            <div class="filter-group">
+              <span class="filter-lbl">狀態</span>
+              <select class="filter-select" id="fil-status" onchange="loadBookings()">
+                <option value="">全部</option>
+                <option value="confirmed">已確認</option>
+                <option value="cancelled">已取消</option>
+                <option value="completed">已完成</option>
+              </select>
+            </div>
+            <div class="filter-group">
+              <span class="filter-lbl">會議室</span>
+              <select class="filter-select" id="fil-room" onchange="loadBookings()">
+                <option value="">全部</option>
+              </select>
+            </div>
+          </div>
+          <div class="tbl-wrap">
+            <table>
+              <thead><tr>
+                <th>預約編號</th><th>聯絡人</th><th>部門</th><th>會議室</th>
+                <th>日期</th><th>時段</th><th>時長</th><th>人數</th><th>金額</th><th>狀態</th><th>操作</th>
+              </tr></thead>
+              <tbody id="bookings-tbody"></tbody>
+            </table>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- ── ROOMS ── -->
+    <div class="page" id="page-rooms">
+      <div class="card">
+        <div class="card-head">
+          <div class="card-title">會議室管理</div>
+          <button class="btn btn-primary" onclick="openRoomModal()">＋ 新增會議室</button>
+        </div>
+        <div class="card-body">
+          <div class="room-admin-grid" id="roomAdminGrid">
+            <div style="grid-column:1/-1;text-align:center;padding:40px;color:var(--ink-60);">載入中...</div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- ── SITE CONTENT ── -->
+    <div class="page" id="page-content">
+      <div class="card">
+        <div class="card-head">
+          <div class="card-title">前台文字內容編輯</div>
+          <button class="btn btn-primary" onclick="saveContent()">💾 儲存所有變更</button>
+        </div>
+        <div class="card-body">
+          <div class="content-sections">
+
+            <div class="content-section">
+              <div class="cs-head">🏠 主頁基本資訊</div>
+              <div class="cs-body">
+                <div class="cs-field">
+                  <label class="cs-label">網站標題</label>
+                  <input class="finput" type="text" id="c-site_title" placeholder="會議室預約系統">
+                </div>
+                <div class="cs-field">
+                  <label class="cs-label">Hero 標語標籤</label>
+                  <input class="finput" type="text" id="c-hero_badge" placeholder="專業會議空間">
+                </div>
+                <div class="cs-field">
+                  <label class="cs-label">頁面描述文字</label>
+                  <textarea class="ftarea" id="c-site_description" placeholder="提供多種類型會議室..."></textarea>
+                </div>
+              </div>
+            </div>
+
+            <div class="content-section">
+              <div class="cs-head">📞 聯絡與服務資訊</div>
+              <div class="cs-body">
+                <div class="cs-field">
+                  <label class="cs-label">服務時間</label>
+                  <input class="finput" type="text" id="c-service_hours" placeholder="週一至週五 08:00 – 22:00">
+                </div>
+                <div class="cs-field">
+                  <label class="cs-label">聯絡電話</label>
+                  <input class="finput" type="text" id="c-contact_phone" placeholder="02-1234-5678">
+                </div>
+                <div class="cs-field">
+                  <label class="cs-label">聯絡 Email</label>
+                  <input class="finput" type="email" id="c-contact_email" placeholder="booking@example.com">
+                </div>
+              </div>
+            </div>
+
+            <div class="content-section" style="grid-column:1/-1;">
+              <div class="cs-head">📋 預約須知（顯示於側邊欄）</div>
+              <div class="cs-body">
+                <div class="fgrid">
+                  <div class="cs-field">
+                    <label class="cs-label">須知 1</label>
+                    <input class="finput" type="text" id="c-notice_1" placeholder="請提前 15 分鐘辦理入場手續">
+                  </div>
+                  <div class="cs-field">
+                    <label class="cs-label">須知 2</label>
+                    <input class="finput" type="text" id="c-notice_2" placeholder="取消或更改請提前 2 小時通知">
+                  </div>
+                  <div class="cs-field">
+                    <label class="cs-label">須知 3</label>
+                    <input class="finput" type="text" id="c-notice_3" placeholder="禁止攜帶食物進入精緻會議室">
+                  </div>
+                  <div class="cs-field">
+                    <label class="cs-label">須知 4</label>
+                    <input class="finput" type="text" id="c-notice_4" placeholder="使用後請恢復設備原始設定">
+                  </div>
+                  <div class="cs-field">
+                    <label class="cs-label">須知 5</label>
+                    <input class="finput" type="text" id="c-notice_5" placeholder="逾時使用將依時薪計費">
+                  </div>
+                  <div class="cs-field">
+                    <label class="cs-label">頁尾版權文字</label>
+                    <input class="finput" type="text" id="c-footer_text" placeholder="© 2026 會議室預約系統">
+                  </div>
+                </div>
+              </div>
+            </div>
+
+          </div>
+          <div style="margin-top:20px;text-align:right;">
+            <button class="btn btn-primary" onclick="saveContent()" style="padding:12px 28px;font-size:15px;">💾 儲存所有變更</button>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- ── PHOTOS ── -->
+    <div class="page" id="page-photos">
+      <div class="card">
+        <div class="card-head">
+          <div class="card-title">會議室照片管理</div>
+          <div style="font-size:13px;color:var(--ink-60);">支援 JPG、PNG、GIF、WEBP，最大 16MB</div>
+        </div>
+        <div class="card-body">
+          <div id="photoRoomList">
+            <div style="text-align:center;padding:40px;color:var(--ink-60);">載入中...</div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+  </div>
+</div>
+
+<!-- Room Modal -->
+<div class="modal" id="roomModal">
+  <div class="modal-box">
+    <div class="modal-title" id="roomModalTitle">新增會議室</div>
+    <input type="hidden" id="rm-id">
+
+    <div class="fgrid">
+      <div class="fg">
+        <label>會議室名稱</label>
+        <input class="finput" type="text" id="rm-name" placeholder="例：精緻洽談室 A">
+      </div>
+      <div class="fg">
+        <label>類型</label>
+        <select class="fselect" id="rm-type">
+          <option>腦力激盪</option>
+          <option>洽談室</option>
+          <option>簡報廳</option>
+          <option>視訊會議</option>
+          <option>行政套房</option>
+          <option>培訓教室</option>
+        </select>
+      </div>
+      <div class="fg">
+        <label>容納人數</label>
+        <input class="finput" type="number" id="rm-capacity" placeholder="10" min="1">
+      </div>
+      <div class="fg">
+        <label>每小時費率（NT$）</label>
+        <input class="finput" type="number" id="rm-rate" placeholder="500" min="0">
+      </div>
+      <div class="fg">
+        <label>樓層</label>
+        <input class="finput" type="text" id="rm-floor" placeholder="例：3F">
+      </div>
+      <div class="fg">
+        <label>狀態</label>
+        <select class="fselect" id="rm-active">
+          <option value="true">啟用</option>
+          <option value="false">停用</option>
+        </select>
+      </div>
+    </div>
+
+    <div class="fg">
+      <label>描述說明</label>
+      <textarea class="ftarea" id="rm-desc" placeholder="會議室詳細說明..."></textarea>
+    </div>
+
+    <div class="fg">
+      <label>設備設施 <span>（輸入後按 Enter 新增）</span></label>
+      <div class="amenity-input-row">
+        <input class="finput" type="text" id="rm-amenity-input" placeholder="例：白板、投影機、WiFi" onkeydown="amenityKeydown(event)" style="flex:1;">
+        <button class="btn btn-outline btn-sm" onclick="addAmenity()">新增</button>
+      </div>
+      <div class="amenity-tags" id="amenityTags"></div>
+    </div>
+
+    <div class="fg">
+      <label>封面照片</label>
+      <div class="current-photo-row" id="currentPhotoRow" style="display:none;">
+        <img id="currentPhotoThumb" src="" alt="目前照片">
+        <span>目前照片</span>
+        <button class="btn btn-outline btn-sm" onclick="clearModalPhoto()">移除</button>
+      </div>
+      <div class="photo-upload-area" id="modalUploadArea" onclick="triggerModalFileInput()">
+        <input type="file" id="modalPhotoInput" accept="image/*" onchange="handleModalPhotoSelect(event)" style="position:absolute;inset:0;opacity:0;cursor:pointer;">
+        <div class="photo-upload-icon">🖼️</div>
+        <div class="photo-upload-text">
+          <strong>點擊選擇照片</strong> 或拖曳到此處<br>
+          <small style="color:var(--ink-60);">支援 JPG、PNG、GIF、WEBP，最大 16MB</small>
+        </div>
+        <div class="upload-progress" id="modalUploadProgress">
+          <div class="upload-progress-bar" id="modalUploadBar" style="width:0%"></div>
+        </div>
+      </div>
+      <div id="modalPhotoPreview"></div>
+      <input type="hidden" id="rm-photo-url">
+    </div>
+
+    <div class="modal-footer">
+      <button class="btn btn-outline" onclick="closeRoomModal()">取消</button>
+      <button class="btn btn-primary" onclick="saveRoom()">儲存</button>
+    </div>
+  </div>
+</div>
+
+<!-- Toast -->
+<div class="toast" id="toast"></div>
+
+<script>
+const PW = sessionStorage.getItem('adminPw') || '';
+if (!PW) window.location.href = '/admin';
+
+const H = { 'X-Admin-Password': PW };
+let amenities = [];
+let allRooms = [];
+
+function toast(msg, type = 'success') {
+  const el = document.getElementById('toast');
+  el.textContent = (type === 'success' ? '✓ ' : '✗ ') + msg;
+  el.className = `toast show ${type}`;
+  setTimeout(() => el.classList.remove('show'), 3000);
+}
+
+function showPage(id, navEl) {
+  document.querySelectorAll('.page').forEach(p => p.classList.remove('active'));
+  document.getElementById(`page-${id}`).classList.add('active');
+  document.querySelectorAll('.nav-item').forEach(n => n.classList.remove('active'));
+  if (navEl) navEl.classList.add('active');
+  const titles = {
+    dashboard: '儀表板', bookings: '預約管理', rooms: '會議室管理',
+    content: '文字內容編輯', photos: '照片管理'
+  };
+  document.getElementById('topbarTitle').textContent = titles[id] || '';
+  switch(id) {
+    case 'dashboard': loadDashboard(); break;
+    case 'bookings': loadBookings(); break;
+    case 'rooms': loadRoomsAdmin(); break;
+    case 'content': loadContent(); break;
+    case 'photos': loadPhotos(); break;
+  }
+}
+
+function logout() {
+  sessionStorage.removeItem('adminPw');
+  window.location.href = '/admin';
+}
+
+// ── DASHBOARD ──
+async function loadDashboard() {
+  try {
+    const [statsRes, bookingsRes] = await Promise.all([
+      fetch('/admin/api/stats', { headers: H }),
+      fetch('/admin/api/bookings', { headers: H })
+    ]);
+    const stats = await statsRes.json();
+    document.getElementById('st-total').textContent = stats.total_bookings;
+    document.getElementById('st-today').textContent = stats.today_bookings;
+    document.getElementById('st-rooms').textContent = stats.total_rooms;
+    document.getElementById('st-revenue').textContent = 'NT$' + (stats.total_revenue || 0).toLocaleString();
+    document.getElementById('st-cancelled').textContent = stats.cancelled;
+    document.getElementById('st-completed').textContent = stats.completed;
+
+    const bookings = await bookingsRes.json();
+    const tbody = document.getElementById('dash-bookings');
+    if (!bookings.length) {
+      tbody.innerHTML = '<tr><td colspan="6" style="text-align:center;padding:30px;color:var(--ink-60);">尚無預約</td></tr>';
+      return;
+    }
+    tbody.innerHTML = bookings.slice(0, 10).map(b => `
+      <tr>
+        <td><strong>${b.booking_number}</strong></td>
+        <td>${b.customer_name}</td>
+        <td>${b.room_name}</td>
+        <td>${b.date}</td>
+        <td>${b.start_time} – ${b.end_time}</td>
+        <td>${badgeHtml(b.status)}</td>
+      </tr>`).join('');
+  } catch(e) { console.error(e); }
+}
+
+// ── BOOKINGS ──
+async function loadBookings() {
+  try {
+    // populate room filter
+    if (allRooms.length) {
+      const sel = document.getElementById('fil-room');
+      if (sel.options.length < 2) {
+        allRooms.forEach(r => {
+          const opt = document.createElement('option');
+          opt.value = r.id;
+          opt.textContent = r.name;
+          sel.appendChild(opt);
+        });
+      }
+    } else {
+      const rr = await fetch('/admin/api/rooms', { headers: H });
+      allRooms = await rr.json();
+      const sel = document.getElementById('fil-room');
+      allRooms.forEach(r => {
+        const opt = document.createElement('option');
+        opt.value = r.id;
+        opt.textContent = r.name;
+        sel.appendChild(opt);
+      });
+    }
+
+    const date = document.getElementById('fil-date').value;
+    const status = document.getElementById('fil-status').value;
+    const room = document.getElementById('fil-room').value;
+    let url = '/admin/api/bookings?';
+    if (date) url += `date=${date}&`;
+    if (status) url += `status=${status}&`;
+    if (room) url += `room_id=${room}`;
+
+    const res = await fetch(url, { headers: H });
+    const bookings = await res.json();
+    const tbody = document.getElementById('bookings-tbody');
+    if (!bookings.length) {
+      tbody.innerHTML = '<tr><td colspan="11" style="text-align:center;padding:30px;color:var(--ink-60);">找不到符合的預約</td></tr>';
+      return;
+    }
+    tbody.innerHTML = bookings.map(b => `
+      <tr>
+        <td><strong>${b.booking_number}</strong></td>
+        <td>${b.customer_name}<br><small style="color:var(--ink-60);">${b.customer_phone}</small></td>
+        <td>${b.department || '—'}</td>
+        <td>${b.room_name}</td>
+        <td>${b.date}</td>
+        <td>${b.start_time} – ${b.end_time}</td>
+        <td>${b.duration}h</td>
+        <td>${b.attendees}人</td>
+        <td>NT$ ${(b.total_price||0).toLocaleString()}</td>
+        <td>${badgeHtml(b.status)}</td>
+        <td>
+          ${b.status === 'confirmed' ? `
+            <button class="btn btn-outline btn-sm" onclick="completeBooking(${b.id})" title="完成">✔</button>
+            <button class="btn btn-danger btn-sm" onclick="cancelBooking(${b.id})" title="取消">✕</button>
+          ` : '—'}
+        </td>
+      </tr>`).join('');
+  } catch(e) { console.error(e); }
+}
+
+async function cancelBooking(id) {
+  if (!confirm('確定要取消此預約？')) return;
+  const res = await fetch(`/admin/api/bookings/${id}/cancel`, { method: 'POST', headers: H });
+  if (res.ok) { toast('預約已取消'); loadBookings(); }
+  else toast('操作失敗', 'error');
+}
+
+async function completeBooking(id) {
+  if (!confirm('確定將此預約標記為完成？')) return;
+  const res = await fetch(`/admin/api/bookings/${id}/complete`, { method: 'POST', headers: H });
+  if (res.ok) { toast('已標記為完成'); loadBookings(); }
+  else toast('操作失敗', 'error');
+}
+
+// ── ROOMS ADMIN ──
+async function loadRoomsAdmin() {
+  try {
+    const res = await fetch('/admin/api/rooms', { headers: H });
+    allRooms = await res.json();
+    const ICONS = {'腦力激盪':'💡','洽談室':'🤝','簡報廳':'📊','視訊會議':'📹','行政套房':'🏛','培訓教室':'📚'};
+    document.getElementById('roomAdminGrid').innerHTML = allRooms.map(r => {
+      const icon = ICONS[r.room_type] || '🏢';
+      const photoHTML = r.photo_url
+        ? `<div class="rac-photo" style="position:relative;"><img src="${r.photo_url}" alt="${r.name}" onerror="this.parentElement.innerHTML='<div class=rac-photo-placeholder>${icon}</div>'"><span class="rac-status ${r.is_active ? 'badge-green' : 'badge-red'}">${r.is_active ? '啟用中' : '已停用'}</span></div>`
+        : `<div class="rac-photo-placeholder" style="position:relative;">${icon}<span class="rac-status badge-gray" style="position:absolute;top:8px;right:8px;">${r.is_active ? '啟用中' : '已停用'}</span></div>`;
+      return `
+        <div class="room-admin-card ${r.is_active ? '' : 'inactive'}">
+          ${photoHTML}
+          <div class="rac-body">
+            <div class="rac-type">${r.room_type}</div>
+            <div class="rac-name">${r.name}</div>
+            <div class="rac-meta">容納 ${r.capacity} 人 · ${r.floor || 'F—'} · NT$ ${r.hourly_rate.toLocaleString()}/hr</div>
+            <div class="rac-actions">
+              <button class="btn btn-outline btn-sm" onclick="editRoom(${r.id})" style="flex:1;">✏️ 編輯</button>
+              <button class="btn btn-outline btn-sm" onclick="toggleRoomStatus(${r.id}, ${!r.is_active})" style="flex:1;">${r.is_active ? '停用' : '啟用'}</button>
+            </div>
+          </div>
+        </div>`;
+    }).join('');
+  } catch(e) { console.error(e); }
+}
+
+async function toggleRoomStatus(id, newActive) {
+  const res = await fetch(`/admin/api/rooms/${id}`, {
+    method: 'PUT',
+    headers: { ...H, 'Content-Type': 'application/json' },
+    body: JSON.stringify({ is_active: newActive })
+  });
+  if (res.ok) { toast(newActive ? '已啟用' : '已停用'); loadRoomsAdmin(); }
+  else toast('操作失敗', 'error');
+}
+
+// ── ROOM MODAL ──
+function openRoomModal(roomData = null) {
+  document.getElementById('rm-id').value = '';
+  document.getElementById('rm-name').value = '';
+  document.getElementById('rm-type').value = '洽談室';
+  document.getElementById('rm-capacity').value = '';
+  document.getElementById('rm-rate').value = '';
+  document.getElementById('rm-floor').value = '';
+  document.getElementById('rm-desc').value = '';
+  document.getElementById('rm-active').value = 'true';
+  document.getElementById('rm-photo-url').value = '';
+  document.getElementById('currentPhotoRow').style.display = 'none';
+  document.getElementById('modalPhotoPreview').innerHTML = '';
+  amenities = [];
+  renderAmenities();
+  document.getElementById('roomModalTitle').textContent = '新增會議室';
+  document.getElementById('roomModal').classList.add('show');
+}
+
+function editRoom(id) {
+  const r = allRooms.find(x => x.id === id);
+  if (!r) return;
+  document.getElementById('rm-id').value = r.id;
+  document.getElementById('rm-name').value = r.name;
+  document.getElementById('rm-type').value = r.room_type;
+  document.getElementById('rm-capacity').value = r.capacity;
+  document.getElementById('rm-rate').value = r.hourly_rate;
+  document.getElementById('rm-floor').value = r.floor || '';
+  document.getElementById('rm-desc').value = r.description || '';
+  document.getElementById('rm-active').value = r.is_active ? 'true' : 'false';
+  document.getElementById('rm-photo-url').value = r.photo_url || '';
+  amenities = [...(r.amenities || [])];
+  renderAmenities();
+
+  const photoRow = document.getElementById('currentPhotoRow');
+  if (r.photo_url) {
+    photoRow.style.display = 'flex';
+    document.getElementById('currentPhotoThumb').src = r.photo_url;
+  } else {
+    photoRow.style.display = 'none';
+  }
+
+  document.getElementById('roomModalTitle').textContent = `編輯：${r.name}`;
+  document.getElementById('roomModal').classList.add('show');
+}
+
+function closeRoomModal() {
+  document.getElementById('roomModal').classList.remove('show');
+}
+
+// Amenities
+function amenityKeydown(e) { if (e.key === 'Enter') { e.preventDefault(); addAmenity(); } }
+function addAmenity() {
+  const input = document.getElementById('rm-amenity-input');
+  const val = input.value.trim();
+  if (val && !amenities.includes(val)) { amenities.push(val); renderAmenities(); }
+  input.value = '';
+  input.focus();
+}
+function removeAmenity(idx) { amenities.splice(idx, 1); renderAmenities(); }
+function renderAmenities() {
+  document.getElementById('amenityTags').innerHTML = amenities.map((a, i) =>
+    `<span class="amenity-tag">${a} <span class="amenity-remove" onclick="removeAmenity(${i})">×</span></span>`
+  ).join('');
+}
+
+// Photo upload in modal
+function triggerModalFileInput() {
+  // handled by input overlay
+}
+
+let pendingPhotoUrl = '';
+
+async function handleModalPhotoSelect(event) {
+  const file = event.target.files[0];
+  if (!file) return;
+  const progress = document.getElementById('modalUploadProgress');
+  const bar = document.getElementById('modalUploadBar');
+  progress.style.display = 'block';
+  bar.style.width = '30%';
+
+  const formData = new FormData();
+  formData.append('photo', file);
+  try {
+    bar.style.width = '70%';
+    const res = await fetch('/admin/api/upload-photo', {
+      method: 'POST',
+      headers: { 'X-Admin-Password': PW },
+      body: formData
+    });
+    bar.style.width = '100%';
+    const data = await res.json();
+    if (res.ok && data.photo_url) {
+      document.getElementById('rm-photo-url').value = data.photo_url;
+      pendingPhotoUrl = data.photo_url;
+      document.getElementById('modalPhotoPreview').innerHTML = `
+        <div class="photo-preview">
+          <img src="${data.photo_url}" alt="預覽">
+        </div>`;
+      // Update current photo row
+      document.getElementById('currentPhotoRow').style.display = 'flex';
+      document.getElementById('currentPhotoThumb').src = data.photo_url;
+      toast('照片上傳成功');
+    } else {
+      toast(data.error || '上傳失敗', 'error');
+    }
+  } catch {
+    toast('上傳失敗', 'error');
+  } finally {
+    setTimeout(() => { progress.style.display = 'none'; bar.style.width = '0%'; }, 800);
+  }
+}
+
+function clearModalPhoto() {
+  document.getElementById('rm-photo-url').value = '';
+  document.getElementById('currentPhotoRow').style.display = 'none';
+  document.getElementById('modalPhotoPreview').innerHTML = '';
+  toast('已移除照片');
+}
+
+async function saveRoom() {
+  const id = document.getElementById('rm-id').value;
+  const payload = {
+    name: document.getElementById('rm-name').value.trim(),
+    room_type: document.getElementById('rm-type').value,
+    capacity: parseInt(document.getElementById('rm-capacity').value) || 10,
+    hourly_rate: parseInt(document.getElementById('rm-rate').value) || 500,
+    floor: document.getElementById('rm-floor').value.trim(),
+    description: document.getElementById('rm-desc').value.trim(),
+    amenities: amenities,
+    is_active: document.getElementById('rm-active').value === 'true',
+    photo_url: document.getElementById('rm-photo-url').value,
+  };
+  if (!payload.name) { alert('請填寫會議室名稱'); return; }
+  try {
+    const url = id ? `/admin/api/rooms/${id}` : '/admin/api/rooms';
+    const method = id ? 'PUT' : 'POST';
+    const res = await fetch(url, {
+      method,
+      headers: { ...H, 'Content-Type': 'application/json' },
+      body: JSON.stringify(payload)
+    });
+    if (res.ok) {
+      toast(id ? '會議室已更新' : '會議室已新增');
+      closeRoomModal();
+      loadRoomsAdmin();
+    } else {
+      const err = await res.json();
+      toast(err.error || '儲存失敗', 'error');
+    }
+  } catch { toast('儲存失敗', 'error'); }
+}
+
+// ── CONTENT ──
+async function loadContent() {
+  try {
+    const res = await fetch('/admin/api/site-content', { headers: H });
+    const data = await res.json();
+    const keys = ['site_title','hero_badge','site_description','service_hours','contact_phone','contact_email',
+                  'notice_1','notice_2','notice_3','notice_4','notice_5','footer_text'];
+    keys.forEach(k => {
+      const el = document.getElementById(`c-${k}`);
+      if (el && data[k] !== undefined) el.value = data[k];
+    });
+  } catch { toast('載入失敗', 'error'); }
+}
+
+async function saveContent() {
+  const keys = ['site_title','hero_badge','site_description','service_hours','contact_phone','contact_email',
+                'notice_1','notice_2','notice_3','notice_4','notice_5','footer_text'];
+  const payload = {};
+  keys.forEach(k => {
+    const el = document.getElementById(`c-${k}`);
+    if (el) payload[k] = el.value.trim();
+  });
+  try {
+    const res = await fetch('/admin/api/site-content', {
+      method: 'POST',
+      headers: { ...H, 'Content-Type': 'application/json' },
+      body: JSON.stringify(payload)
+    });
+    if (res.ok) toast('✅ 已儲存，前台將即時更新');
+    else toast('儲存失敗', 'error');
+  } catch { toast('儲存失敗', 'error'); }
+}
+
+// ── PHOTOS ──
+async function loadPhotos() {
+  try {
+    const res = await fetch('/admin/api/rooms', { headers: H });
+    allRooms = await res.json();
+    const ICONS = {'腦力激盪':'💡','洽談室':'🤝','簡報廳':'📊','視訊會議':'📹','行政套房':'🏛','培訓教室':'📚'};
+
+    document.getElementById('photoRoomList').innerHTML = allRooms.map(r => {
+      const icon = ICONS[r.room_type] || '🏢';
+      return `
+      <div class="card" style="margin-bottom:20px;">
+        <div class="card-head">
+          <div style="display:flex;align-items:center;gap:12px;">
+            <span style="font-size:22px;">${icon}</span>
+            <div>
+              <div class="card-title">${r.name}</div>
+              <div style="font-size:12px;color:var(--ink-60);">${r.room_type} · ${r.floor || 'F—'} · 容納 ${r.capacity} 人</div>
+            </div>
+          </div>
+          <span class="badge ${r.is_active ? 'badge-green' : 'badge-gray'}">${r.is_active ? '啟用中' : '已停用'}</span>
+        </div>
+        <div class="card-body">
+          <div style="display:grid;grid-template-columns:240px 1fr;gap:28px;align-items:start;">
+            <div>
+              <div style="font-size:12px;font-weight:600;text-transform:uppercase;letter-spacing:0.08em;color:var(--ink-60);margin-bottom:10px;">目前照片</div>
+              ${r.photo_url
+                ? `<img src="${r.photo_url}" alt="${r.name}" style="width:100%;height:160px;object-fit:cover;border-radius:8px;border:1px solid var(--border);" id="photo-thumb-${r.id}" onerror="this.outerHTML='<div style=width:100%;height:160px;border-radius:8px;background:linear-gradient(135deg,#1a1a2e,#16213e);display:flex;align-items:center;justify-content:center;font-size:40px;>${icon}</div>'">`
+                : `<div style="width:100%;height:160px;border-radius:8px;background:linear-gradient(135deg,#1a1a2e,#16213e);display:flex;align-items:center;justify-content:center;font-size:40px;color:rgba(255,255,255,0.2);" id="photo-thumb-${r.id}">${icon}</div>`
+              }
+              ${r.photo_url ? `<div style="margin-top:8px;"><button class="btn btn-outline btn-sm" onclick="removeRoomPhoto(${r.id})" style="width:100%;">🗑 移除照片</button></div>` : ''}
+            </div>
+            <div>
+              <div style="font-size:12px;font-weight:600;text-transform:uppercase;letter-spacing:0.08em;color:var(--ink-60);margin-bottom:10px;">上傳新照片</div>
+              <div class="photo-upload-area" style="position:relative;" id="drop-${r.id}"
+                ondragover="dragover(event,${r.id})" ondragleave="dragleave(event,${r.id})" ondrop="handleDrop(event,${r.id})">
+                <input type="file" accept="image/*" onchange="uploadRoomPhoto(event,${r.id})" style="position:absolute;inset:0;opacity:0;cursor:pointer;">
+                <div class="photo-upload-icon">🖼️</div>
+                <div class="photo-upload-text">
+                  <strong>點擊選擇照片</strong>，或拖曳至此<br>
+                  <small>JPG、PNG、GIF、WEBP，最大 16MB</small>
+                </div>
+                <div class="upload-progress" id="prog-${r.id}">
+                  <div class="upload-progress-bar" id="progbar-${r.id}" style="width:0%"></div>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>`;
+    }).join('');
+  } catch(e) { console.error(e); }
+}
+
+function dragover(e, id) { e.preventDefault(); document.getElementById(`drop-${id}`).classList.add('dragover'); }
+function dragleave(e, id) { document.getElementById(`drop-${id}`).classList.remove('dragover'); }
+function handleDrop(e, id) {
+  e.preventDefault();
+  document.getElementById(`drop-${id}`).classList.remove('dragover');
+  const file = e.dataTransfer.files[0];
+  if (file) uploadRoomPhotoFile(file, id);
+}
+
+async function uploadRoomPhoto(event, roomId) {
+  uploadRoomPhotoFile(event.target.files[0], roomId);
+}
+
+async function uploadRoomPhotoFile(file, roomId) {
+  if (!file) return;
+  const prog = document.getElementById(`prog-${roomId}`);
+  const bar = document.getElementById(`progbar-${roomId}`);
+  prog.style.display = 'block';
+  bar.style.width = '20%';
+
+  const formData = new FormData();
+  formData.append('photo', file);
+  try {
+    bar.style.width = '60%';
+    const uploadRes = await fetch('/admin/api/upload-photo', {
+      method: 'POST',
+      headers: { 'X-Admin-Password': PW },
+      body: formData
+    });
+    bar.style.width = '80%';
+    const uploadData = await uploadRes.json();
+    if (!uploadRes.ok || !uploadData.photo_url) {
+      throw new Error(uploadData.error || '上傳失敗');
+    }
+
+    // Update room
+    const updateRes = await fetch(`/admin/api/rooms/${roomId}`, {
+      method: 'PUT',
+      headers: { ...H, 'Content-Type': 'application/json' },
+      body: JSON.stringify({ photo_url: uploadData.photo_url })
+    });
+    bar.style.width = '100%';
+
+    if (updateRes.ok) {
+      toast(`✅ 照片已更新`);
+      // Update thumb live
+      const thumb = document.getElementById(`photo-thumb-${roomId}`);
+      if (thumb) {
+        const newImg = document.createElement('img');
+        newImg.src = uploadData.photo_url;
+        newImg.alt = '照片';
+        newImg.style.cssText = 'width:100%;height:160px;object-fit:cover;border-radius:8px;border:1px solid var(--border);';
+        newImg.id = `photo-thumb-${roomId}`;
+        thumb.replaceWith(newImg);
+      }
+      // Refresh to show remove button
+      setTimeout(() => loadPhotos(), 500);
+    } else {
+      throw new Error('更新失敗');
+    }
+  } catch(e) {
+    toast(e.message || '上傳失敗', 'error');
+  } finally {
+    setTimeout(() => { prog.style.display = 'none'; bar.style.width = '0%'; }, 1000);
+  }
+}
+
+async function removeRoomPhoto(roomId) {
+  if (!confirm('確定要移除此照片？')) return;
+  const res = await fetch(`/admin/api/rooms/${roomId}`, {
+    method: 'PUT',
+    headers: { ...H, 'Content-Type': 'application/json' },
+    body: JSON.stringify({ photo_url: '' })
+  });
+  if (res.ok) { toast('照片已移除'); loadPhotos(); }
+  else toast('操作失敗', 'error');
+}
+
+// ── HELPERS ──
+function badgeHtml(status) {
+  const map = {
+    confirmed: ['badge-green', '已確認'],
+    cancelled: ['badge-red', '已取消'],
+    completed: ['badge-gold', '已完成'],
+  };
+  const [cls, txt] = map[status] || ['badge-gray', status];
+  return `<span class="badge ${cls}">${txt}</span>`;
+}
+
+// ── INIT ──
+loadDashboard();
+</script>
+</body>
+</html>

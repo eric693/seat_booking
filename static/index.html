@@ -1,0 +1,1808 @@
+<!DOCTYPE html>
+<html lang="zh-TW">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>會議室預約系統</title>
+<link href="https://fonts.googleapis.com/css2?family=DM+Serif+Display:ital@0;1&family=DM+Sans:wght@300;400;500;600&display=swap" rel="stylesheet">
+<style>
+:root {
+  --ink: #0F0F0F;
+  --ink-60: rgba(15,15,15,0.6);
+  --ink-20: rgba(15,15,15,0.12);
+  --paper: #F5F2ED;
+  --white: #FFFFFF;
+  --gold: #B8965A;
+  --gold-light: #F2E8D5;
+  --teal: #2A6B6B;
+  --teal-light: #E8F2F2;
+  --red: #C44B3A;
+  --green: #3A7C55;
+  --border: rgba(15,15,15,0.1);
+  --shadow: 0 2px 20px rgba(0,0,0,0.06);
+  --shadow-lg: 0 8px 40px rgba(0,0,0,0.12);
+  --r: 2px;
+}
+
+*, *::before, *::after { margin:0; padding:0; box-sizing:border-box; }
+
+body {
+  font-family: 'DM Sans', sans-serif;
+  background: var(--paper);
+  color: var(--ink);
+  line-height: 1.6;
+}
+
+/* ── HEADER ── */
+header {
+  background: var(--ink);
+  color: var(--white);
+  padding: 0;
+  position: sticky;
+  top: 0;
+  z-index: 100;
+  border-bottom: 2px solid var(--gold);
+}
+
+.header-inner {
+  max-width: 1300px;
+  margin: 0 auto;
+  padding: 0 40px;
+  height: 64px;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+}
+
+.brand {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+
+.brand-icon {
+  width: 36px; height: 36px;
+  background: var(--gold);
+  border-radius: var(--r);
+  display: flex; align-items: center; justify-content: center;
+  font-size: 18px;
+}
+
+.brand-name {
+  font-family: 'DM Serif Display', serif;
+  font-size: 18px;
+  letter-spacing: 0.02em;
+}
+
+.header-actions {
+  display: flex;
+  align-items: center;
+  gap: 20px;
+  font-size: 13px;
+  color: rgba(255,255,255,0.7);
+}
+
+.header-link {
+  color: rgba(255,255,255,0.7);
+  text-decoration: none;
+  transition: color 0.2s;
+  cursor: pointer;
+}
+.header-link:hover { color: var(--gold); }
+
+/* ── HERO ── */
+.hero {
+  background: var(--ink);
+  color: var(--white);
+  padding: 80px 40px 100px;
+  position: relative;
+  overflow: hidden;
+}
+
+.hero::before {
+  content: '';
+  position: absolute;
+  inset: 0;
+  background: radial-gradient(ellipse at 80% 50%, rgba(184,150,90,0.15) 0%, transparent 60%);
+}
+
+.hero-inner {
+  max-width: 1300px;
+  margin: 0 auto;
+  position: relative;
+  z-index: 1;
+  display: grid;
+  grid-template-columns: 1fr 380px;
+  gap: 60px;
+  align-items: center;
+}
+
+.hero-badge {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  background: rgba(184,150,90,0.15);
+  border: 1px solid rgba(184,150,90,0.4);
+  color: var(--gold);
+  padding: 6px 14px;
+  border-radius: 100px;
+  font-size: 12px;
+  font-weight: 500;
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+  margin-bottom: 24px;
+}
+
+.hero-title {
+  font-family: 'DM Serif Display', serif;
+  font-size: clamp(40px, 5vw, 64px);
+  line-height: 1.1;
+  margin-bottom: 20px;
+  letter-spacing: -0.01em;
+}
+
+.hero-title em {
+  font-style: italic;
+  color: var(--gold);
+}
+
+.hero-desc {
+  font-size: 16px;
+  color: rgba(255,255,255,0.65);
+  line-height: 1.8;
+  max-width: 500px;
+  margin-bottom: 36px;
+}
+
+.hero-meta {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+
+.meta-row {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  font-size: 13px;
+  color: rgba(255,255,255,0.6);
+}
+
+.meta-dot {
+  width: 6px; height: 6px;
+  border-radius: 50%;
+  background: var(--gold);
+  flex-shrink: 0;
+}
+
+.hero-card {
+  background: rgba(255,255,255,0.05);
+  border: 1px solid rgba(255,255,255,0.1);
+  border-radius: 8px;
+  padding: 28px;
+  backdrop-filter: blur(10px);
+}
+
+.hero-card h3 {
+  font-family: 'DM Serif Display', serif;
+  font-size: 18px;
+  color: var(--gold);
+  margin-bottom: 16px;
+}
+
+.stat-list {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+.stat-row {
+  display: flex;
+  justify-content: space-between;
+  font-size: 14px;
+  color: rgba(255,255,255,0.7);
+  padding-bottom: 10px;
+  border-bottom: 1px solid rgba(255,255,255,0.06);
+}
+
+.stat-row:last-child { border-bottom: none; padding-bottom: 0; }
+.stat-val { color: var(--white); font-weight: 600; }
+
+/* ── MAIN LAYOUT ── */
+.page-wrapper {
+  max-width: 1300px;
+  margin: 0 auto;
+  padding: 60px 40px 100px;
+  display: grid;
+  grid-template-columns: 1fr 380px;
+  gap: 60px;
+  align-items: start;
+}
+
+/* ── SECTION ── */
+.section { margin-bottom: 52px; }
+
+.section-head {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  margin-bottom: 24px;
+}
+
+.section-title {
+  font-family: 'DM Serif Display', serif;
+  font-size: 28px;
+  color: var(--ink);
+}
+
+.section-step {
+  font-size: 12px;
+  font-weight: 600;
+  color: var(--gold);
+  text-transform: uppercase;
+  letter-spacing: 0.12em;
+}
+
+/* ── ROOM CARDS ── */
+.rooms-grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 20px;
+}
+
+.room-card {
+  background: var(--white);
+  border: 1.5px solid var(--border);
+  border-radius: 8px;
+  overflow: hidden;
+  cursor: pointer;
+  transition: all 0.25s ease;
+  position: relative;
+}
+
+.room-card:hover {
+  border-color: var(--gold);
+  box-shadow: var(--shadow-lg);
+  transform: translateY(-2px);
+}
+
+.room-card.selected {
+  border-color: var(--teal);
+  box-shadow: 0 0 0 3px rgba(42,107,107,0.15);
+}
+
+.room-photo {
+  width: 100%;
+  height: 160px;
+  object-fit: cover;
+  background: linear-gradient(135deg, #1a1a2e, #16213e);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 40px;
+  color: rgba(255,255,255,0.3);
+}
+
+.room-photo img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  display: block;
+}
+
+.room-photo-placeholder {
+  width: 100%;
+  height: 160px;
+  background: linear-gradient(135deg, #1a1a2e 0%, #16213e 50%, #0f3460 100%);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 36px;
+  color: rgba(255,255,255,0.2);
+}
+
+.room-body { padding: 18px; }
+
+.room-type-tag {
+  display: inline-block;
+  background: var(--gold-light);
+  color: var(--gold);
+  font-size: 11px;
+  font-weight: 600;
+  padding: 3px 9px;
+  border-radius: 100px;
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+  margin-bottom: 8px;
+}
+
+.room-name {
+  font-family: 'DM Serif Display', serif;
+  font-size: 20px;
+  color: var(--ink);
+  margin-bottom: 6px;
+}
+
+.room-desc {
+  font-size: 13px;
+  color: var(--ink-60);
+  line-height: 1.6;
+  margin-bottom: 14px;
+  display: -webkit-box;
+  -webkit-line-clamp: 2;
+  -webkit-box-orient: vertical;
+  overflow: hidden;
+}
+
+.room-footer {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding-top: 12px;
+  border-top: 1px solid var(--border);
+}
+
+.room-capacity {
+  font-size: 13px;
+  color: var(--ink-60);
+}
+.room-capacity strong { color: var(--ink); }
+
+.room-rate {
+  font-family: 'DM Serif Display', serif;
+  font-size: 20px;
+  color: var(--teal);
+}
+.room-rate small { font-family: 'DM Sans', sans-serif; font-size: 12px; color: var(--ink-60); }
+
+.amenities-list {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 5px;
+  margin-bottom: 10px;
+}
+
+.amenity-tag {
+  background: var(--paper);
+  color: var(--ink-60);
+  font-size: 11px;
+  padding: 3px 8px;
+  border-radius: 4px;
+  border: 1px solid var(--border);
+}
+
+.selected-check {
+  position: absolute;
+  top: 12px; right: 12px;
+  width: 28px; height: 28px;
+  background: var(--teal);
+  color: white;
+  border-radius: 50%;
+  display: none;
+  align-items: center;
+  justify-content: center;
+  font-size: 14px;
+  font-weight: bold;
+}
+
+.room-card.selected .selected-check { display: flex; }
+
+/* ── CALENDAR ── */
+.cal-header {
+  display: flex;
+  align-items: center;
+  gap: 16px;
+  margin-bottom: 16px;
+}
+
+.cal-nav {
+  background: none;
+  border: 1.5px solid var(--border);
+  width: 36px; height: 36px;
+  border-radius: var(--r);
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 16px;
+  transition: all 0.2s;
+  color: var(--ink);
+}
+.cal-nav:hover { background: var(--ink); color: white; border-color: var(--ink); }
+
+.cal-month {
+  font-family: 'DM Serif Display', serif;
+  font-size: 20px;
+  flex: 1;
+}
+
+.cal-grid {
+  display: grid;
+  grid-template-columns: repeat(7, 1fr);
+  gap: 4px;
+}
+
+.cal-dh {
+  text-align: center;
+  font-size: 11px;
+  font-weight: 600;
+  color: var(--ink-60);
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+  padding: 6px 0;
+}
+
+.cal-day {
+  aspect-ratio: 1;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 14px;
+  border-radius: 4px;
+  cursor: pointer;
+  transition: all 0.15s;
+  border: 1.5px solid transparent;
+}
+
+.cal-day:hover:not(.disabled):not(.other) { background: var(--gold-light); border-color: var(--gold); }
+.cal-day.today { border-color: var(--gold); color: var(--gold); font-weight: 600; }
+.cal-day.selected { background: var(--teal); color: white; border-color: var(--teal); }
+.cal-day.disabled, .cal-day.other { color: var(--border); cursor: default; pointer-events: none; }
+
+/* ── TIME GRID ── */
+.time-grid-wrap {
+  margin-top: 28px;
+  user-select: none;
+}
+
+.time-grid-head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: 14px;
+}
+
+.time-grid-label {
+  font-size: 13px;
+  font-weight: 600;
+  color: var(--ink);
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+}
+
+.time-grid-hint {
+  font-size: 12px;
+  color: var(--ink-60);
+}
+
+/* Legend */
+.time-legend {
+  display: flex;
+  gap: 20px;
+  margin-bottom: 16px;
+  flex-wrap: wrap;
+}
+.tl-item {
+  display: flex;
+  align-items: center;
+  gap: 7px;
+  font-size: 12px;
+  color: var(--ink-60);
+}
+.tl-dot {
+  width: 18px; height: 18px;
+  border-radius: 3px;
+  flex-shrink: 0;
+}
+.tl-avail { background: white; border: 1.5px solid var(--border); }
+.tl-sel   { background: var(--teal); border: 1.5px solid var(--teal); }
+.tl-booked {
+  background: repeating-linear-gradient(
+    -45deg,
+    #f9e5e3 0px, #f9e5e3 4px,
+    #fbd0cb 4px, #fbd0cb 8px
+  );
+  border: 1.5px solid #e8a49d;
+}
+
+/* Period rows */
+.time-period-label {
+  font-size: 11px;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.1em;
+  color: var(--ink-60);
+  padding: 10px 0 8px;
+  border-top: 1px solid var(--border);
+  margin-top: 4px;
+}
+
+.time-period-label:first-child { border-top: none; margin-top: 0; padding-top: 0; }
+
+/* Hour axis + grid */
+.time-row {
+  display: grid;
+  grid-template-columns: 44px 1fr 1fr;
+  gap: 3px;
+  margin-bottom: 3px;
+  align-items: stretch;
+}
+
+.time-axis {
+  font-size: 11px;
+  color: var(--ink-60);
+  text-align: right;
+  padding-right: 8px;
+  padding-top: 6px;
+  line-height: 1;
+  font-variant-numeric: tabular-nums;
+}
+
+/* Individual slot cell */
+.ts {
+  height: 36px;
+  border: 1.5px solid var(--border);
+  border-radius: 3px;
+  background: white;
+  cursor: pointer;
+  transition: background 0.1s, border-color 0.1s, transform 0.08s;
+  position: relative;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 11px;
+  color: transparent; /* hide label by default */
+}
+
+.ts:hover:not(.ts-booked):not(.ts-selected) {
+  background: var(--teal-light);
+  border-color: var(--teal);
+  z-index: 1;
+}
+
+/* Selected state */
+.ts.ts-selected {
+  background: var(--teal);
+  border-color: #1e5050;
+  color: white;
+}
+
+/* Selected range visual — connect adjacent */
+.ts.ts-selected + .ts.ts-selected {
+  border-left: none;
+  border-radius: 0;
+}
+
+/* Range start/end marks */
+.ts.ts-range-start { border-radius: 3px 0 0 3px; }
+.ts.ts-range-end   { border-radius: 0 3px 3px 0; }
+.ts.ts-range-start.ts-range-end { border-radius: 3px; }
+.ts.ts-range-mid   { border-radius: 0; border-left: none; border-right: none; }
+
+/* Booked state — striped, no pointer */
+.ts.ts-booked {
+  background: repeating-linear-gradient(
+    -45deg,
+    #f9e5e3 0px, #f9e5e3 5px,
+    #fbd0cb 5px, #fbd0cb 10px
+  );
+  border-color: #e8a49d;
+  cursor: not-allowed;
+  color: var(--red);
+  font-size: 10px;
+  font-weight: 600;
+  letter-spacing: 0.02em;
+}
+
+/* Conflict highlight */
+.ts.ts-conflict {
+  background: #fff0ee;
+  border-color: var(--red);
+  animation: shake 0.3s ease;
+}
+
+@keyframes shake {
+  0%,100% { transform: translateX(0); }
+  25%      { transform: translateX(-3px); }
+  75%      { transform: translateX(3px); }
+}
+
+/* Selection summary bar */
+.time-selection-bar {
+  display: none;
+  margin-top: 14px;
+  background: var(--teal-light);
+  border: 1.5px solid rgba(42,107,107,0.3);
+  border-radius: 6px;
+  padding: 12px 16px;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+}
+
+.tsb-info {
+  display: flex;
+  align-items: center;
+  gap: 16px;
+  flex-wrap: wrap;
+}
+
+.tsb-time {
+  font-size: 18px;
+  font-family: 'DM Serif Display', serif;
+  color: var(--teal);
+  font-weight: 600;
+}
+
+.tsb-dur {
+  font-size: 13px;
+  color: var(--ink-60);
+  background: white;
+  border: 1px solid var(--border);
+  padding: 3px 10px;
+  border-radius: 100px;
+}
+
+.tsb-clear {
+  background: none;
+  border: none;
+  color: var(--ink-60);
+  cursor: pointer;
+  font-size: 18px;
+  line-height: 1;
+  padding: 4px;
+  border-radius: 4px;
+  transition: color 0.15s;
+  flex-shrink: 0;
+}
+.tsb-clear:hover { color: var(--red); }
+
+.time-conflict-msg {
+  display: none;
+  margin-top: 10px;
+  background: #fff3f3;
+  border: 1.5px solid #ffcdd2;
+  border-radius: 6px;
+  padding: 10px 14px;
+  font-size: 13px;
+  color: var(--red);
+}
+
+/* ── FORM ── */
+.form-grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 16px;
+}
+
+.fgroup {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+.fgroup.full { grid-column: 1 / -1; }
+
+.fgroup label {
+  font-size: 13px;
+  font-weight: 500;
+  color: var(--ink);
+}
+
+.fgroup label span {
+  font-weight: 400;
+  color: var(--ink-60);
+  font-size: 12px;
+}
+
+.finput, .fselect, .ftextarea {
+  padding: 11px 14px;
+  border: 1.5px solid var(--border);
+  border-radius: var(--r);
+  font-size: 14px;
+  font-family: inherit;
+  color: var(--ink);
+  background: white;
+  transition: border-color 0.2s;
+}
+
+.finput:focus, .fselect:focus, .ftextarea:focus {
+  outline: none;
+  border-color: var(--teal);
+}
+
+.ftextarea { resize: vertical; min-height: 80px; }
+
+.fselect {
+  appearance: none;
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='8' viewBox='0 0 12 8'%3E%3Cpath d='M1 1l5 5 5-5' stroke='%23666' stroke-width='1.5' fill='none'/%3E%3C/svg%3E");
+  background-repeat: no-repeat;
+  background-position: right 12px center;
+  padding-right: 32px;
+  cursor: pointer;
+}
+
+/* ── SIDEBAR ── */
+.sidebar { position: sticky; top: 84px; }
+
+.summary-box {
+  background: var(--ink);
+  color: white;
+  border-radius: 8px;
+  overflow: hidden;
+  margin-bottom: 16px;
+}
+
+.summary-head {
+  background: var(--gold);
+  padding: 18px 24px;
+  font-family: 'DM Serif Display', serif;
+  font-size: 18px;
+  color: var(--ink);
+}
+
+.summary-body { padding: 20px 24px; }
+
+.sum-row {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+  padding: 10px 0;
+  border-bottom: 1px solid rgba(255,255,255,0.08);
+  gap: 12px;
+}
+
+.sum-row:last-child { border-bottom: none; }
+
+.sum-lbl {
+  font-size: 11px;
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+  color: rgba(255,255,255,0.5);
+  flex-shrink: 0;
+}
+
+.sum-val {
+  font-size: 14px;
+  color: white;
+  font-weight: 500;
+  text-align: right;
+}
+
+.sum-val.empty { color: rgba(255,255,255,0.3); font-style: italic; font-weight: 400; }
+
+.sum-total {
+  background: rgba(255,255,255,0.06);
+  margin: 8px -24px -20px;
+  padding: 16px 24px;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+}
+
+.sum-total-lbl { font-size: 12px; text-transform: uppercase; letter-spacing: 0.08em; color: rgba(255,255,255,0.5); }
+.sum-total-price {
+  font-family: 'DM Serif Display', serif;
+  font-size: 28px;
+  color: var(--gold);
+}
+
+.book-btn {
+  width: 100%;
+  padding: 16px;
+  background: var(--teal);
+  color: white;
+  border: none;
+  border-radius: var(--r);
+  font-size: 15px;
+  font-weight: 600;
+  font-family: inherit;
+  cursor: pointer;
+  transition: all 0.25s;
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+  margin-bottom: 12px;
+}
+
+.book-btn:hover:not(:disabled) {
+  background: #1e5050;
+  transform: translateY(-2px);
+  box-shadow: 0 8px 24px rgba(42,107,107,0.3);
+}
+
+.book-btn:disabled { background: #ccc; cursor: not-allowed; transform: none; }
+
+.notice-box {
+  background: white;
+  border: 1.5px solid var(--border);
+  border-radius: 8px;
+  padding: 20px;
+}
+
+.notice-title {
+  font-size: 12px;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.1em;
+  color: var(--ink);
+  margin-bottom: 12px;
+}
+
+.notice-list { list-style: none; }
+.notice-list li {
+  font-size: 13px;
+  color: var(--ink-60);
+  padding: 6px 0;
+  padding-left: 16px;
+  position: relative;
+  border-bottom: 1px solid var(--border);
+  line-height: 1.5;
+}
+.notice-list li:last-child { border-bottom: none; }
+.notice-list li::before {
+  content: '—';
+  position: absolute;
+  left: 0;
+  color: var(--gold);
+}
+
+/* ── MODAL ── */
+.modal {
+  display: none;
+  position: fixed;
+  inset: 0;
+  background: rgba(0,0,0,0.6);
+  z-index: 1000;
+  align-items: center;
+  justify-content: center;
+  backdrop-filter: blur(4px);
+}
+
+.modal.active { display: flex; }
+
+.modal-box {
+  background: white;
+  border-radius: 12px;
+  padding: 52px 48px;
+  max-width: 520px;
+  width: 90%;
+  text-align: center;
+  animation: pop 0.3s ease;
+}
+
+@keyframes pop {
+  from { transform: scale(0.9); opacity: 0; }
+  to { transform: scale(1); opacity: 1; }
+}
+
+.modal-icon {
+  width: 68px; height: 68px;
+  background: var(--teal-light);
+  border: 2px solid rgba(42,107,107,0.3);
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 28px;
+  margin: 0 auto 24px;
+}
+
+.modal-title {
+  font-family: 'DM Serif Display', serif;
+  font-size: 32px;
+  color: var(--ink);
+  margin-bottom: 10px;
+}
+
+.modal-sub {
+  font-size: 15px;
+  color: var(--ink-60);
+  margin-bottom: 28px;
+  line-height: 1.6;
+}
+
+.confirm-table {
+  background: var(--paper);
+  border: 1px solid var(--border);
+  border-radius: 6px;
+  padding: 4px 0;
+  text-align: left;
+  margin-bottom: 28px;
+}
+
+.ct-row {
+  display: flex;
+  justify-content: space-between;
+  padding: 10px 18px;
+  border-bottom: 1px solid var(--border);
+  font-size: 14px;
+}
+
+.ct-row:last-child { border-bottom: none; }
+.ct-key { color: var(--ink-60); }
+.ct-val { color: var(--ink); font-weight: 600; }
+
+.modal-close-btn {
+  padding: 14px 40px;
+  background: var(--ink);
+  color: white;
+  border: none;
+  border-radius: var(--r);
+  font-size: 14px;
+  font-weight: 600;
+  cursor: pointer;
+  font-family: inherit;
+  transition: all 0.2s;
+}
+.modal-close-btn:hover { background: var(--teal); }
+
+/* Query modal */
+.query-section {
+  padding: 24px;
+  background: var(--paper);
+  border-radius: 8px;
+  max-width: 460px;
+  width: 90%;
+}
+
+.query-title {
+  font-family: 'DM Serif Display', serif;
+  font-size: 22px;
+  margin-bottom: 16px;
+}
+
+.q-row {
+  display: flex;
+  gap: 10px;
+  margin-bottom: 12px;
+}
+
+footer {
+  background: var(--ink);
+  color: rgba(255,255,255,0.45);
+  text-align: center;
+  padding: 28px;
+  font-size: 13px;
+  border-top: 2px solid var(--gold);
+}
+
+/* ── RESPONSIVE ── */
+@media (max-width: 1024px) {
+  .hero-inner, .page-wrapper { grid-template-columns: 1fr; }
+  .sidebar { position: static; }
+  .hero-card { display: none; }
+}
+
+@media (max-width: 700px) {
+  .rooms-grid { grid-template-columns: 1fr; }
+  .form-grid { grid-template-columns: 1fr; }
+  .fgroup.full { grid-column: 1; }
+  .header-inner, .hero { padding-left: 20px; padding-right: 20px; }
+  .page-wrapper { padding: 32px 20px 60px; }
+  .hero { padding: 52px 20px 60px; }
+}
+</style>
+</head>
+<body>
+
+<header>
+  <div class="header-inner">
+    <div class="brand">
+      <div class="brand-icon">🏢</div>
+      <div class="brand-name" id="hdr-title">會議室預約系統</div>
+    </div>
+    <div class="header-actions">
+      <span id="hdr-phone">02-1234-5678</span>
+      <a class="header-link" onclick="openQueryModal()">查詢預約</a>
+    </div>
+  </div>
+</header>
+
+<!-- HERO -->
+<section class="hero">
+  <div class="hero-inner">
+    <div>
+      <div class="hero-badge">
+        <span style="width:6px;height:6px;border-radius:50%;background:var(--gold);animation:pls 2s infinite;display:inline-block;"></span>
+        <span id="hero-badge">專業會議空間</span>
+      </div>
+      <h1 class="hero-title" id="hero-title-el">企業<em>會議室</em><br>即時預約</h1>
+      <p class="hero-desc" id="hero-desc">提供多種類型會議室，彈性時段預約，滿足各種商務需求。</p>
+      <div class="hero-meta">
+        <div class="meta-row"><div class="meta-dot"></div><span id="meta-hours">週一至週五 08:00 – 22:00</span></div>
+        <div class="meta-row"><div class="meta-dot"></div><span id="meta-email">booking@example.com</span></div>
+      </div>
+    </div>
+    <div class="hero-card">
+      <h3>今日概況</h3>
+      <div class="stat-list" id="hero-stats">
+        <div class="stat-row"><span>可用會議室</span><span class="stat-val" id="stat-rooms">—</span></div>
+        <div class="stat-row"><span>今日預約</span><span class="stat-val" id="stat-today">—</span></div>
+        <div class="stat-row"><span>最快可預約</span><span class="stat-val">立即</span></div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<div class="page-wrapper">
+  <div>
+
+    <!-- STEP 1: Select Room -->
+    <div class="section">
+      <div class="section-head">
+        <h2 class="section-title">選擇會議室</h2>
+        <span class="section-step">Step 1 of 3</span>
+      </div>
+      <div class="rooms-grid" id="roomsGrid">
+        <div style="grid-column:1/-1;text-align:center;padding:40px;color:var(--ink-60);">載入中...</div>
+      </div>
+    </div>
+
+    <!-- STEP 2: Date & Time -->
+    <div class="section" id="dateTimeSection" style="display:none;">
+      <div class="section-head">
+        <h2 class="section-title">選擇日期與時段</h2>
+        <span class="section-step">Step 2 of 3</span>
+      </div>
+
+      <div class="cal-header">
+        <button class="cal-nav" onclick="changeMonth(-1)">&#8249;</button>
+        <div class="cal-month" id="calMonth"></div>
+        <button class="cal-nav" onclick="changeMonth(1)">&#8250;</button>
+      </div>
+      <div class="cal-grid" id="calGrid"></div>
+
+      <div class="time-grid-wrap" id="timeGridWrap" style="display:none;">
+        <div class="time-grid-head">
+          <div class="time-grid-label">選擇使用時段</div>
+          <div class="time-grid-hint">點擊格子開始選取，可連續拖曳複選</div>
+        </div>
+
+        <!-- Legend -->
+        <div class="time-legend">
+          <div class="tl-item"><div class="tl-dot tl-avail"></div>可預約</div>
+          <div class="tl-item"><div class="tl-dot tl-sel"></div>已選取</div>
+          <div class="tl-item"><div class="tl-dot tl-booked"></div>已預約（不可選）</div>
+        </div>
+
+        <!-- Time grid rendered by JS -->
+        <div id="timeGridBody"></div>
+
+        <!-- Selection summary bar -->
+        <div class="time-selection-bar" id="tsbBar">
+          <div class="tsb-info">
+            <span class="tsb-time" id="tsbTime">—</span>
+            <span class="tsb-dur" id="tsbDur">—</span>
+          </div>
+          <button class="tsb-clear" onclick="clearTimeSelection()" title="清除選取">✕</button>
+        </div>
+
+        <!-- Conflict message -->
+        <div class="time-conflict-msg" id="timeConflictMsg">
+          ⚠️ 選取範圍包含已預約時段，請重新選擇。
+        </div>
+      </div>
+    </div>
+
+    <!-- STEP 3: Contact Info -->
+    <div class="section" id="formSection" style="display:none;">
+      <div class="section-head">
+        <h2 class="section-title">填寫聯絡資料</h2>
+        <span class="section-step">Step 3 of 3</span>
+      </div>
+      <div class="form-grid">
+        <div class="fgroup">
+          <label>聯絡人姓名</label>
+          <input class="finput" type="text" id="fName" placeholder="請輸入姓名" oninput="updateSummary()">
+        </div>
+        <div class="fgroup">
+          <label>手機號碼</label>
+          <input class="finput" type="tel" id="fPhone" placeholder="0912-345-678" oninput="updateSummary()">
+        </div>
+        <div class="fgroup">
+          <label>Email <span>（預約確認信）</span></label>
+          <input class="finput" type="email" id="fEmail" placeholder="your@email.com">
+        </div>
+        <div class="fgroup">
+          <label>部門 / 公司</label>
+          <input class="finput" type="text" id="fDept" placeholder="例：行銷部">
+        </div>
+        <div class="fgroup">
+          <label>預計出席人數</label>
+          <select class="fselect" id="fAttendees">
+            <option value="1">1 人</option>
+            <option value="2">2 人</option>
+            <option value="4" selected>4 人</option>
+            <option value="6">6 人</option>
+            <option value="8">8 人</option>
+            <option value="10">10 人</option>
+            <option value="15">15 人</option>
+            <option value="20">20 人</option>
+            <option value="30">30 人</option>
+            <option value="50">50 人</option>
+          </select>
+        </div>
+        <div class="fgroup">
+          <label>會議類型</label>
+          <select class="fselect" id="fPurpose">
+            <option value="部門會議">部門會議</option>
+            <option value="客戶洽談">客戶洽談</option>
+            <option value="員工培訓">員工培訓</option>
+            <option value="產品發表">產品發表</option>
+            <option value="視訊會議">視訊會議</option>
+            <option value="腦力激盪">腦力激盪</option>
+            <option value="其他">其他</option>
+          </select>
+        </div>
+        <div class="fgroup full">
+          <label>備註 <span>（選填）</span></label>
+          <textarea class="ftextarea" id="fNote" placeholder="特殊需求或注意事項..."></textarea>
+        </div>
+      </div>
+    </div>
+
+  </div>
+
+  <!-- SIDEBAR -->
+  <div class="sidebar">
+    <div class="summary-box">
+      <div class="summary-head">預約摘要</div>
+      <div class="summary-body">
+        <div class="sum-row">
+          <div class="sum-lbl">會議室</div>
+          <div class="sum-val empty" id="sum-room">請選擇</div>
+        </div>
+        <div class="sum-row">
+          <div class="sum-lbl">類型</div>
+          <div class="sum-val empty" id="sum-type">—</div>
+        </div>
+        <div class="sum-row">
+          <div class="sum-lbl">日期</div>
+          <div class="sum-val empty" id="sum-date">請選擇</div>
+        </div>
+        <div class="sum-row">
+          <div class="sum-lbl">時段</div>
+          <div class="sum-val empty" id="sum-time">請選擇</div>
+        </div>
+        <div class="sum-row">
+          <div class="sum-lbl">時長</div>
+          <div class="sum-val" id="sum-dur">—</div>
+        </div>
+        <div class="sum-row">
+          <div class="sum-lbl">聯絡人</div>
+          <div class="sum-val empty" id="sum-name">請填寫</div>
+        </div>
+        <div class="sum-total">
+          <div class="sum-total-lbl">費用合計</div>
+          <div class="sum-total-price" id="sum-price">NT$ 0</div>
+        </div>
+      </div>
+    </div>
+
+    <button class="book-btn" id="bookBtn" onclick="submitBooking()">確認預約</button>
+
+    <div class="notice-box">
+      <div class="notice-title">預約須知</div>
+      <ul class="notice-list" id="noticeList">
+        <li>請提前 15 分鐘辦理入場手續</li>
+        <li>取消或更改請提前 2 小時通知</li>
+        <li>禁止攜帶食物進入精緻會議室</li>
+        <li>使用後請恢復設備原始設定</li>
+        <li>逾時使用將依時薪計費</li>
+      </ul>
+    </div>
+  </div>
+</div>
+
+<!-- Success Modal -->
+<div class="modal" id="successModal">
+  <div class="modal-box">
+    <div class="modal-icon">✓</div>
+    <h2 class="modal-title">預約成功！</h2>
+    <p class="modal-sub">您的會議室已確認預約<br>請妥善保存預約編號</p>
+    <div class="confirm-table" id="confirmTable"></div>
+    <button class="modal-close-btn" onclick="closeSuccess()">完成</button>
+  </div>
+</div>
+
+<!-- Query Modal -->
+<div class="modal" id="queryModal">
+  <div class="modal-box" style="max-width:460px;">
+    <h2 class="modal-title" style="margin-bottom:20px;">查詢預約</h2>
+    <div class="form-grid" style="grid-template-columns:1fr;">
+      <div class="fgroup">
+        <label>預約編號</label>
+        <input class="finput" type="text" id="qNumber" placeholder="MR20260221XXXX">
+      </div>
+      <div class="fgroup">
+        <label>手機號碼</label>
+        <input class="finput" type="tel" id="qPhone" placeholder="0912-345-678">
+      </div>
+    </div>
+    <div style="display:flex;gap:10px;margin-top:16px;">
+      <button class="book-btn" style="background:var(--teal);flex:1;margin:0;" onclick="doQuery()">查詢</button>
+      <button class="book-btn" style="background:var(--ink-60);flex:1;margin:0;" onclick="document.getElementById('queryModal').classList.remove('active')">關閉</button>
+    </div>
+    <div id="queryResult" style="margin-top:16px;"></div>
+  </div>
+</div>
+
+<footer>
+  <div id="footerText">© 2026 會議室預約系統 · 版權所有</div>
+</footer>
+
+<style>
+@keyframes pls { 0%,100%{opacity:1} 50%{opacity:0.3} }
+</style>
+
+<script>
+const API = '';
+const state = {
+  room: null,
+  roomId: null,
+  roomRate: 0,
+  roomType: '',
+  date: null,
+  startTime: null,
+  endTime: null,
+  price: 0,
+};
+
+let calDate = new Date();
+let bookedSlots = [];
+
+// ── Helpers ──
+function toMin(t) {
+  const [h, m] = t.split(':').map(Number);
+  return h * 60 + m;
+}
+
+function formatMoney(n) {
+  return 'NT$ ' + n.toLocaleString();
+}
+
+function isConflict(s, e) {
+  return bookedSlots.some(b => {
+    const bs = toMin(b.start), be = toMin(b.end);
+    const ss = toMin(s), se = toMin(e);
+    return !(se <= bs || ss >= be);
+  });
+}
+
+// ── Load site content ──
+async function loadContent() {
+  try {
+    const res = await fetch(`${API}/api/site-content`);
+    const c = await res.json();
+    if (c.site_title) {
+      document.title = c.site_title;
+      document.getElementById('hdr-title').textContent = c.site_title;
+    }
+    if (c.site_subtitle) document.getElementById('hero-title-el').innerHTML = c.site_subtitle.replace(/([^<]+)(<em>[^<]+<\/em>)/g, '$1$2') || document.getElementById('hero-title-el').innerHTML;
+    if (c.site_description) document.getElementById('hero-desc').textContent = c.site_description;
+    if (c.hero_badge) document.querySelector('#hero-badge').textContent = c.hero_badge;
+    if (c.service_hours) document.getElementById('meta-hours').textContent = c.service_hours;
+    if (c.contact_email) document.getElementById('meta-email').textContent = c.contact_email;
+    if (c.contact_phone) document.getElementById('hdr-phone').textContent = c.contact_phone;
+    if (c.footer_text) document.getElementById('footerText').textContent = c.footer_text;
+
+    // notices
+    const notices = ['notice_1','notice_2','notice_3','notice_4','notice_5'].map(k => c[k]).filter(Boolean);
+    if (notices.length) {
+      document.getElementById('noticeList').innerHTML = notices.map(n => `<li>${n}</li>`).join('');
+    }
+  } catch (e) { console.warn('Content load failed', e); }
+}
+
+// ── Load rooms ──
+const ROOM_ICONS = {
+  '腦力激盪': '💡', '洽談室': '🤝', '簡報廳': '📊',
+  '視訊會議': '📹', '行政套房': '🏛', '培訓教室': '📚',
+};
+
+async function loadRooms() {
+  try {
+    const res = await fetch(`${API}/api/rooms`);
+    const rooms = await res.json();
+    document.getElementById('stat-rooms').textContent = rooms.length;
+
+    const grid = document.getElementById('roomsGrid');
+    grid.innerHTML = rooms.map(r => {
+      const icon = ROOM_ICONS[r.room_type] || '🏢';
+      const amenHTML = (r.amenities || []).slice(0, 4).map(a => `<span class="amenity-tag">${a}</span>`).join('');
+      const photoHTML = r.photo_url
+        ? `<div class="room-photo"><img src="${r.photo_url}" alt="${r.name}" onerror="this.parentElement.innerHTML='${icon}'"></div>`
+        : `<div class="room-photo-placeholder">${icon}</div>`;
+      return `
+        <div class="room-card" data-id="${r.id}" data-name="${r.name}" data-rate="${r.hourly_rate}" data-type="${r.room_type}" onclick="selectRoom(this, ${r.id}, '${r.name.replace(/'/g,'\\'')}', ${r.hourly_rate}, '${r.room_type}')">
+          <div class="selected-check">✓</div>
+          ${photoHTML}
+          <div class="room-body">
+            <div class="room-type-tag">${r.room_type}</div>
+            <div class="room-name">${r.name}</div>
+            <div class="room-desc">${r.description || ''}</div>
+            <div class="amenities-list">${amenHTML}</div>
+            <div class="room-footer">
+              <div class="room-capacity">容納 <strong>${r.capacity}</strong> 人 · ${r.floor || ''}</div>
+              <div class="room-rate">NT$ ${r.hourly_rate.toLocaleString()} <small>/ hr</small></div>
+            </div>
+          </div>
+        </div>`;
+    }).join('');
+  } catch (e) {
+    document.getElementById('roomsGrid').innerHTML = '<div style="grid-column:1/-1;padding:40px;text-align:center;color:red;">載入失敗，請重新整理</div>';
+  }
+}
+
+function selectRoom(el, id, name, rate, type) {
+  document.querySelectorAll('.room-card').forEach(c => c.classList.remove('selected'));
+  el.classList.add('selected');
+  state.roomId = id;
+  state.room = name;
+  state.roomRate = rate;
+  state.roomType = type;
+  state.date = null;
+  state.startTime = null;
+  state.endTime = null;
+  selStart = -1; selEnd = -1;
+  blockedSlots = new Set();
+
+  document.getElementById('sum-room').textContent = name;
+  document.getElementById('sum-room').classList.remove('empty');
+  document.getElementById('sum-type').textContent = type;
+  document.getElementById('sum-type').classList.remove('empty');
+  document.getElementById('sum-date').textContent = '請選擇';
+  document.getElementById('sum-date').classList.add('empty');
+  document.getElementById('sum-time').textContent = '請選擇';
+  document.getElementById('sum-time').classList.add('empty');
+
+  // Reset grid
+  document.getElementById('timeGridWrap').style.display = 'none';
+  document.getElementById('timeGridBody').innerHTML = '';
+  document.getElementById('tsbBar').style.display = 'none';
+  document.getElementById('timeConflictMsg').style.display = 'none';
+
+  document.getElementById('dateTimeSection').style.display = 'block';
+  document.getElementById('formSection').style.display = 'block';
+  document.getElementById('dateTimeSection').scrollIntoView({ behavior: 'smooth', block: 'start' });
+  renderCal();
+  updatePrice();
+}
+
+// ── Calendar ──
+const MONTHS = ['一月','二月','三月','四月','五月','六月','七月','八月','九月','十月','十一月','十二月'];
+const DAYS = ['日','一','二','三','四','五','六'];
+
+function renderCal() {
+  const y = calDate.getFullYear(), m = calDate.getMonth();
+  document.getElementById('calMonth').textContent = `${y} 年 ${MONTHS[m]}`;
+  const today = new Date(); today.setHours(0,0,0,0);
+  const firstDay = new Date(y, m, 1).getDay();
+  const daysInMonth = new Date(y, m+1, 0).getDate();
+  const prevDays = new Date(y, m, 0).getDate();
+
+  let html = DAYS.map(d => `<div class="cal-dh">${d}</div>`).join('');
+
+  for (let i = firstDay - 1; i >= 0; i--)
+    html += `<div class="cal-day other">${prevDays - i}</div>`;
+
+  for (let d = 1; d <= daysInMonth; d++) {
+    const dt = new Date(y, m, d);
+    const isToday = dt.toDateString() === today.toDateString();
+    const isPast = dt < today;
+    const ds = `${y}-${String(m+1).padStart(2,'0')}-${String(d).padStart(2,'0')}`;
+    const isSel = state.date === ds;
+    let cls = 'cal-day';
+    if (isToday) cls += ' today';
+    if (isPast) cls += ' disabled';
+    if (isSel) cls += ' selected';
+    const click = !isPast ? `onclick="selectDate('${ds}', this)"` : '';
+    html += `<div class="${cls}" ${click}>${d}</div>`;
+  }
+
+  const rem = (7 - (firstDay + daysInMonth) % 7) % 7;
+  for (let d = 1; d <= rem; d++) html += `<div class="cal-day other">${d}</div>`;
+  document.getElementById('calGrid').innerHTML = html;
+}
+
+function changeMonth(dir) {
+  calDate.setMonth(calDate.getMonth() + dir);
+  renderCal();
+}
+
+async function selectDate(ds, el) {
+  if (!state.roomId) { alert('請先選擇會議室'); return; }
+  state.date = ds;
+  state.startTime = null;
+  state.endTime = null;
+  selStart = -1; selEnd = -1;
+  blockedSlots = new Set();
+
+  document.querySelectorAll('.cal-day').forEach(d => d.classList.remove('selected'));
+  el.classList.add('selected');
+
+  const weekday = ['日','一','二','三','四','五','六'][new Date(ds).getDay()];
+  document.getElementById('sum-date').textContent = `${ds} 週${weekday}`;
+  document.getElementById('sum-date').classList.remove('empty');
+  document.getElementById('sum-time').textContent = '請選擇';
+  document.getElementById('sum-time').classList.add('empty');
+
+  // Load booked slots from backend
+  try {
+    const res = await fetch(`${API}/api/rooms/${state.roomId}/availability?date=${ds}`);
+    const data = await res.json();
+    bookedSlots = data.booked_slots || [];
+    // Mark blocked half-hour slots
+    blockedSlots = new Set();
+    bookedSlots.forEach(b => {
+      const s = timeToSlot(b.start);
+      const e = timeToSlot(b.end); // end slot is exclusive
+      for (let i = s; i < e; i++) blockedSlots.add(i);
+    });
+  } catch { bookedSlots = []; blockedSlots = new Set(); }
+
+  // Show grid
+  document.getElementById('timeGridWrap').style.display = 'block';
+  document.getElementById('tsbBar').style.display = 'none';
+  document.getElementById('timeConflictMsg').style.display = 'none';
+  buildTimeGrid();
+  updatePrice();
+}
+
+function renderBookedSlots() {
+  const container = document.getElementById('bookedSlotsList');
+  if (!bookedSlots.length) {
+    container.style.display = 'none';
+    return;
+  }
+  container.style.display = 'block';
+  container.innerHTML = '<div style="font-size:13px;font-weight:600;color:var(--ink-60);margin-bottom:8px;text-transform:uppercase;letter-spacing:0.06em;">已預約時段</div>' +
+    bookedSlots.map(b => `<div class="booked-slot-item"><span class="booked-slot-icon">●</span>${b.start} – ${b.end}</div>`).join('');
+}
+
+// ── Time Grid ──
+// All 28 half-hour slots: 08:00–22:00  (slot index 0 = "08:00–08:30", ..., 27 = "21:30–22:00")
+const SLOT_COUNT = 28;
+const SLOT_START_HOUR = 8; // 08:00
+
+function slotToTime(idx) {
+  const totalMin = SLOT_START_HOUR * 60 + idx * 30;
+  const h = Math.floor(totalMin / 60);
+  const m = totalMin % 60;
+  return `${String(h).padStart(2,'0')}:${String(m).padStart(2,'0')}`;
+}
+
+function timeToSlot(t) {
+  const [h, m] = t.split(':').map(Number);
+  return (h * 60 + m - SLOT_START_HOUR * 60) / 30;
+}
+
+// Drag state
+let dragStart = -1;
+let dragEnd   = -1;
+let isDragging = false;
+
+// Which slots are blocked by existing bookings
+let blockedSlots = new Set();
+
+// Selected slot range [selStart, selEnd] inclusive (index of 30-min slot)
+let selStart = -1;
+let selEnd   = -1;
+
+function buildTimeGrid() {
+  // Periods: Morning 08-12, Afternoon 12-18, Evening 18-22
+  const periods = [
+    { label: '上午  Morning', from: 0,  to: 7  },  // slots 0-7  → 08:00-12:00
+    { label: '下午  Afternoon', from: 8,  to: 19 }, // slots 8-19 → 12:00-18:00
+    { label: '晚間  Evening', from: 20, to: 27 },   // slots 20-27 → 18:00-22:00
+  ];
+
+  let html = '';
+  periods.forEach(p => {
+    html += `<div class="time-period-label">${p.label}</div>`;
+    for (let i = p.from; i <= p.to; i++) {
+      const startT = slotToTime(i);
+      const endT   = slotToTime(i + 1);
+      const isOdd  = (i % 2 === 1); // :30 slots — no axis label
+      const axisLabel = !isOdd ? startT : '';
+      const isBlocked = blockedSlots.has(i);
+
+      html += `
+        <div class="time-row">
+          <div class="time-axis">${axisLabel}</div>
+          <div class="ts ${isBlocked ? 'ts-booked' : ''}"
+               data-slot="${i}"
+               ${isBlocked ? '' : `
+                 onmousedown="tsMouseDown(event,${i})"
+                 onmouseenter="tsMouseEnter(event,${i})"
+                 ontouchstart="tsTouchStart(event,${i})"
+                 ontouchmove="tsTouchMove(event)"
+               `}
+          >${isBlocked ? '已預約' : ''}</div>
+          <div class="time-axis" style="text-align:left;padding-left:8px;padding-right:0;">${endT}</div>
+        </div>`;
+    }
+  });
+
+  document.getElementById('timeGridBody').innerHTML = html;
+
+  // Global mouse-up to commit selection
+  document.addEventListener('mouseup', tsMouseUp, { once: false });
+  document.addEventListener('touchend', tsTouchEnd, { once: false });
+}
+
+function getSlotEl(idx) {
+  return document.querySelector(`.ts[data-slot="${idx}"]`);
+}
+
+function tsMouseDown(e, idx) {
+  e.preventDefault();
+  if (blockedSlots.has(idx)) return;
+  isDragging = true;
+  dragStart = idx;
+  dragEnd   = idx;
+  renderDrag();
+}
+
+function tsMouseEnter(e, idx) {
+  if (!isDragging) return;
+  dragEnd = idx;
+  renderDrag();
+}
+
+function tsMouseUp() {
+  if (!isDragging) return;
+  isDragging = false;
+  commitSelection();
+}
+
+function tsTouchStart(e, idx) {
+  if (blockedSlots.has(idx)) return;
+  isDragging = true;
+  dragStart = idx;
+  dragEnd   = idx;
+  renderDrag();
+}
+
+function tsTouchMove(e) {
+  if (!isDragging) return;
+  const touch = e.touches[0];
+  const el = document.elementFromPoint(touch.clientX, touch.clientY);
+  if (el && el.classList.contains('ts') && !el.classList.contains('ts-booked')) {
+    const idx = parseInt(el.dataset.slot);
+    if (!isNaN(idx)) { dragEnd = idx; renderDrag(); }
+  }
+}
+
+function tsTouchEnd() {
+  if (!isDragging) return;
+  isDragging = false;
+  commitSelection();
+}
+
+function renderDrag() {
+  const lo = Math.min(dragStart, dragEnd);
+  const hi = Math.max(dragStart, dragEnd);
+
+  // Check if any blocked slot in range
+  let hasConflict = false;
+  for (let i = lo; i <= hi; i++) {
+    if (blockedSlots.has(i)) { hasConflict = true; break; }
+  }
+
+  document.querySelectorAll('.ts').forEach(el => {
+    const idx = parseInt(el.dataset.slot);
+    el.classList.remove('ts-selected','ts-range-start','ts-range-end','ts-range-mid','ts-conflict');
+    if (blockedSlots.has(idx)) return;
+    if (idx >= lo && idx <= hi) {
+      if (hasConflict) {
+        el.classList.add('ts-conflict');
+      } else {
+        el.classList.add('ts-selected');
+        if (idx === lo && idx === hi) el.classList.add('ts-range-start','ts-range-end');
+        else if (idx === lo)  el.classList.add('ts-range-start');
+        else if (idx === hi)  el.classList.add('ts-range-end');
+        else                   el.classList.add('ts-range-mid');
+      }
+    }
+  });
+}
+
+function commitSelection() {
+  const lo = Math.min(dragStart, dragEnd);
+  const hi = Math.max(dragStart, dragEnd);
+
+  // Check conflict
+  for (let i = lo; i <= hi; i++) {
+    if (blockedSlots.has(i)) {
+      // flash conflict then clear
+      setTimeout(() => {
+        document.querySelectorAll('.ts').forEach(el => el.classList.remove('ts-conflict','ts-selected','ts-range-start','ts-range-end','ts-range-mid'));
+        document.getElementById('timeConflictMsg').style.display = 'block';
+        document.getElementById('tsbBar').style.display = 'none';
+      }, 350);
+      selStart = -1; selEnd = -1;
+      state.startTime = null; state.endTime = null;
+      updatePrice();
+      updateSumTime();
+      return;
+    }
+  }
+
+  document.getElementById('timeConflictMsg').style.display = 'none';
+  selStart = lo;
+  selEnd   = hi;
+  state.startTime = slotToTime(lo);
+  state.endTime   = slotToTime(hi + 1);
+
+  updateSumTime();
+  updatePrice();
+  showSelectionBar();
+}
+
+function showSelectionBar() {
+  if (selStart < 0) return;
+  const bar = document.getElementById('tsbBar');
+  bar.style.display = 'flex';
+  document.getElementById('tsbTime').textContent = `${state.startTime} – ${state.endTime}`;
+  const dur = (selEnd - selStart + 1) * 0.5;
+  document.getElementById('tsbDur').textContent = dur === 0.5 ? '30 分鐘' : dur >= 1 ? `${dur} 小時` : `${dur * 60} 分鐘`;
+}
+
+function clearTimeSelection() {
+  selStart = -1; selEnd = -1;
+  state.startTime = null; state.endTime = null;
+  document.querySelectorAll('.ts').forEach(el => el.classList.remove('ts-selected','ts-range-start','ts-range-end','ts-range-mid'));
+  document.getElementById('tsbBar').style.display = 'none';
+  document.getElementById('timeConflictMsg').style.display = 'none';
+  updatePrice();
+  updateSumTime();
+}
+
+function updateSumTime() {
+  const el = document.getElementById('sum-time');
+  if (state.startTime && state.endTime) {
+    el.textContent = `${state.startTime} – ${state.endTime}`;
+    el.classList.remove('empty');
+  } else {
+    el.textContent = '請選擇';
+    el.classList.add('empty');
+  }
+}
+
+function updateSummary() {
+  const name = document.getElementById('fName').value.trim();
+  const phone = document.getElementById('fPhone').value.trim();
+  if (name) {
+    document.getElementById('sum-name').textContent = name + (phone ? ` · ${phone}` : '');
+    document.getElementById('sum-name').classList.remove('empty');
+  } else {
+    document.getElementById('sum-name').textContent = '請填寫';
+    document.getElementById('sum-name').classList.add('empty');
+  }
+}
+
+function updatePrice() {
+  if (state.startTime && state.endTime && state.roomRate) {
+    const dur = (toMin(state.endTime) - toMin(state.startTime)) / 60;
+    state.price = Math.round(dur * state.roomRate);
+    document.getElementById('sum-dur').textContent = `${dur} 小時`;
+    document.getElementById('sum-price').textContent = formatMoney(state.price);
+  } else {
+    document.getElementById('sum-dur').textContent = '—';
+    document.getElementById('sum-price').textContent = 'NT$ 0';
+  }
+}
+
+// ── Submit ──
+async function submitBooking() {
+  if (!state.roomId) { alert('請選擇會議室'); return; }
+  if (!state.date)   { alert('請選擇日期'); return; }
+  if (!state.startTime || !state.endTime) { alert('請選擇使用時段'); return; }
+  const name  = document.getElementById('fName').value.trim();
+  const phone = document.getElementById('fPhone').value.trim();
+  if (!name)  { alert('請填寫聯絡人姓名'); return; }
+  if (!phone) { alert('請填寫手機號碼'); return; }
+
+  const btn = document.getElementById('bookBtn');
+  btn.disabled = true;
+  btn.textContent = '預約中...';
+
+  try {
+    const res = await fetch(`${API}/api/book`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        room_id: state.roomId,
+        date: state.date,
+        start_time: state.startTime,
+        end_time: state.endTime,
+        name, phone,
+        email: document.getElementById('fEmail').value.trim(),
+        department: document.getElementById('fDept').value.trim(),
+        attendees: parseInt(document.getElementById('fAttendees').value),
+        purpose: document.getElementById('fPurpose').value,
+        note: document.getElementById('fNote').value,
+      })
+    });
+    const data = await res.json();
+    if (res.ok && data.success) {
+      showSuccess(data.booking);
+    } else {
+      alert(data.error || '預約失敗，請重試');
+    }
+  } catch (e) {
+    alert('預約失敗：' + e.message);
+  } finally {
+    btn.disabled = false;
+    btn.textContent = '確認預約';
+  }
+}
+
+function showSuccess(booking) {
+  const rows = [
+    ['預約編號', booking.booking_number],
+    ['會議室', booking.room_name],
+    ['日期', booking.date],
+    ['時段', `${booking.start_time} – ${booking.end_time}`],
+    ['時長', `${booking.duration} 小時`],
+    ['聯絡人', booking.customer_name],
+    ['費用', `NT$ ${booking.total_price.toLocaleString()}`],
+  ];
+  document.getElementById('confirmTable').innerHTML = rows.map(([k, v]) =>
+    `<div class="ct-row"><span class="ct-key">${k}</span><span class="ct-val">${v}</span></div>`
+  ).join('');
+  document.getElementById('successModal').classList.add('active');
+}
+
+function closeSuccess() {
+  document.getElementById('successModal').classList.remove('active');
+  location.reload();
+}
+
+document.getElementById('successModal').addEventListener('click', function(e) {
+  if (e.target === this) closeSuccess();
+});
+
+// ── Query ──
+function openQueryModal() {
+  document.getElementById('queryResult').innerHTML = '';
+  document.getElementById('queryModal').classList.add('active');
+}
+
+document.getElementById('queryModal').addEventListener('click', function(e) {
+  if (e.target === this) this.classList.remove('active');
+});
+
+async function doQuery() {
+  const number = document.getElementById('qNumber').value.trim();
+  const phone = document.getElementById('qPhone').value.trim();
+  if (!number || !phone) { alert('請填寫預約編號和手機號碼'); return; }
+  try {
+    const res = await fetch(`${API}/api/bookings/check?number=${encodeURIComponent(number)}&phone=${encodeURIComponent(phone)}`);
+    const data = await res.json();
+    if (res.ok) {
+      const statusMap = { confirmed: '✅ 已確認', cancelled: '❌ 已取消', completed: '✔ 已完成' };
+      document.getElementById('queryResult').innerHTML = `
+        <div class="confirm-table">
+          <div class="ct-row"><span class="ct-key">預約編號</span><span class="ct-val">${data.booking_number}</span></div>
+          <div class="ct-row"><span class="ct-key">會議室</span><span class="ct-val">${data.room_name}</span></div>
+          <div class="ct-row"><span class="ct-key">日期</span><span class="ct-val">${data.date}</span></div>
+          <div class="ct-row"><span class="ct-key">時段</span><span class="ct-val">${data.start_time} – ${data.end_time}</span></div>
+          <div class="ct-row"><span class="ct-key">狀態</span><span class="ct-val">${statusMap[data.status] || data.status}</span></div>
+        </div>`;
+    } else {
+      document.getElementById('queryResult').innerHTML = `<div style="color:var(--red);padding:12px;text-align:center;">${data.error}</div>`;
+    }
+  } catch {
+    document.getElementById('queryResult').innerHTML = '<div style="color:var(--red);">查詢失敗</div>';
+  }
+}
+
+// ── Init ──
+loadContent();
+loadRooms();
+renderCal();
+</script>
+</body>
+</html>

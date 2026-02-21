@@ -1,0 +1,321 @@
+<!DOCTYPE html>
+<html lang="zh-TW">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>管理員登入 — 會議室預約系統</title>
+<link href="https://fonts.googleapis.com/css2?family=DM+Serif+Display:ital@0;1&family=DM+Sans:wght@300;400;500;600&display=swap" rel="stylesheet">
+<style>
+*, *::before, *::after { margin:0; padding:0; box-sizing:border-box; }
+
+body {
+  font-family: 'DM Sans', sans-serif;
+  min-height: 100vh;
+  display: flex;
+  background: #0F0F0F;
+  position: relative;
+  overflow: hidden;
+}
+
+.bg-art {
+  position: absolute;
+  inset: 0;
+  background: 
+    radial-gradient(ellipse at 20% 80%, rgba(184,150,90,0.12) 0%, transparent 50%),
+    radial-gradient(ellipse at 80% 20%, rgba(42,107,107,0.12) 0%, transparent 50%);
+}
+
+.bg-grid {
+  position: absolute;
+  inset: 0;
+  background-image: 
+    linear-gradient(rgba(255,255,255,0.03) 1px, transparent 1px),
+    linear-gradient(90deg, rgba(255,255,255,0.03) 1px, transparent 1px);
+  background-size: 60px 60px;
+}
+
+.left-panel {
+  flex: 1;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 60px;
+  position: relative;
+  z-index: 1;
+}
+
+.login-box {
+  width: 100%;
+  max-width: 420px;
+}
+
+.logo-area {
+  margin-bottom: 48px;
+}
+
+.logo-icon {
+  width: 52px; height: 52px;
+  background: #B8965A;
+  border-radius: 4px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 24px;
+  margin-bottom: 20px;
+}
+
+.logo-title {
+  font-family: 'DM Serif Display', serif;
+  font-size: 32px;
+  color: white;
+  line-height: 1.1;
+  margin-bottom: 8px;
+}
+
+.logo-sub {
+  font-size: 14px;
+  color: rgba(255,255,255,0.4);
+  text-transform: uppercase;
+  letter-spacing: 0.12em;
+}
+
+.form-group {
+  margin-bottom: 20px;
+}
+
+.form-label {
+  display: block;
+  margin-bottom: 8px;
+  font-size: 13px;
+  font-weight: 500;
+  color: rgba(255,255,255,0.6);
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+}
+
+.form-input {
+  width: 100%;
+  padding: 14px 16px;
+  background: rgba(255,255,255,0.06);
+  border: 1.5px solid rgba(255,255,255,0.1);
+  border-radius: 4px;
+  font-size: 15px;
+  color: white;
+  font-family: inherit;
+  transition: all 0.2s;
+}
+
+.form-input:focus {
+  outline: none;
+  border-color: #B8965A;
+  background: rgba(255,255,255,0.08);
+}
+
+.form-input::placeholder { color: rgba(255,255,255,0.25); }
+
+.login-btn {
+  width: 100%;
+  padding: 15px;
+  background: #B8965A;
+  color: #0F0F0F;
+  border: none;
+  border-radius: 4px;
+  font-size: 15px;
+  font-weight: 700;
+  cursor: pointer;
+  font-family: inherit;
+  text-transform: uppercase;
+  letter-spacing: 0.1em;
+  transition: all 0.25s;
+  margin-top: 8px;
+}
+
+.login-btn:hover {
+  background: #D4AF7A;
+  transform: translateY(-2px);
+  box-shadow: 0 8px 24px rgba(184,150,90,0.3);
+}
+
+.error-msg {
+  background: rgba(196,75,58,0.15);
+  border: 1px solid rgba(196,75,58,0.4);
+  color: #ff8a80;
+  padding: 12px 16px;
+  border-radius: 4px;
+  font-size: 14px;
+  margin-bottom: 20px;
+  display: none;
+}
+
+.error-msg.show { display: block; }
+
+.back-link {
+  text-align: center;
+  margin-top: 28px;
+}
+
+.back-link a {
+  color: rgba(255,255,255,0.4);
+  text-decoration: none;
+  font-size: 14px;
+  transition: color 0.2s;
+}
+.back-link a:hover { color: #B8965A; }
+
+.right-panel {
+  width: 480px;
+  background: rgba(255,255,255,0.03);
+  border-left: 1px solid rgba(255,255,255,0.06);
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  padding: 60px;
+  position: relative;
+  z-index: 1;
+}
+
+.right-title {
+  font-family: 'DM Serif Display', serif;
+  font-size: 22px;
+  color: rgba(255,255,255,0.6);
+  margin-bottom: 32px;
+}
+
+.feature-list {
+  display: flex;
+  flex-direction: column;
+  gap: 20px;
+}
+
+.feature-item {
+  display: flex;
+  gap: 16px;
+  align-items: flex-start;
+}
+
+.feature-icon {
+  width: 40px; height: 40px;
+  background: rgba(184,150,90,0.12);
+  border: 1px solid rgba(184,150,90,0.25);
+  border-radius: 6px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 18px;
+  flex-shrink: 0;
+}
+
+.feature-text h4 {
+  font-size: 14px;
+  font-weight: 600;
+  color: rgba(255,255,255,0.8);
+  margin-bottom: 4px;
+}
+
+.feature-text p {
+  font-size: 13px;
+  color: rgba(255,255,255,0.4);
+  line-height: 1.5;
+}
+
+@media (max-width: 900px) {
+  .right-panel { display: none; }
+}
+</style>
+</head>
+<body>
+
+<div class="bg-art"></div>
+<div class="bg-grid"></div>
+
+<div class="left-panel">
+  <div class="login-box">
+    <div class="logo-area">
+      <div class="logo-icon">🏢</div>
+      <div class="logo-title">會議室<br>管理系統</div>
+      <div class="logo-sub">Admin Dashboard</div>
+    </div>
+
+    <div class="error-msg" id="errorMsg"></div>
+
+    <form onsubmit="login(event)">
+      <div class="form-group">
+        <label class="form-label">管理員密碼</label>
+        <input type="password" class="form-input" id="password" placeholder="請輸入管理員密碼" required autofocus>
+      </div>
+      <button type="submit" class="login-btn">登入後台</button>
+    </form>
+
+    <div class="back-link">
+      <a href="/">← 返回預約頁面</a>
+    </div>
+  </div>
+</div>
+
+<div class="right-panel">
+  <div class="right-title">後台管理功能</div>
+  <div class="feature-list">
+    <div class="feature-item">
+      <div class="feature-icon">📷</div>
+      <div class="feature-text">
+        <h4>照片上傳管理</h4>
+        <p>為每間會議室上傳精美照片，即時同步至前台展示</p>
+      </div>
+    </div>
+    <div class="feature-item">
+      <div class="feature-icon">✏️</div>
+      <div class="feature-text">
+        <h4>前端文字編輯</h4>
+        <p>自訂標題、說明、聯絡資訊與注意事項</p>
+      </div>
+    </div>
+    <div class="feature-item">
+      <div class="feature-icon">🏛</div>
+      <div class="feature-text">
+        <h4>會議室管理</h4>
+        <p>新增、編輯、停用會議室，管理容量與費率</p>
+      </div>
+    </div>
+    <div class="feature-item">
+      <div class="feature-icon">📅</div>
+      <div class="feature-text">
+        <h4>預約管理</h4>
+        <p>查看、確認、取消預約，掌握即時排程</p>
+      </div>
+    </div>
+    <div class="feature-item">
+      <div class="feature-icon">📊</div>
+      <div class="feature-text">
+        <h4>統計儀表板</h4>
+        <p>預約數量、營收統計與使用率分析</p>
+      </div>
+    </div>
+  </div>
+</div>
+
+<script>
+async function login(e) {
+  e.preventDefault();
+  const pw = document.getElementById('password').value;
+  const errEl = document.getElementById('errorMsg');
+  try {
+    const res = await fetch('/admin/api/login', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ password: pw })
+    });
+    if (res.ok) {
+      sessionStorage.setItem('adminPw', pw);
+      window.location.href = '/dashboard';
+    } else {
+      errEl.textContent = '密碼錯誤，請重試';
+      errEl.classList.add('show');
+    }
+  } catch {
+    errEl.textContent = '登入失敗，請稍後再試';
+    errEl.classList.add('show');
+  }
+}
+</script>
+</body>
+</html>

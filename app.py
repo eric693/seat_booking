@@ -330,7 +330,7 @@ def _hero_gradient_box(top_label: str, top_color: str, title: str,
             {'type': 'text', 'text': title,
              'color': '#ffffff', 'size': 'xl', 'weight': 'bold', 'margin': 'md', 'wrap': True},
             {'type': 'text', 'text': subtitle,
-             'color': 'rgba(255,255,255,0.7)', 'size': 'sm', 'margin': 'sm', 'wrap': True},
+             'color': '#B3D9D9', 'size': 'sm', 'margin': 'sm', 'wrap': True},
         ]
     }
 
@@ -426,7 +426,6 @@ def _row(label: str, value: str) -> dict:
     return {
         'type': 'box', 'layout': 'horizontal',
         'paddingTop': '8px', 'paddingBottom': '8px',
-        'borderWidth': '1px', 'borderColor': _C['border'],
         'contents': [
             {'type': 'text', 'text': label, 'size': 'sm',
              'color': _C['ink60'], 'flex': 2},
@@ -459,7 +458,7 @@ def _header_box(title: str, subtitle: str = '', bg: str = None) -> dict:
     ]
     if subtitle:
         contents.append(
-            {'type': 'text', 'text': subtitle, 'color': 'rgba(255,255,255,0.6)',
+            {'type': 'text', 'text': subtitle, 'color': '#99C8C8',
              'size': 'xs', 'margin': 'xs', 'wrap': True}
         )
     return {
@@ -583,7 +582,6 @@ def flex_timeslot(date_str: str, rooms_data: list) -> dict:
         room_rows.append({
             'type': 'box', 'layout': 'vertical',
             'paddingTop': '10px', 'paddingBottom': '10px',
-            'borderWidth': '1px', 'borderColor': _C['border'],
             'contents': [
                 {'type': 'box', 'layout': 'horizontal', 'contents': [
                     {'type': 'text', 'text': r['name'], 'size': 'sm',
@@ -701,7 +699,7 @@ def flex_welcome() -> dict:
                 'paddingAll': '24px',
                 'contents': [
                     {'type': 'text', 'text': '歡迎使用',
-                     'color': 'rgba(255,255,255,0.5)',
+                     'color': '#80B8B8',
                      'size': 'sm'},
                     {'type': 'text', 'text': '會議室預約系統',
                      'color': _C['white'], 'size': 'xl',
@@ -818,7 +816,7 @@ def flex_booking_confirm(booking) -> dict:
                                             'size': 'xs', 'color': '#ffffff', 'weight': 'bold'}]},
                              {'type': 'filler'},
                              {'type': 'text', 'text': booking.booking_number,
-                              'size': 'xs', 'color': 'rgba(255,255,255,0.4)', 'gravity': 'center'},
+                              'size': 'xs', 'color': '#66AAAA', 'gravity': 'center'},
                          ]},
                          # 會議室名稱
                          {'type': 'text', 'text': room,
@@ -828,9 +826,9 @@ def flex_booking_confirm(booking) -> dict:
                          {'type': 'box', 'layout': 'horizontal', 'margin': 'sm',
                           'contents': [
                               {'type': 'text', 'text': f'{room_type}',
-                               'size': 'xs', 'color': 'rgba(255,255,255,0.55)'},
+                               'size': 'xs', 'color': '#8CBFBF'},
                               {'type': 'text', 'text': floor or '',
-                               'size': 'xs', 'color': 'rgba(255,255,255,0.55)'},
+                               'size': 'xs', 'color': '#8CBFBF'},
                           ]},
                      ]},
                 ]
@@ -931,7 +929,7 @@ def flex_booking_cancel(booking) -> dict:
                           'size': 'xl', 'color': '#ffffff', 'weight': 'bold',
                           'margin': 'lg', 'wrap': True},
                          {'type': 'text', 'text': f'{date_fmt} {booking.start_time}–{booking.end_time}',
-                          'size': 'sm', 'color': 'rgba(255,255,255,0.55)', 'margin': 'sm'},
+                          'size': 'sm', 'color': '#8CBFBF', 'margin': 'sm'},
                      ]},
                 ]
             },
@@ -1028,16 +1026,16 @@ def flex_admin_notify(booking) -> dict:
                                             'size': 'xs', 'color': '#ffffff', 'weight': 'bold'}]},
                              {'type': 'filler'},
                              {'type': 'text', 'text': created,
-                              'size': 'xs', 'color': 'rgba(255,255,255,0.4)', 'gravity': 'center'},
+                              'size': 'xs', 'color': '#66AAAA', 'gravity': 'center'},
                          ]},
                          # 顧客姓名
                          {'type': 'text', 'text': booking.customer_name,
                           'size': 'xl', 'color': '#ffffff', 'weight': 'bold', 'margin': 'lg'},
                          {'type': 'box', 'layout': 'horizontal', 'margin': 'sm', 'contents': [
                              {'type': 'text', 'text': booking.customer_phone,
-                              'size': 'xs', 'color': 'rgba(255,255,255,0.6)'},
+                              'size': 'xs', 'color': '#99C8C8'},
                              {'type': 'text', 'text': booking.department or '',
-                              'size': 'xs', 'color': 'rgba(255,255,255,0.4)'},
+                              'size': 'xs', 'color': '#66AAAA'},
                          ]},
                      ]},
                 ]

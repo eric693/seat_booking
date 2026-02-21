@@ -1171,12 +1171,13 @@ class SiteContent(db.Model):
 class LineUser(db.Model):
     """LINE Bot 使用者記錄"""
     __tablename__ = 'line_users'
-    id           = db.Column(db.Integer, primary_key=True)
-    line_user_id = db.Column(db.String(100), unique=True, nullable=False)
-    phone        = db.Column(db.String(20))
-    display_name = db.Column(db.String(100))
-    is_admin     = db.Column(db.Boolean, default=False)
-    created_at   = db.Column(db.DateTime, default=datetime.now)
+    id              = db.Column(db.Integer, primary_key=True)
+    line_user_id    = db.Column(db.String(100), unique=True, nullable=False)
+    phone           = db.Column(db.String(20))
+    display_name    = db.Column(db.String(100))
+    is_admin        = db.Column(db.Boolean, default=False)
+    created_at      = db.Column(db.DateTime, default=datetime.now)
+    booking_session = db.Column(db.Text)  # JSON：儲存預約對話進度
 
     def to_dict(self):
         return {
@@ -1418,8 +1419,561 @@ def line_webhook():
     return 'OK', 200
 
 
+# ─────────────────────────────────────────────
+# 預約對話流程 Flex Messages
+# ─────────────────────────────────────────────
+
+def _sess(lu) -> dict:
+    """取得使用者的 booking session，沒有就回空 dict"""
+    try:
+        return json.loads(lu.booking_session) if lu.booking_session else {}
+    except Exception:
+        return {}
+
+
+def _save_sess(lu, data: dict):
+    lu.booking_session = json.dumps(data, ensure_ascii=False)
+    db.session.commit()
+
+
+def _clear_sess(lu):
+    lu.booking_session = None
+    db.session.commit()
+
+
+def flex_select_room(rooms) -> dict:
+    """Step 1：選擇會議室 Flex（每間房間一個按鈕）"""
+    room_btns = []
+    for r in rooms:
+        cap  = f'{r.capacity} 人  ·  NT${r.hourly_rate}/hr'
+        floor_txt = f'{r.floor}  ' if r.floor else ''
+        room_btns.append({
+            'type': 'box', 'layout': 'vertical',
+            'backgroundColor': '#FFFFFF',
+            'paddingAll': '14px',
+            'margin': 'sm',
+            'action': {'type': 'message', 'label': r.name,
+                       'text': f'選房間 {r.id}'},
+            'contents': [
+                {'type': 'text', 'text': r.name, 'size': 'md',
+                 'weight': 'bold', 'color': _C['ink']},
+                {'type': 'text',
+                 'text': f'{floor_txt}{r.room_type}  ·  {cap}',
+                 'size': 'xs', 'color': _C['ink60'], 'margin': 'xs', 'wrap': True},
+                *([{'type': 'text', 'text': r.description[:40] + ('…' if len(r.description or '') > 40 else ''),
+                    'size': 'xs', 'color': _C['ink60'], 'margin': 'xs', 'wrap': True}]
+                  if r.description else []),
+            ]
+        })
+
+    return {
+        'type': 'flex', 'altText': '請選擇會議室',
+        'contents': {
+            'type': 'bubble', 'size': 'mega',
+            'header': _header_box('預約會議室', 'Step 1 / 5  ·  選擇會議室'),
+            'body': {
+                'type': 'box', 'layout': 'vertical',
+                'backgroundColor': _C['bg'],
+                'paddingAll': '12px', 'spacing': 'none',
+                'contents': room_btns or [
+                    {'type': 'text', 'text': '目前沒有可用的會議室',
+                     'color': _C['ink60'], 'size': 'sm'}
+                ]
+            },
+            'footer': {
+                'type': 'box', 'layout': 'vertical',
+                'backgroundColor': _C['bg'], 'paddingAll': '12px',
+                'contents': [_btn('取消預約', 'message', '取消預約', bg='#888888')]
+            }
+        }
+    }
+
+
+def flex_input_date(room_name: str) -> dict:
+    """Step 2：輸入日期"""
+    from datetime import datetime as _dt, timedelta
+    today = _dt.now()
+    # 快捷日期：明天 / 後天 / 大後天
+    shortcuts = []
+    for delta in [1, 2, 3]:
+        d = today + timedelta(days=delta)
+        weekdays = ['一','二','三','四','五','六','日']
+        label = f'{d.month}/{d.day} 週{weekdays[d.weekday()]}'
+        shortcuts.append({
+            'type': 'box', 'layout': 'vertical',
+            'backgroundColor': '#FFFFFF', 'cornerRadius': '8px',
+            'paddingAll': '10px', 'flex': 1,
+            'action': {'type': 'message', 'label': label,
+                       'text': d.strftime('%Y-%m-%d')},
+            'contents': [
+                {'type': 'text', 'text': label, 'size': 'sm',
+                 'align': 'center', 'color': _C['teal'], 'weight': 'bold'},
+            ]
+        })
+
+    return {
+        'type': 'flex', 'altText': '請輸入日期',
+        'contents': {
+            'type': 'bubble', 'size': 'mega',
+            'header': _header_box(f'{room_name}', 'Step 2 / 5  ·  選擇日期'),
+            'body': {
+                'type': 'box', 'layout': 'vertical',
+                'backgroundColor': _C['bg'],
+                'paddingAll': '16px', 'spacing': 'md',
+                'contents': [
+                    {'type': 'text',
+                     'text': '請輸入日期，例：2026-03-15',
+                     'size': 'sm', 'color': _C['ink60'], 'wrap': True},
+                    {'type': 'box', 'layout': 'horizontal',
+                     'spacing': 'sm', 'contents': shortcuts},
+                ]
+            },
+            'footer': {
+                'type': 'box', 'layout': 'vertical',
+                'backgroundColor': _C['bg'], 'paddingAll': '12px',
+                'contents': [_btn('取消預約', 'message', '取消預約', bg='#888888')]
+            }
+        }
+    }
+
+
+def flex_select_slot(room_name: str, date_str: str,
+                     booked: list, room_id: int) -> dict:
+    """Step 3：選擇時段（顯示可用 / 已占用）"""
+    from datetime import datetime as _dt
+    try:
+        d = _dt.strptime(date_str, '%Y-%m-%d')
+        weekdays = ['一','二','三','四','五','六','日']
+        date_fmt = f'{d.month}/{d.day} 週{weekdays[d.weekday()]}'
+    except Exception:
+        date_fmt = date_str
+
+    # 把已占用時段展開成 slot set
+    blocked = set()
+    for b in booked:
+        sh, sm = map(int, b['start'].split(':'))
+        eh, em = map(int, b['end'].split(':'))
+        s_idx = (sh * 60 + sm - 8 * 60) // 30
+        e_idx = (eh * 60 + em - 8 * 60) // 30
+        for i in range(s_idx, e_idx):
+            blocked.add(i)
+
+    # 產生時段按鈕（以小時為單位，8:00~22:00 = 14 個整點）
+    slot_rows = []
+    for h in range(8, 21):
+        s_idx = (h - 8) * 2
+        e_idx = s_idx + 2
+        is_blocked = any(i in blocked for i in range(s_idx, e_idx))
+        start_t = f'{h:02d}:00'
+        end_t   = f'{h+1:02d}:00'
+        label   = f'{start_t} – {end_t}'
+        if is_blocked:
+            slot_rows.append({
+                'type': 'box', 'layout': 'horizontal',
+                'paddingTop': '8px', 'paddingBottom': '8px',
+                'contents': [
+                    {'type': 'text', 'text': label, 'size': 'sm',
+                     'color': '#AAAAAA', 'flex': 3},
+                    {'type': 'box', 'layout': 'vertical',
+                     'backgroundColor': '#DDDDDD', 'cornerRadius': '10px',
+                     'paddingTop': '2px', 'paddingBottom': '2px',
+                     'paddingStart': '8px', 'paddingEnd': '8px', 'flex': 0,
+                     'contents': [{'type': 'text', 'text': '已預約',
+                                   'size': 'xxs', 'color': '#888888'}]},
+                ]
+            })
+        else:
+            slot_rows.append({
+                'type': 'box', 'layout': 'horizontal',
+                'paddingTop': '8px', 'paddingBottom': '8px',
+                'action': {'type': 'message', 'label': label,
+                           'text': f'選時段 {start_t} {end_t}'},
+                'contents': [
+                    {'type': 'text', 'text': label, 'size': 'sm',
+                     'color': _C['teal'], 'weight': 'bold', 'flex': 3},
+                    {'type': 'box', 'layout': 'vertical',
+                     'backgroundColor': _C['teal'], 'cornerRadius': '10px',
+                     'paddingTop': '2px', 'paddingBottom': '2px',
+                     'paddingStart': '8px', 'paddingEnd': '8px', 'flex': 0,
+                     'contents': [{'type': 'text', 'text': '可預約',
+                                   'size': 'xxs', 'color': '#FFFFFF'}]},
+                ]
+            })
+
+    return {
+        'type': 'flex', 'altText': f'{date_fmt} 可用時段',
+        'contents': {
+            'type': 'bubble', 'size': 'mega',
+            'header': _header_box(f'{date_fmt}  ·  {room_name}',
+                                  'Step 3 / 5  ·  選擇時段（點選可預約時段）'),
+            'body': {
+                'type': 'box', 'layout': 'vertical',
+                'backgroundColor': _C['bg'],
+                'paddingAll': '12px', 'spacing': 'none',
+                'contents': slot_rows,
+            },
+            'footer': {
+                'type': 'box', 'layout': 'vertical',
+                'backgroundColor': _C['bg'], 'paddingAll': '12px',
+                'contents': [_btn('取消預約', 'message', '取消預約', bg='#888888')]
+            }
+        }
+    }
+
+
+def flex_input_name() -> dict:
+    """Step 4a：輸入姓名"""
+    return {
+        'type': 'flex', 'altText': '請輸入聯絡人姓名',
+        'contents': {
+            'type': 'bubble', 'size': 'kilo',
+            'header': _header_box('聯絡人資料', 'Step 4 / 5  ·  請填寫資料'),
+            'body': {
+                'type': 'box', 'layout': 'vertical',
+                'backgroundColor': _C['bg'], 'paddingAll': '16px',
+                'spacing': 'sm',
+                'contents': [
+                    {'type': 'text', 'text': '請輸入您的姓名',
+                     'size': 'sm', 'color': _C['ink'], 'weight': 'bold'},
+                    {'type': 'text', 'text': '例：王小明',
+                     'size': 'xs', 'color': _C['ink60']},
+                ]
+            },
+            'footer': {
+                'type': 'box', 'layout': 'vertical',
+                'backgroundColor': _C['bg'], 'paddingAll': '12px',
+                'contents': [_btn('取消預約', 'message', '取消預約', bg='#888888')]
+            }
+        }
+    }
+
+
+def flex_input_phone() -> dict:
+    """Step 4b：輸入手機"""
+    return {
+        'type': 'flex', 'altText': '請輸入手機號碼',
+        'contents': {
+            'type': 'bubble', 'size': 'kilo',
+            'header': _header_box('聯絡人資料', 'Step 4 / 5  ·  手機號碼'),
+            'body': {
+                'type': 'box', 'layout': 'vertical',
+                'backgroundColor': _C['bg'], 'paddingAll': '16px',
+                'spacing': 'sm',
+                'contents': [
+                    {'type': 'text', 'text': '請輸入手機號碼',
+                     'size': 'sm', 'color': _C['ink'], 'weight': 'bold'},
+                    {'type': 'text', 'text': '例：0912345678',
+                     'size': 'xs', 'color': _C['ink60']},
+                ]
+            },
+            'footer': {
+                'type': 'box', 'layout': 'vertical',
+                'backgroundColor': _C['bg'], 'paddingAll': '12px',
+                'contents': [_btn('取消預約', 'message', '取消預約', bg='#888888')]
+            }
+        }
+    }
+
+
+def flex_input_email() -> dict:
+    """Step 4c：輸入 Email"""
+    return {
+        'type': 'flex', 'altText': '請輸入 Email',
+        'contents': {
+            'type': 'bubble', 'size': 'kilo',
+            'header': _header_box('聯絡人資料', 'Step 4 / 5  ·  Email'),
+            'body': {
+                'type': 'box', 'layout': 'vertical',
+                'backgroundColor': _C['bg'], 'paddingAll': '16px',
+                'spacing': 'sm',
+                'contents': [
+                    {'type': 'text', 'text': '請輸入 Email',
+                     'size': 'sm', 'color': _C['ink'], 'weight': 'bold'},
+                    {'type': 'text', 'text': '預約確認信將發送至此信箱',
+                     'size': 'xs', 'color': _C['ink60']},
+                    {'type': 'text', 'text': '例：name@example.com',
+                     'size': 'xs', 'color': _C['ink60']},
+                ]
+            },
+            'footer': {
+                'type': 'box', 'layout': 'vertical',
+                'backgroundColor': _C['bg'], 'paddingAll': '12px',
+                'contents': [_btn('取消預約', 'message', '取消預約', bg='#888888')]
+            }
+        }
+    }
+
+
+def flex_confirm_booking(sess: dict) -> dict:
+    """Step 5：確認預約資料"""
+    room_name = sess.get('room_name', '—')
+    date_str  = sess.get('date', '—')
+    start_t   = sess.get('start_time', '—')
+    end_t     = sess.get('end_time', '—')
+    name      = sess.get('name', '—')
+    phone     = sess.get('phone', '—')
+    email     = sess.get('email', '—')
+    try:
+        from datetime import datetime as _dt
+        d = _dt.strptime(date_str, '%Y-%m-%d')
+        weekdays = ['一','二','三','四','五','六','日']
+        date_fmt = f'{d.month}/{d.day} 週{weekdays[d.weekday()]}'
+    except Exception:
+        date_fmt = date_str
+
+    # 計算金額
+    try:
+        sh, sm = map(int, start_t.split(':'))
+        eh, em = map(int, end_t.split(':'))
+        dur = (eh * 60 + em - sh * 60 - sm) / 60
+        price = int(dur * sess.get('hourly_rate', 0))
+        price_txt = f'NT$ {price:,}  /{  _fmt_duration(dur)}'
+    except Exception:
+        price_txt = '—'
+
+    return {
+        'type': 'flex', 'altText': '請確認預約資料',
+        'contents': {
+            'type': 'bubble', 'size': 'mega',
+            'header': _header_box('確認預約資料', 'Step 5 / 5  ·  請確認以下資訊'),
+            'body': {
+                'type': 'box', 'layout': 'vertical',
+                'backgroundColor': _C['bg'],
+                'paddingAll': '16px', 'spacing': 'sm',
+                'contents': [
+                    _row('會議室', room_name),
+                    _row('日期',   date_fmt),
+                    _row('時段',   f'{start_t} – {end_t}'),
+                    _row('聯絡人', name),
+                    _row('手機',   phone),
+                    _row('Email',  email),
+                    _divider(),
+                    _row('費用',   price_txt),
+                ]
+            },
+            'footer': {
+                'type': 'box', 'layout': 'vertical',
+                'backgroundColor': _C['bg'], 'paddingAll': '12px',
+                'spacing': 'sm',
+                'contents': [
+                    _btn('確認送出', 'message', '確認送出預約'),
+                    _btn('取消預約', 'message', '取消預約', bg='#888888'),
+                ]
+            }
+        }
+    }
+
+
+# ─────────────────────────────────────────────
+# 預約對話流程主控制器
+# ─────────────────────────────────────────────
+
+def _handle_booking_flow(uid: str, rtok: str, text: str, lu):
+    """
+    回傳 True 表示訊息已被預約流程處理，False 表示不在流程中
+    """
+    import re as _re
+    sess = _sess(lu)
+    step = sess.get('step', '')
+
+    # ── 取消 ──
+    if text in ('取消預約', '取消', 'cancel'):
+        if step:
+            _clear_sess(lu)
+            reply_line(rtok, [flex_not_found('已取消預約流程', '如需重新預約，請點選「預約」')])
+            return True
+        return False  # 不在流程中，交給一般指令處理
+
+    # ── Step 0：開始預約 → 顯示會議室列表 ──
+    if text in ('預約', '開始預約', '我要預約'):
+        rooms = Room.query.filter_by(is_active=True).all()
+        if not rooms:
+            reply_line(rtok, [flex_not_found('目前沒有可用的會議室', '請稍後再試')])
+            return True
+        _save_sess(lu, {'step': 'select_room'})
+        reply_line(rtok, [flex_select_room(rooms)])
+        return True
+
+    # ── Step 1：已選會議室 ──
+    if step == 'select_room':
+        m = _re.match(r'^選房間 (\d+)$', text)
+        if not m:
+            rooms = Room.query.filter_by(is_active=True).all()
+            reply_line(rtok, [flex_select_room(rooms)])
+            return True
+        room_id = int(m.group(1))
+        room = Room.query.get(room_id)
+        if not room or not room.is_active:
+            reply_line(rtok, [flex_not_found('找不到此會議室', '請重新選擇')])
+            return True
+        sess = {'step': 'select_date', 'room_id': room_id,
+                'room_name': room.name, 'hourly_rate': room.hourly_rate}
+        _save_sess(lu, sess)
+        reply_line(rtok, [flex_input_date(room.name)])
+        return True
+
+    # ── Step 2：輸入日期 ──
+    if step == 'select_date':
+        # 解析日期
+        date_str = None
+        m8 = _re.match(r'^(\d{4})[/-](\d{1,2})[/-](\d{1,2})$', text)
+        m4 = _re.match(r'^(\d{1,2})[/-](\d{1,2})$', text)
+        if m8:
+            date_str = f'{m8.group(1)}-{int(m8.group(2)):02d}-{int(m8.group(3)):02d}'
+        elif m4:
+            year = datetime.now().year
+            date_str = f'{year}-{int(m4.group(1)):02d}-{int(m4.group(2)):02d}'
+        if not date_str:
+            reply_line(rtok, [flex_input_date(sess.get('room_name', ''))])
+            return True
+        # 不能選過去
+        try:
+            from datetime import datetime as _dt, date as _date
+            chosen = _dt.strptime(date_str, '%Y-%m-%d').date()
+            if chosen < _date.today():
+                reply_line(rtok, [flex_not_found('不能選擇過去的日期', '請重新輸入日期')])
+                return True
+        except Exception:
+            reply_line(rtok, [flex_input_date(sess.get('room_name', ''))])
+            return True
+
+        booked = get_booked_slots(sess['room_id'], date_str)
+        sess['step']  = 'select_slot'
+        sess['date']  = date_str
+        _save_sess(lu, sess)
+        reply_line(rtok, [flex_select_slot(
+            sess['room_name'], date_str, booked, sess['room_id'])])
+        return True
+
+    # ── Step 3：選時段 ──
+    if step == 'select_slot':
+        m = _re.match(r'^選時段 (\d{2}:\d{2}) (\d{2}:\d{2})$', text)
+        if not m:
+            booked = get_booked_slots(sess['room_id'], sess['date'])
+            reply_line(rtok, [flex_select_slot(
+                sess['room_name'], sess['date'], booked, sess['room_id'])])
+            return True
+        start_t, end_t = m.group(1), m.group(2)
+        # 即時衝突檢查
+        if not check_availability(sess['room_id'], sess['date'], start_t, end_t):
+            booked = get_booked_slots(sess['room_id'], sess['date'])
+            reply_line(rtok, [
+                flex_not_found('此時段已被預約', '請選擇其他時段'),
+                flex_select_slot(sess['room_name'], sess['date'], booked, sess['room_id'])
+            ])
+            return True
+        sess['step']       = 'input_name'
+        sess['start_time'] = start_t
+        sess['end_time']   = end_t
+        _save_sess(lu, sess)
+        reply_line(rtok, [flex_input_name()])
+        return True
+
+    # ── Step 4a：輸入姓名 ──
+    if step == 'input_name':
+        if not text.strip():
+            reply_line(rtok, [flex_input_name()])
+            return True
+        sess['step'] = 'input_phone'
+        sess['name'] = text.strip()
+        # 若已綁定手機，自動帶入
+        if lu.phone:
+            sess['step']  = 'input_email'
+            sess['phone'] = lu.phone
+            _save_sess(lu, sess)
+            reply_line(rtok, [flex_input_email()])
+        else:
+            _save_sess(lu, sess)
+            reply_line(rtok, [flex_input_phone()])
+        return True
+
+    # ── Step 4b：輸入手機 ──
+    if step == 'input_phone':
+        phone = text.strip().replace('-', '').replace(' ', '')
+        if not phone.isdigit() or len(phone) < 8:
+            reply_line(rtok, [flex_not_found('手機號碼格式不正確', '請輸入 10 碼手機號碼，例：0912345678')])
+            return True
+        sess['step']  = 'input_email'
+        sess['phone'] = phone
+        _save_sess(lu, sess)
+        reply_line(rtok, [flex_input_email()])
+        return True
+
+    # ── Step 4c：輸入 Email ──
+    if step == 'input_email':
+        import re as _re2
+        if not _re2.match(r'^[^\s@]+@[^\s@]+\.[^\s@]+$', text.strip()):
+            reply_line(rtok, [flex_not_found('Email 格式不正確', '請重新輸入，例：name@example.com')])
+            return True
+        sess['step']  = 'confirm'
+        sess['email'] = text.strip()
+        _save_sess(lu, sess)
+        reply_line(rtok, [flex_confirm_booking(sess)])
+        return True
+
+    # ── Step 5：確認送出 ──
+    if step == 'confirm' and text == '確認送出預約':
+        # 最終衝突再確認（防止兩人同時搶同一時段）
+        if not check_availability(sess['room_id'], sess['date'],
+                                  sess['start_time'], sess['end_time']):
+            _clear_sess(lu)
+            reply_line(rtok, [flex_not_found(
+                '很抱歉，此時段剛被其他人預約',
+                '請重新開始預約，輸入「預約」繼續')])
+            return True
+
+        # 計算費用
+        sh, sm = map(int, sess['start_time'].split(':'))
+        eh, em = map(int, sess['end_time'].split(':'))
+        dur   = (eh * 60 + em - sh * 60 - sm) / 60
+        price = int(dur * sess.get('hourly_rate', 0))
+
+        # 建立預約
+        booking = Booking(
+            booking_number  = generate_booking_number(),
+            room_id         = sess['room_id'],
+            customer_name   = sess['name'],
+            customer_phone  = sess['phone'],
+            customer_email  = sess['email'],
+            department      = '',
+            date            = sess['date'],
+            start_time      = sess['start_time'],
+            end_time        = sess['end_time'],
+            duration        = dur,
+            total_price     = price,
+            attendees       = 1,
+            purpose         = 'LINE 預約',
+            note            = '',
+            line_user_id    = uid,
+        )
+        db.session.add(booking)
+        # 綁定手機
+        lu.phone = sess['phone']
+        db.session.commit()
+        booking = Booking.query.get(booking.id)
+        _clear_sess(lu)
+
+        # 通知
+        push_line(uid, [flex_booking_confirm(booking)])
+        for aid in admin_line_ids():
+            push_line(aid, [flex_admin_notify(booking)])
+        if booking.customer_email:
+            send_email(booking.customer_email,
+                       f'【預約確認】{booking.room.name} – {booking.date}',
+                       _booking_email_html(booking))
+        send_sms(booking.customer_phone, _booking_sms_body(booking))
+        return True
+
+    return False  # 不在流程中
+
+
 def _handle_line_text(uid, rtok, text):
     lower = text.lower()
+    lu = upsert_line_user(uid)
+
+    # ── 預約對話流程攔截（最高優先）──
+    if _handle_booking_flow(uid, rtok, text, lu):
+        return
 
     # ── 說明 / 主選單 ──
     if lower in ('說明', 'help', '指令', '?', '？', '選單', 'menu'):
@@ -1494,7 +2048,6 @@ def _handle_line_text(uid, rtok, text):
                 '手機號碼格式不正確',
                 '請輸入：綁定 0912345678')])
             return
-        lu = upsert_line_user(uid)
         lu.phone = phone
         Booking.query.filter_by(customer_phone=phone, line_user_id=None).update(
             {'line_user_id': uid})

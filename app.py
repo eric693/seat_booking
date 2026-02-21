@@ -16,8 +16,10 @@ from werkzeug.utils import secure_filename
 app = Flask(__name__)
 app.secret_key = os.environ.get('SECRET_KEY', 'meeting-room-booking-2026')
 
-# Render 持久磁碟用 /data/meeting_rooms.db，本地用 sqlite:///meeting_rooms.db
-DATABASE_URL = os.environ.get('DATABASE_URL', 'sqlite:///meeting_rooms.db')
+# Render 持久磁碟 /data/meeting_rooms.db；本地開發用 sqlite:///meeting_rooms.db
+import sys
+_default_db = 'sqlite:////data/meeting_rooms.db' if not sys.platform.startswith('win') and os.path.isdir('/data') else 'sqlite:///meeting_rooms.db'
+DATABASE_URL = os.environ.get('DATABASE_URL', _default_db)
 app.config['SQLALCHEMY_DATABASE_URI'] = DATABASE_URL
 app.config['SQLALCHEMY_TRACK_MODIFICATIONS'] = False
 app.config['MAX_CONTENT_LENGTH'] = 16 * 1024 * 1024  # 16MB
@@ -34,6 +36,7 @@ LINE_CHANNEL_ACCESS_TOKEN = os.environ.get('LINE_CHANNEL_ACCESS_TOKEN', '')
 LINE_CHANNEL_SECRET       = os.environ.get('LINE_CHANNEL_SECRET', '')
 LINE_PUSH_URL  = 'https://api.line.me/v2/bot/message/push'
 LINE_REPLY_URL = 'https://api.line.me/v2/bot/message/reply'
+SITE_URL       = os.environ.get('SITE_URL', 'https://seat-booking-rlf2.onrender.com')
 
 # ── Email 通知（SendGrid 優先，fallback Gmail SMTP）────────
 SENDGRID_API_KEY = os.environ.get('SENDGRID_API_KEY', '')
@@ -401,6 +404,357 @@ def _price_block(price: int, duration) -> dict:
 # ─────────────────────────────────────────────
 # 三種 Flex Message
 # ─────────────────────────────────────────────
+
+# ─────────────────────────────────────────────
+# LINE Flex Message 設計系統
+# ─────────────────────────────────────────────
+
+_C = {
+    'dark':    '#1A3333',
+    'teal':    '#2A6B6B',
+    'gold':    '#B8965A',
+    'red':     '#C44B3A',
+    'white':   '#FFFFFF',
+    'ink':     '#1A1A1A',
+    'ink60':   '#888888',
+    'bg':      '#F5F2ED',
+    'border':  '#E0DAD0',
+}
+
+
+def _row(label: str, value: str) -> dict:
+    return {
+        'type': 'box', 'layout': 'horizontal',
+        'paddingTop': '8px', 'paddingBottom': '8px',
+        'borderWidth': '1px', 'borderColor': _C['border'],
+        'contents': [
+            {'type': 'text', 'text': label, 'size': 'sm',
+             'color': _C['ink60'], 'flex': 2},
+            {'type': 'text', 'text': value, 'size': 'sm',
+             'color': _C['ink'], 'flex': 3, 'wrap': True, 'weight': 'bold'},
+        ]
+    }
+
+
+def _btn(label: str, action_type: str, data_or_uri: str,
+         bg: str = None, color: str = None) -> dict:
+    bg    = bg    or _C['teal']
+    color = color or _C['white']
+    action = ({'type': 'uri',     'label': label, 'uri': data_or_uri}
+              if action_type == 'uri' else
+              {'type': 'message', 'label': label, 'text': data_or_uri})
+    return {
+        'type': 'button', 'action': action,
+        'style': 'primary', 'color': bg,
+        'height': 'sm',
+        'margin': 'sm',
+    }
+
+
+def _header_box(title: str, subtitle: str = '', bg: str = None) -> dict:
+    bg = bg or _C['dark']
+    contents = [
+        {'type': 'text', 'text': title, 'color': _C['white'],
+         'size': 'lg', 'weight': 'bold', 'wrap': True},
+    ]
+    if subtitle:
+        contents.append(
+            {'type': 'text', 'text': subtitle, 'color': 'rgba(255,255,255,0.6)',
+             'size': 'xs', 'margin': 'xs', 'wrap': True}
+        )
+    return {
+        'type': 'box', 'layout': 'vertical',
+        'backgroundColor': bg,
+        'paddingAll': '20px',
+        'contents': contents,
+    }
+
+
+def _chip(text: str, bg: str, color: str) -> dict:
+    return {
+        'type': 'box', 'layout': 'vertical',
+        'backgroundColor': bg, 'cornerRadius': '20px',
+        'paddingTop': '4px', 'paddingBottom': '4px',
+        'paddingStart': '12px', 'paddingEnd': '12px',
+        'contents': [{'type': 'text', 'text': text,
+                      'size': 'xs', 'color': color, 'weight': 'bold'}],
+    }
+
+
+def _divider() -> dict:
+    return {'type': 'separator', 'color': _C['border'], 'margin': 'md'}
+
+
+def _fmt_duration(dur_hours) -> str:
+    try:
+        d = float(dur_hours)
+    except Exception:
+        return str(dur_hours)
+    if d < 1:
+        return f'{int(d*60)} 分鐘'
+    elif d == int(d):
+        return f'{int(d)} 小時'
+    else:
+        h = int(d)
+        return f'{h} 小時 {int((d-h)*60)} 分鐘'
+
+
+# ─── 主選單 Flex（歡迎 / 說明）────────────────────
+def flex_main_menu() -> dict:
+    return {
+        'type': 'flex', 'altText': '會議室預約系統 — 主選單',
+        'contents': {
+            'type': 'bubble', 'size': 'mega',
+            'header': _header_box('會議室預約系統', '請選擇您要執行的操作'),
+            'body': {
+                'type': 'box', 'layout': 'vertical',
+                'backgroundColor': _C['bg'],
+                'paddingAll': '16px', 'spacing': 'none',
+                'contents': [
+                    # 說明文字
+                    {'type': 'text',
+                     'text': '點選下方按鈕，或直接輸入指令操作。',
+                     'size': 'sm', 'color': _C['ink60'], 'wrap': True,
+                     'margin': 'none'},
+                    _divider(),
+                    # 指令說明列表
+                    {'type': 'box', 'layout': 'vertical', 'margin': 'md',
+                     'spacing': 'sm', 'contents': [
+                        _cmd_row('前往預約', '開啟網站完成預約'),
+                        _cmd_row('我的預約', '查詢最近 3 筆預約記錄'),
+                        _cmd_row('時段 2026-03-15', '查詢指定日期各房間時段'),
+                        _cmd_row('查詢 MR2026XXXXXX', '依預約編號查詢詳情'),
+                        _cmd_row('綁定 0912345678', '綁定手機以接收通知'),
+                    ]},
+                ]
+            },
+            'footer': {
+                'type': 'box', 'layout': 'vertical',
+                'backgroundColor': _C['bg'],
+                'paddingAll': '12px', 'spacing': 'sm',
+                'contents': [
+                    _btn('前往預約網站', 'uri', SITE_URL),
+                    _btn('我的預約', 'message', '我的預約',
+                         bg='#2D2D2D'),
+                ]
+            }
+        }
+    }
+
+
+def _cmd_row(cmd: str, desc: str) -> dict:
+    return {
+        'type': 'box', 'layout': 'horizontal',
+        'paddingTop': '6px', 'paddingBottom': '6px',
+        'contents': [
+            {'type': 'text', 'text': cmd,  'size': 'sm', 'color': _C['teal'],
+             'weight': 'bold', 'flex': 4, 'wrap': True},
+            {'type': 'text', 'text': desc, 'size': 'xs', 'color': _C['ink60'],
+             'flex': 5, 'wrap': True, 'align': 'end'},
+        ]
+    }
+
+
+# ─── 時段查詢 Flex ─────────────────────────────────
+def flex_timeslot(date_str: str, rooms_data: list) -> dict:
+    """
+    rooms_data: [{'name': str, 'slots': [{'start':..,'end':..}]}]
+    """
+    from datetime import datetime as _dt
+    try:
+        d = _dt.strptime(date_str, '%Y-%m-%d')
+        weekdays = ['一','二','三','四','五','六','日']
+        date_fmt = f'{d.month}/{d.day} 週{weekdays[d.weekday()]}'
+    except Exception:
+        date_fmt = date_str
+
+    room_rows = []
+    for r in rooms_data:
+        slots = r['slots']
+        if slots:
+            slot_str = '  '.join(f"{s['start']}–{s['end']}" for s in slots)
+            status_color = _C['red']
+            status_text  = '已有預約'
+        else:
+            slot_str     = '全天可預約'
+            status_color = '#2E7D32'
+            status_text  = '可預約'
+
+        room_rows.append({
+            'type': 'box', 'layout': 'vertical',
+            'paddingTop': '10px', 'paddingBottom': '10px',
+            'borderWidth': '1px', 'borderColor': _C['border'],
+            'contents': [
+                {'type': 'box', 'layout': 'horizontal', 'contents': [
+                    {'type': 'text', 'text': r['name'], 'size': 'sm',
+                     'weight': 'bold', 'color': _C['ink'], 'flex': 4},
+                    {'type': 'box', 'layout': 'vertical',
+                     'backgroundColor': status_color,
+                     'cornerRadius': '10px',
+                     'paddingTop': '2px', 'paddingBottom': '2px',
+                     'paddingStart': '8px', 'paddingEnd': '8px',
+                     'flex': 0,
+                     'contents': [
+                         {'type': 'text', 'text': status_text,
+                          'size': 'xxs', 'color': _C['white']}
+                     ]},
+                ]},
+                {'type': 'text', 'text': slot_str, 'size': 'xs',
+                 'color': _C['ink60'], 'margin': 'sm', 'wrap': True},
+            ]
+        })
+
+    return {
+        'type': 'flex', 'altText': f'{date_str} 時段狀態',
+        'contents': {
+            'type': 'bubble', 'size': 'mega',
+            'header': _header_box(f'{date_fmt}  時段狀態', '以下為各會議室預約狀況'),
+            'body': {
+                'type': 'box', 'layout': 'vertical',
+                'backgroundColor': _C['bg'],
+                'paddingAll': '16px', 'spacing': 'none',
+                'contents': room_rows or [
+                    {'type': 'text', 'text': '目前沒有可用的會議室',
+                     'size': 'sm', 'color': _C['ink60']}
+                ],
+            },
+            'footer': {
+                'type': 'box', 'layout': 'vertical',
+                'backgroundColor': _C['bg'],
+                'paddingAll': '12px',
+                'contents': [
+                    _btn('前往預約網站', 'uri', SITE_URL),
+                ]
+            }
+        }
+    }
+
+
+# ─── 綁定成功 Flex ─────────────────────────────────
+def flex_bind_success(phone: str) -> dict:
+    return {
+        'type': 'flex', 'altText': '手機號碼綁定成功',
+        'contents': {
+            'type': 'bubble', 'size': 'kilo',
+            'header': _header_box('綁定成功', bg=_C['teal']),
+            'body': {
+                'type': 'box', 'layout': 'vertical',
+                'backgroundColor': _C['bg'],
+                'paddingAll': '16px', 'spacing': 'md',
+                'contents': [
+                    _row('綁定號碼', phone),
+                    _row('通知項目', '預約成立 / 取消'),
+                    {'type': 'text',
+                     'text': '往後預約成立或取消時，將自動推播通知給您。',
+                     'size': 'sm', 'color': _C['ink60'],
+                     'margin': 'md', 'wrap': True},
+                ]
+            },
+            'footer': {
+                'type': 'box', 'layout': 'vertical',
+                'backgroundColor': _C['bg'],
+                'paddingAll': '12px',
+                'contents': [_btn('前往預約', 'uri', SITE_URL)]
+            }
+        }
+    }
+
+
+# ─── 查無預約 Flex ─────────────────────────────────
+def flex_not_found(msg: str, hint: str = '') -> dict:
+    return {
+        'type': 'flex', 'altText': msg,
+        'contents': {
+            'type': 'bubble', 'size': 'kilo',
+            'header': _header_box('查無資料', bg='#4A4A4A'),
+            'body': {
+                'type': 'box', 'layout': 'vertical',
+                'backgroundColor': _C['bg'],
+                'paddingAll': '16px', 'spacing': 'sm',
+                'contents': [
+                    {'type': 'text', 'text': msg, 'size': 'sm',
+                     'color': _C['ink'], 'wrap': True},
+                    *([{'type': 'text', 'text': hint, 'size': 'xs',
+                        'color': _C['ink60'], 'wrap': True, 'margin': 'sm'}]
+                      if hint else []),
+                ]
+            },
+            'footer': {
+                'type': 'box', 'layout': 'vertical',
+                'backgroundColor': _C['bg'],
+                'paddingAll': '12px',
+                'contents': [_btn('返回主選單', 'message', '說明')]
+            }
+        }
+    }
+
+
+# ─── 歡迎加入 Flex ─────────────────────────────────
+def flex_welcome() -> dict:
+    return {
+        'type': 'flex', 'altText': '歡迎使用會議室預約系統',
+        'contents': {
+            'type': 'bubble', 'size': 'mega',
+            'header': {
+                'type': 'box', 'layout': 'vertical',
+                'backgroundColor': _C['dark'],
+                'paddingAll': '24px',
+                'contents': [
+                    {'type': 'text', 'text': '歡迎使用',
+                     'color': 'rgba(255,255,255,0.5)',
+                     'size': 'sm'},
+                    {'type': 'text', 'text': '會議室預約系統',
+                     'color': _C['white'], 'size': 'xl',
+                     'weight': 'bold', 'margin': 'xs'},
+                ]
+            },
+            'body': {
+                'type': 'box', 'layout': 'vertical',
+                'backgroundColor': _C['bg'],
+                'paddingAll': '16px', 'spacing': 'md',
+                'contents': [
+                    {'type': 'text',
+                     'text': '您可以透過本系統查詢會議室時段、綁定手機號碼接收預約通知。',
+                     'size': 'sm', 'color': _C['ink60'], 'wrap': True},
+                    _divider(),
+                    {'type': 'text', 'text': '建議先完成以下步驟：',
+                     'size': 'sm', 'weight': 'bold', 'color': _C['ink'],
+                     'margin': 'md'},
+                    _step_row('1', '前往網站，完成會議室預約'),
+                    _step_row('2', '綁定手機號碼以接收通知'),
+                    _step_row('3', '輸入「說明」查看所有指令'),
+                ]
+            },
+            'footer': {
+                'type': 'box', 'layout': 'vertical',
+                'backgroundColor': _C['bg'],
+                'paddingAll': '12px', 'spacing': 'sm',
+                'contents': [
+                    _btn('前往預約網站', 'uri', SITE_URL),
+                    _btn('查看所有指令', 'message', '說明', bg='#2D2D2D'),
+                ]
+            }
+        }
+    }
+
+
+def _step_row(num: str, text: str) -> dict:
+    return {
+        'type': 'box', 'layout': 'horizontal',
+        'margin': 'sm', 'spacing': 'md',
+        'contents': [
+            {'type': 'box', 'layout': 'vertical',
+             'backgroundColor': _C['teal'], 'cornerRadius': '20px',
+             'width': '22px', 'height': '22px',
+             'justifyContent': 'center', 'alignItems': 'center',
+             'contents': [{'type': 'text', 'text': num, 'size': 'xs',
+                           'color': _C['white'], 'align': 'center'}]},
+            {'type': 'text', 'text': text, 'size': 'sm',
+             'color': _C['ink'], 'flex': 1, 'wrap': True,
+             'gravity': 'center'},
+        ]
+    }
+
 
 def flex_booking_confirm(booking) -> dict:
     """
@@ -1030,14 +1384,7 @@ def line_webhook():
 
         if etype == 'follow':
             upsert_line_user(uid)
-            reply_line(rtok, [{'type': 'text', 'text': (
-                '歡迎使用會議室預約系統！\n\n'
-                '可用指令：\n'
-                '• 查詢 [預約編號] — 查詢預約狀態\n'
-                '• 我的預約 — 查詢最近 3 筆\n'
-                '• 綁定 [手機號碼] — 綁定後自動收通知\n'
-                '• 說明 — 查看所有指令'
-            )}])
+            reply_line(rtok, [flex_welcome()])
 
         elif etype == 'message' and event.get('message', {}).get('type') == 'text':
             _handle_line_text(uid, rtok, event['message']['text'].strip())
@@ -1048,57 +1395,89 @@ def line_webhook():
 def _handle_line_text(uid, rtok, text):
     lower = text.lower()
 
-    if lower in ('說明', 'help', '指令', '?', '？'):
-        reply_line(rtok, [{'type': 'text', 'text': (
-            '可用指令：\n\n'
-            '查詢 [預約編號]\n  範例：查詢 MR202601010001\n\n'
-            '我的預約\n  顯示最近 3 筆預約\n\n'
-            '綁定 [手機號碼]\n  範例：綁定 0912345678\n  綁定後預約成立／取消將自動通知\n\n'
-            '說明 — 顯示此說明'
-        )}])
+    # ── 說明 / 主選單 ──
+    if lower in ('說明', 'help', '指令', '?', '？', '選單', 'menu'):
+        reply_line(rtok, [flex_main_menu()])
         return
 
+    # ── 查詢預約編號 ──
     if lower.startswith('查詢'):
         number = text[2:].strip().upper()
-        b = Booking.query.filter_by(booking_number=number).first() if number else None
+        if not number:
+            reply_line(rtok, [flex_not_found(
+                '請輸入預約編號',
+                '範例：查詢 MR2026030100001')])
+            return
+        b = Booking.query.filter_by(booking_number=number).first()
         if not b:
-            reply_line(rtok, [{'type': 'text',
-                'text': f'找不到預約編號 {number}，請確認後再試。'}])
+            reply_line(rtok, [flex_not_found(
+                f'找不到預約編號 {number}',
+                '請確認編號是否正確，或前往網站查詢。')])
         else:
             reply_line(rtok, [flex_booking_confirm(b)])
         return
 
+    # ── 我的預約 ──
     if lower in ('我的預約', '預約紀錄'):
         lu = LineUser.query.filter_by(line_user_id=uid).first()
         if not lu or not lu.phone:
-            reply_line(rtok, [{'type': 'text',
-                'text': '請先綁定手機號碼：\n綁定 0912345678'}])
+            reply_line(rtok, [flex_not_found(
+                '尚未綁定手機號碼',
+                '請先輸入：綁定 0912345678')])
             return
         bs = (Booking.query.filter_by(customer_phone=lu.phone)
               .order_by(Booking.created_at.desc()).limit(3).all())
         if not bs:
-            reply_line(rtok, [{'type': 'text', 'text': '目前沒有預約紀錄。'}])
+            reply_line(rtok, [flex_not_found('目前沒有預約紀錄',
+                '前往網站完成第一筆預約。')])
         else:
             reply_line(rtok, [flex_booking_confirm(b) for b in bs])
         return
 
+    # ── 時段查詢 ──
+    if lower.startswith('時段'):
+        import re as _re
+        raw_date = text[2:].strip()
+        date_str = None
+        m8 = _re.match(r'^(\d{4})[/-]?(\d{2})[/-]?(\d{2})$', raw_date)
+        m4 = _re.match(r'^(\d{1,2})[/-](\d{1,2})$', raw_date)
+        if m8:
+            date_str = f'{m8.group(1)}-{m8.group(2)}-{m8.group(3)}'
+        elif m4:
+            from datetime import datetime as _dt
+            year = _dt.now().year
+            date_str = f'{year}-{int(m4.group(1)):02d}-{int(m4.group(2)):02d}'
+        if not date_str:
+            reply_line(rtok, [flex_not_found(
+                '日期格式不正確',
+                '請輸入：時段 2026-03-15  或  時段 3/15')])
+            return
+        rooms = Room.query.filter_by(is_active=True).all()
+        rooms_data = []
+        for room in rooms:
+            slots = get_booked_slots(room.id, date_str)
+            rooms_data.append({'name': room.name, 'slots': slots})
+        reply_line(rtok, [flex_timeslot(date_str, rooms_data)])
+        return
+
+    # ── 綁定手機 ──
     if lower.startswith('綁定'):
         phone = text[2:].strip().replace('-', '').replace(' ', '')
         if not phone.isdigit() or len(phone) < 8:
-            reply_line(rtok, [{'type': 'text',
-                'text': '手機格式不正確，請輸入如：\n綁定 0912345678'}])
+            reply_line(rtok, [flex_not_found(
+                '手機號碼格式不正確',
+                '請輸入：綁定 0912345678')])
             return
         lu = upsert_line_user(uid)
         lu.phone = phone
-        # 同步舊預約
         Booking.query.filter_by(customer_phone=phone, line_user_id=None).update(
             {'line_user_id': uid})
         db.session.commit()
-        reply_line(rtok, [{'type': 'text',
-            'text': f'已成功綁定 {phone}，往後預約通知將自動推播給您。'}])
+        reply_line(rtok, [flex_bind_success(phone)])
         return
 
-    reply_line(rtok, [{'type': 'text', 'text': '收到！輸入「說明」查看可用指令。'}])
+    # ── 未識別指令 → 引導到主選單 ──
+    reply_line(rtok, [flex_main_menu()])
 
 
 # ─────────────────────────────────────────────

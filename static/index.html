@@ -1055,7 +1055,7 @@ footer {
       <div class="time-grid-wrap" id="timeGridWrap" style="display:none;">
         <div class="time-grid-head">
           <div class="time-grid-label">選擇使用時段</div>
-          <div class="time-grid-hint">點擊格子開始選取，可連續拖曳複選</div>
+          <div class="time-grid-hint">點擊或拖曳選取，再次點擊可取消；最短 60 分鐘</div>
         </div>
 
         <!-- Legend -->
@@ -1079,7 +1079,7 @@ footer {
 
         <!-- Conflict message -->
         <div class="time-conflict-msg" id="timeConflictMsg">
-          此時段包含已預約時段，請重新選擇。
+          <span id="conflictText">此時段包含已預約時段，請重新選擇。</span>
         </div>
       </div>
     </div>
@@ -1096,12 +1096,12 @@ footer {
           <input class="finput" type="text" id="fName" placeholder="請輸入姓名" oninput="updateSummary()">
         </div>
         <div class="fgroup">
-          <label>手機號碼</label>
+          <label>手機號碼 <span style="color:var(--red);">*</span></label>
           <input class="finput" type="tel" id="fPhone" placeholder="0912-345-678" oninput="updateSummary()">
         </div>
         <div class="fgroup">
-          <label>Email <span>（預約確認信）</span></label>
-          <input class="finput" type="email" id="fEmail" placeholder="your@email.com">
+          <label>Email <span style="color:var(--red);">*</span> <span>（必填，接收確認信）</span></label>
+          <input class="finput" type="email" id="fEmail" placeholder="your@email.com" required oninput="updateSummary()">
         </div>
         <div class="fgroup">
           <label>部門 / 公司</label>
@@ -1447,7 +1447,9 @@ async function selectDate(ds, el) {
       const e = timeToSlot(b.end); // end slot is exclusive
       for (let i = s; i < e; i++) blockedSlots.add(i);
     });
-  } catch(e) { bookedSlots = []; blockedSlots = new Set(); }
+  } catch(e2) { bookedSlots = []; blockedSlots = new Set(); }
+  // 切換日期時清除舊選取
+  selectedSlots.clear();
 
   // Show grid
   document.getElementById('timeGridWrap').style.display = 'block';
@@ -1470,6 +1472,7 @@ function renderBookedSlots() {
 // All 28 half-hour slots: 08:00–22:00  (slot index 0 = "08:00–08:30", ..., 27 = "21:30–22:00")
 const SLOT_COUNT = 28;
 const SLOT_START_HOUR = 8; // 08:00
+const MIN_SLOTS = 2; // 最少 2 格 = 60 分鐘
 
 function slotToTime(idx) {
   const totalMin = SLOT_START_HOUR * 60 + idx * 30;
@@ -1483,36 +1486,35 @@ function timeToSlot(t) {
   return (h * 60 + m - SLOT_START_HOUR * 60) / 30;
 }
 
-// Drag state
-let dragStart = -1;
-let dragEnd   = -1;
+// ── 多選模式：用 Set 紀錄哪些格子被選取 ──
+let selectedSlots = new Set(); // 使用者選取的時段
+let blockedSlots  = new Set(); // 已被預約（來自資料庫）
+
+// 拖曳狀態
+let dragStart  = -1;
+let dragEnd    = -1;
 let isDragging = false;
+let dragMode   = 'add'; // 'add' or 'remove'
 
-// Which slots are blocked by existing bookings
-let blockedSlots = new Set();
-
-// Selected slot range [selStart, selEnd] inclusive (index of 30-min slot)
+// 相容舊程式碼
 let selStart = -1;
 let selEnd   = -1;
 
 function buildTimeGrid() {
-  // Periods: Morning 08-12, Afternoon 12-18, Evening 18-22
   const periods = [
-    { label: '上午 Morning', from: 0,  to: 7  },  // slots 0-7  → 08:00-12:00
-    { label: '下午 Afternoon', from: 8,  to: 19 }, // slots 8-19 → 12:00-18:00
-    { label: '晚間 Evening', from: 20, to: 27 },   // slots 20-27 → 18:00-22:00
+    { label: '上午 Morning',   from: 0,  to: 7  },
+    { label: '下午 Afternoon', from: 8,  to: 19 },
+    { label: '晚間 Evening',   from: 20, to: 27 },
   ];
 
   let html = '';
   periods.forEach(p => {
     html += `<div class="time-period-label">${p.label}</div>`;
     for (let i = p.from; i <= p.to; i++) {
-      const startT = slotToTime(i);
-      const endT   = slotToTime(i + 1);
-      const isOdd  = (i % 2 === 1); // :30 slots — no axis label
-      const axisLabel = !isOdd ? startT : '';
+      const startT   = slotToTime(i);
+      const endT     = slotToTime(i + 1);
+      const axisLabel = (i % 2 === 0) ? startT : '';
       const isBlocked = blockedSlots.has(i);
-
       html += `
         <div class="time-row">
           <div class="time-axis">${axisLabel}</div>
@@ -1529,24 +1531,68 @@ function buildTimeGrid() {
         </div>`;
     }
   });
-
   document.getElementById('timeGridBody').innerHTML = html;
-
-  // Global mouse-up to commit selection
-  document.addEventListener('mouseup', tsMouseUp, { once: false });
-  document.addEventListener('touchend', tsTouchEnd, { once: false });
+  renderSelected();
+  document.addEventListener('mouseup',  tsMouseUp,   { once: false });
+  document.addEventListener('touchend', tsTouchEnd,  { once: false });
 }
 
-function getSlotEl(idx) {
-  return document.querySelector(`.ts[data-slot="${idx}"]`);
+// ── 渲染目前選取狀態 ──
+function renderSelected() {
+  document.querySelectorAll('.ts').forEach(el => {
+    const idx = parseInt(el.dataset.slot);
+    el.classList.remove('ts-selected','ts-range-start','ts-range-end','ts-range-mid','ts-conflict');
+    if (blockedSlots.has(idx)) return;
+    if (selectedSlots.has(idx)) el.classList.add('ts-selected');
+  });
+  // 加上連續邊框樣式
+  document.querySelectorAll('.ts.ts-selected').forEach(el => {
+    const idx = parseInt(el.dataset.slot);
+    const prev = selectedSlots.has(idx - 1) && !blockedSlots.has(idx - 1);
+    const next = selectedSlots.has(idx + 1) && !blockedSlots.has(idx + 1);
+    if (!prev && !next) { el.classList.add('ts-range-start','ts-range-end'); }
+    else if (!prev)     { el.classList.add('ts-range-start'); }
+    else if (!next)     { el.classList.add('ts-range-end'); }
+    else                { el.classList.add('ts-range-mid'); }
+  });
+}
+
+// ── 拖曳預覽（拖動時即時顯示，還未 commit）──
+function renderDrag() {
+  const lo = Math.min(dragStart, dragEnd);
+  const hi = Math.max(dragStart, dragEnd);
+
+  // 先還原到 selectedSlots 狀態
+  renderSelected();
+
+  // 疊加拖曳預覽
+  for (let i = lo; i <= hi; i++) {
+    if (blockedSlots.has(i)) {
+      // 碰到已預約 → 整段變 conflict
+      document.querySelectorAll('.ts').forEach(el => {
+        const idx2 = parseInt(el.dataset.slot);
+        if (idx2 >= lo && idx2 <= hi && !blockedSlots.has(idx2))
+          el.classList.add('ts-conflict');
+      });
+      return;
+    }
+  }
+  for (let i = lo; i <= hi; i++) {
+    const el = document.querySelector(`.ts[data-slot="${i}"]`);
+    if (!el) continue;
+    if (dragMode === 'add')    el.classList.add('ts-selected');
+    else                       el.classList.remove('ts-selected');
+  }
 }
 
 function tsMouseDown(e, idx) {
   e.preventDefault();
   if (blockedSlots.has(idx)) return;
   isDragging = true;
-  dragStart = idx;
-  dragEnd   = idx;
+  dragStart  = idx;
+  dragEnd    = idx;
+  // 如果點的格子已選，進入「取消模式」
+  dragMode = selectedSlots.has(idx) ? 'remove' : 'add';
   renderDrag();
 }
 
@@ -1559,19 +1605,22 @@ function tsMouseEnter(e, idx) {
 function tsMouseUp() {
   if (!isDragging) return;
   isDragging = false;
-  commitSelection();
+  commitDrag();
 }
 
 function tsTouchStart(e, idx) {
+  e.preventDefault();
   if (blockedSlots.has(idx)) return;
   isDragging = true;
-  dragStart = idx;
-  dragEnd   = idx;
+  dragStart  = idx;
+  dragEnd    = idx;
+  dragMode = selectedSlots.has(idx) ? 'remove' : 'add';
   renderDrag();
 }
 
 function tsTouchMove(e) {
   if (!isDragging) return;
+  e.preventDefault();
   const touch = e.touches[0];
   const el = document.elementFromPoint(touch.clientX, touch.clientY);
   if (el && el.classList.contains('ts') && !el.classList.contains('ts-booked')) {
@@ -1583,63 +1632,69 @@ function tsTouchMove(e) {
 function tsTouchEnd() {
   if (!isDragging) return;
   isDragging = false;
-  commitSelection();
+  commitDrag();
 }
 
-function renderDrag() {
+// ── 確認這次拖曳操作 ──
+function commitDrag() {
   const lo = Math.min(dragStart, dragEnd);
   const hi = Math.max(dragStart, dragEnd);
 
-  // Check if any blocked slot in range
-  let hasConflict = false;
-  for (let i = lo; i <= hi; i++) {
-    if (blockedSlots.has(i)) { hasConflict = true; break; }
-  }
-
-  document.querySelectorAll('.ts').forEach(el => {
-    const idx = parseInt(el.dataset.slot);
-    el.classList.remove('ts-selected','ts-range-start','ts-range-end','ts-range-mid','ts-conflict');
-    if (blockedSlots.has(idx)) return;
-    if (idx >= lo && idx <= hi) {
-      if (hasConflict) {
-        el.classList.add('ts-conflict');
-      } else {
-        el.classList.add('ts-selected');
-        if (idx === lo && idx === hi) el.classList.add('ts-range-start','ts-range-end');
-        else if (idx === lo)  el.classList.add('ts-range-start');
-        else if (idx === hi)  el.classList.add('ts-range-end');
-        else                   el.classList.add('ts-range-mid');
-      }
-    }
-  });
-}
-
-function commitSelection() {
-  const lo = Math.min(dragStart, dragEnd);
-  const hi = Math.max(dragStart, dragEnd);
-
-  // Check conflict
+  // 有已預約的格子在範圍內 → 不允許
   for (let i = lo; i <= hi; i++) {
     if (blockedSlots.has(i)) {
-      // flash conflict then clear
-      setTimeout(() => {
-        document.querySelectorAll('.ts').forEach(el => el.classList.remove('ts-conflict','ts-selected','ts-range-start','ts-range-end','ts-range-mid'));
-        document.getElementById('timeConflictMsg').style.display = 'block';
-        document.getElementById('tsbBar').style.display = 'none';
-      }, 350);
-      selStart = -1; selEnd = -1;
-      state.startTime = null; state.endTime = null;
-      updatePrice();
-      updateSumTime();
+      document.getElementById('timeConflictMsg').style.display = 'block';
+      renderSelected(); // 還原
       return;
     }
   }
-
   document.getElementById('timeConflictMsg').style.display = 'none';
-  selStart = lo;
-  selEnd   = hi;
-  state.startTime = slotToTime(lo);
-  state.endTime   = slotToTime(hi + 1);
+
+  // 加入或移除
+  for (let i = lo; i <= hi; i++) {
+    if (dragMode === 'add') selectedSlots.add(i);
+    else                    selectedSlots.delete(i);
+  }
+
+  applyMinDuration();
+  renderSelected();
+  commitSelection();
+}
+
+// ── 確保最短 60 分鐘（2 格）── 
+// 若目前選取總格數不足，提示（不自動延伸，因為是多選不連續）
+function applyMinDuration() {
+  if (selectedSlots.size > 0 && selectedSlots.size < MIN_SLOTS) {
+    // 找出最後一個選取的格子，嘗試往後延伸
+    const slots = [...selectedSlots].sort((a,b) => a-b);
+    const last = slots[slots.length - 1];
+    while (selectedSlots.size < MIN_SLOTS) {
+      const next = [...selectedSlots].sort((a,b) => a-b)[selectedSlots.size - 1] + 1;
+      if (next > 27 || blockedSlots.has(next)) break;
+      selectedSlots.add(next);
+    }
+  }
+}
+
+// ── 從 selectedSlots 計算 startTime / endTime 給 API ──
+// 連續時段：取最小到最大；不連續：取整個範圍（API 用 check_availability）
+function commitSelection() {
+  if (selectedSlots.size === 0) {
+    selStart = -1; selEnd = -1;
+    state.startTime = null; state.endTime = null;
+    document.getElementById('tsbBar').style.display = 'none';
+    updatePrice(); updateSumTime();
+    return;
+  }
+
+  const slots = [...selectedSlots].sort((a,b) => a-b);
+  selStart = slots[0];
+  selEnd   = slots[slots.length - 1];
+  state.startTime = slotToTime(selStart);
+  state.endTime   = slotToTime(selEnd + 1);
+
+  // 不連續時段檢查
+  state.selectedSlots = slots; // 傳給 submitBooking
 
   updateSumTime();
   updatePrice();
@@ -1647,18 +1702,28 @@ function commitSelection() {
 }
 
 function showSelectionBar() {
-  if (selStart < 0) return;
+  if (selectedSlots.size === 0) return;
   const bar = document.getElementById('tsbBar');
   bar.style.display = 'flex';
-  document.getElementById('tsbTime').textContent = `${state.startTime} – ${state.endTime}`;
-  const dur = (selEnd - selStart + 1) * 0.5;
-  document.getElementById('tsbDur').textContent = dur === 0.5 ? '30 分鐘' : dur >= 1 ? `${dur} 小時` : `${dur * 60} 分鐘`;
+  const slots  = [...selectedSlots].sort((a,b) => a-b);
+  const startT = slotToTime(slots[0]);
+  const endT   = slotToTime(slots[slots.length-1] + 1);
+  document.getElementById('tsbTime').textContent = `${startT} – ${endT}`;
+  const dur = selectedSlots.size * 0.5;
+  let durLbl;
+  if (dur < 1) durLbl = Math.round(dur*60) + ' 分鐘';
+  else if (dur === Math.floor(dur)) durLbl = dur + ' 小時';
+  else { const h = Math.floor(dur); durLbl = h + ' 小時 ' + Math.round((dur-h)*60) + ' 分鐘'; }
+  document.getElementById('tsbDur').textContent = durLbl;
 }
 
 function clearTimeSelection() {
+  selectedSlots.clear();
   selStart = -1; selEnd = -1;
   state.startTime = null; state.endTime = null;
-  document.querySelectorAll('.ts').forEach(el => el.classList.remove('ts-selected','ts-range-start','ts-range-end','ts-range-mid'));
+  state.selectedSlots = [];
+  document.querySelectorAll('.ts').forEach(el =>
+    el.classList.remove('ts-selected','ts-range-start','ts-range-end','ts-range-mid','ts-conflict'));
   document.getElementById('tsbBar').style.display = 'none';
   document.getElementById('timeConflictMsg').style.display = 'none';
   updatePrice();
@@ -1709,11 +1774,20 @@ function updatePrice() {
 async function submitBooking() {
   if (!state.roomId) { alert('請選擇會議室'); return; }
   if (!state.date)   { alert('請選擇日期'); return; }
-  if (!state.startTime || !state.endTime) { alert('請選擇使用時段'); return; }
+  if (!state.startTime || !state.endTime || selectedSlots.size === 0) {
+    alert('請選擇使用時段'); return;
+  }
+  if (selectedSlots.size < 2) {
+    alert('最短預約時間為 60 分鐘（2 個時段）'); return;
+  }
   const name  = document.getElementById('fName').value.trim();
   const phone = document.getElementById('fPhone').value.trim();
+  const email = document.getElementById('fEmail').value.trim();
   if (!name)  { alert('請填寫聯絡人姓名'); return; }
   if (!phone) { alert('請填寫手機號碼'); return; }
+  if (!email) { alert('請填寫 Email（用於接收確認信）'); return; }
+  const emailRe = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+  if (!emailRe.test(email)) { alert('Email 格式不正確'); return; }
 
   const btn = document.getElementById('bookBtn');
   btn.disabled = true;

@@ -1030,7 +1030,7 @@ footer {
     <!-- STEP 1: Select Room -->
     <div class="section">
       <div class="section-head">
-        <h2 class="section-title">選擇會議室</h2>
+        <h2 class="section-title" id="txt-step1-title">選擇會議室</h2>
         <span class="section-step">Step 1 of 3</span>
       </div>
       <div class="rooms-grid" id="roomsGrid">
@@ -1041,7 +1041,7 @@ footer {
     <!-- STEP 2: Date & Time -->
     <div class="section" id="dateTimeSection" style="display:none;">
       <div class="section-head">
-        <h2 class="section-title">選擇日期與時段</h2>
+        <h2 class="section-title" id="txt-step2-title">選擇日期與時段</h2>
         <span class="section-step">Step 2 of 3</span>
       </div>
 
@@ -1087,7 +1087,7 @@ footer {
     <!-- STEP 3: Contact Info -->
     <div class="section" id="formSection" style="display:none;">
       <div class="section-head">
-        <h2 class="section-title">填寫聯絡資料</h2>
+        <h2 class="section-title" id="txt-step3-title">填寫聯絡資料</h2>
         <span class="section-step">Step 3 of 3</span>
       </div>
       <div class="form-grid">
@@ -1289,6 +1289,10 @@ async function loadContent() {
     if (c.contact_email) document.getElementById('meta-email').textContent = c.contact_email;
     if (c.contact_phone) document.getElementById('hdr-phone').textContent = c.contact_phone;
     if (c.footer_text) document.getElementById('footerText').textContent = c.footer_text;
+    // 步驟標題
+    if (c.step1_title) document.getElementById('txt-step1-title').textContent = c.step1_title;
+    if (c.step2_title) document.getElementById('txt-step2-title').textContent = c.step2_title;
+    if (c.step3_title) document.getElementById('txt-step3-title').textContent = c.step3_title;
 
     // notices
     const notices = ['notice_1','notice_2','notice_3','notice_4','notice_5'].map(k => c[k]).filter(Boolean);

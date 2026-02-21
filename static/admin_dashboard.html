@@ -780,24 +780,51 @@ tr:hover td { background: #fafafa; }
         <div class="card-body">
           <div class="content-sections">
 
-            <div class="content-section">
-              <div class="cs-head">主頁基本資訊</div>
+            <!-- ── 主頁 Hero 區塊 ── -->
+            <div class="content-section" style="grid-column:1/-1;">
+              <div class="cs-head">主頁 Hero 區塊</div>
               <div class="cs-body">
-                <div class="cs-field">
-                  <label class="cs-label">網站標題</label>
-                  <input class="finput" type="text" id="c-site_title" placeholder="會議室預約系統">
-                </div>
-                <div class="cs-field">
-                  <label class="cs-label">Hero 標語標籤</label>
-                  <input class="finput" type="text" id="c-hero_badge" placeholder="專業會議空間">
-                </div>
-                <div class="cs-field">
-                  <label class="cs-label">頁面描述文字</label>
-                  <textarea class="ftarea" id="c-site_description" placeholder="提供多種類型會議室..."></textarea>
+                <div class="fgrid">
+                  <div class="cs-field">
+                    <label class="cs-label">網站標題（瀏覽器分頁 / Logo）</label>
+                    <input class="finput" type="text" id="c-site_title" placeholder="會議室預約系統">
+                  </div>
+                  <div class="cs-field">
+                    <label class="cs-label">標語小標籤（Hero Badge）</label>
+                    <input class="finput" type="text" id="c-hero_badge" placeholder="專業會議空間">
+                  </div>
+                  <div class="cs-field" style="grid-column:1/-1;">
+                    <label class="cs-label">主標題（支援 &lt;em&gt; 強調色，例：企業&lt;em&gt;會議室&lt;/em&gt;&lt;br&gt;即時預約）</label>
+                    <input class="finput" type="text" id="c-site_subtitle" placeholder="企業&lt;em&gt;會議室&lt;/em&gt;&lt;br&gt;即時預約">
+                  </div>
+                  <div class="cs-field" style="grid-column:1/-1;">
+                    <label class="cs-label">Hero 副標說明文字</label>
+                    <textarea class="ftarea" id="c-site_description" placeholder="提供多種類型會議室，彈性時段預約，滿足各種商務需求。" rows="2"></textarea>
+                  </div>
                 </div>
               </div>
             </div>
 
+            <!-- ── 三大步驟標題 ── -->
+            <div class="content-section">
+              <div class="cs-head">預約步驟標題</div>
+              <div class="cs-body">
+                <div class="cs-field">
+                  <label class="cs-label">Step 1 標題</label>
+                  <input class="finput" type="text" id="c-step1_title" placeholder="選擇會議室">
+                </div>
+                <div class="cs-field">
+                  <label class="cs-label">Step 2 標題</label>
+                  <input class="finput" type="text" id="c-step2_title" placeholder="選擇日期與時段">
+                </div>
+                <div class="cs-field">
+                  <label class="cs-label">Step 3 標題</label>
+                  <input class="finput" type="text" id="c-step3_title" placeholder="填寫聯絡資料">
+                </div>
+              </div>
+            </div>
+
+            <!-- ── 聯絡與服務 ── -->
             <div class="content-section">
               <div class="cs-head">聯絡與服務資訊</div>
               <div class="cs-body">
@@ -806,18 +833,23 @@ tr:hover td { background: #fafafa; }
                   <input class="finput" type="text" id="c-service_hours" placeholder="週一至週五 08:00 – 22:00">
                 </div>
                 <div class="cs-field">
-                  <label class="cs-label">聯絡電話</label>
+                  <label class="cs-label">聯絡電話（顯示於導覽列）</label>
                   <input class="finput" type="text" id="c-contact_phone" placeholder="02-1234-5678">
                 </div>
                 <div class="cs-field">
                   <label class="cs-label">聯絡 Email</label>
                   <input class="finput" type="email" id="c-contact_email" placeholder="booking@example.com">
                 </div>
+                <div class="cs-field">
+                  <label class="cs-label">頁尾版權文字</label>
+                  <input class="finput" type="text" id="c-footer_text" placeholder="© 2026 會議室預約系統">
+                </div>
               </div>
             </div>
 
+            <!-- ── 預約須知 ── -->
             <div class="content-section" style="grid-column:1/-1;">
-              <div class="cs-head">預約須知（顯示於側邊欄）</div>
+              <div class="cs-head">預約須知（顯示於確認側邊欄，最多 5 條）</div>
               <div class="cs-body">
                 <div class="fgrid">
                   <div class="cs-field">
@@ -839,10 +871,6 @@ tr:hover td { background: #fafafa; }
                   <div class="cs-field">
                     <label class="cs-label">須知 5</label>
                     <input class="finput" type="text" id="c-notice_5" placeholder="逾時使用將依時薪計費">
-                  </div>
-                  <div class="cs-field">
-                    <label class="cs-label">頁尾版權文字</label>
-                    <input class="finput" type="text" id="c-footer_text" placeholder="© 2026 會議室預約系統">
                   </div>
                 </div>
               </div>
@@ -1328,8 +1356,10 @@ async function loadContent() {
   try {
     const res = await fetch('/admin/api/site-content', { headers: H });
     const data = await res.json();
-    const keys = ['site_title','hero_badge','site_description','service_hours','contact_phone','contact_email',
-                  'notice_1','notice_2','notice_3','notice_4','notice_5','footer_text'];
+    const keys = ['site_title','hero_badge','site_subtitle','site_description',
+                  'step1_title','step2_title','step3_title',
+                  'service_hours','contact_phone','contact_email','footer_text',
+                  'notice_1','notice_2','notice_3','notice_4','notice_5'];
     keys.forEach(k => {
       const el = document.getElementById(`c-${k}`);
       if (el && data[k] !== undefined) el.value = data[k];
@@ -1338,8 +1368,10 @@ async function loadContent() {
 }
 
 async function saveContent() {
-  const keys = ['site_title','hero_badge','site_description','service_hours','contact_phone','contact_email',
-                'notice_1','notice_2','notice_3','notice_4','notice_5','footer_text'];
+  const keys = ['site_title','hero_badge','site_subtitle','site_description',
+                'step1_title','step2_title','step3_title',
+                'service_hours','contact_phone','contact_email','footer_text',
+                'notice_1','notice_2','notice_3','notice_4','notice_5'];
   const payload = {};
   keys.forEach(k => {
     const el = document.getElementById(`c-${k}`);

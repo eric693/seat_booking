@@ -1262,9 +1262,10 @@ def uploaded_file(filename):
 
 @app.route('/api/site-content')
 def get_site_content():
-    keys = ['site_title','site_subtitle','site_description','hero_badge','hero_cta',
-            'service_hours','contact_phone','contact_email',
-            'notice_1','notice_2','notice_3','notice_4','notice_5','footer_text']
+    keys = ['site_title','site_subtitle','site_description','hero_badge',
+            'step1_title','step2_title','step3_title',
+            'service_hours','contact_phone','contact_email','footer_text',
+            'notice_1','notice_2','notice_3','notice_4','notice_5']
     return jsonify({k: SiteContent.get(k) for k in keys})
 
 

@@ -1928,7 +1928,19 @@ function showSuccess(booking) {
     ['預約編號', booking.booking_number],
     ['會議室', booking.room_name],
     ['日期', booking.date],
-    ['時段', `${booking.start_time} – ${booking.end_time}`],
+    ['時段', (function() {
+      if (booking.segments) {
+        try {
+          const segs = typeof booking.segments === 'string'
+            ? JSON.parse(booking.segments) : booking.segments;
+          if (segs && segs.length > 1)
+            return segs.map(s => `${s.start}–${s.end}`).join('、');
+          if (segs && segs.length === 1)
+            return `${segs[0].start} – ${segs[0].end}`;
+        } catch(e) {}
+      }
+      return `${booking.start_time} – ${booking.end_time}`;
+    })()],
     ['時長', (function() {
       var d = booking.duration;
       if (!d) return '—';

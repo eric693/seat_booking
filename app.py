@@ -302,7 +302,7 @@ def _booking_email_html(booking) -> str:
   </div>
   <div class="bd">
     <div class="row"><span class="lbl">日期</span><span class="val">{date_fmt}</span></div>
-    <div class="row"><span class="lbl">時段</span><span class="val">{booking.start_time} – {booking.end_time}</span></div>
+    <div class="row"><span class="lbl">時段</span><span class="val">{_fmt_segments(booking)}</span></div>
     <div class="row"><span class="lbl">時長</span><span class="val">{dur_str}</span></div>
     <div class="row"><span class="lbl">聯絡人</span><span class="val">{booking.customer_name}</span></div>
     <div class="row"><span class="lbl">手機</span><span class="val">{booking.customer_phone}</span></div>
@@ -406,6 +406,39 @@ def _hero_gradient_box(top_label: str, top_color: str, title: str,
              'color': '#B3D9D9', 'size': 'sm', 'margin': 'sm', 'wrap': True},
         ]
     }
+
+
+def _multi_time_badges(booking) -> list:
+    """產生多段時段的 badge list，供 Flex 使用"""
+    import json as _json
+    segs = []
+    if booking.segments:
+        try: segs = _json.loads(booking.segments)
+        except Exception: pass
+    if not segs:
+        segs = [{'start': booking.start_time, 'end': booking.end_time}]
+    if len(segs) == 1:
+        return [_time_badge(segs[0]['start'], segs[0]['end'])]
+    # 多段：每段一個 badge
+    badges = []
+    for seg in segs:
+        badges.append(_time_badge(seg['start'], seg['end']))
+    return badges
+
+
+def _fmt_segments(booking) -> str:
+    """將 booking 的時段格式化成字串，支援多段"""
+    import json as _json
+    if booking.segments:
+        try:
+            segs = _json.loads(booking.segments)
+            if segs and len(segs) > 1:
+                return '、'.join(f'{s["start"]}–{s["end"]}' for s in segs)
+            elif segs:
+                return f'{segs[0]["start"]} – {segs[0]["end"]}'
+        except Exception:
+            pass
+    return f'{booking.start_time} – {booking.end_time}'
 
 
 def _time_badge(start: str, end: str) -> dict:
@@ -853,7 +886,7 @@ def flex_booking_confirm(booking) -> dict:
 
     return {
         'type': 'flex',
-        'altText': f'【預約確認】{room}｜{booking.date} {booking.start_time}–{booking.end_time}｜編號 {booking.booking_number}',
+        'altText': f'【預約確認】{room}｜{booking.date} {_fmt_segments(booking)}｜編號 {booking.booking_number}',
         'contents': {
             'type': 'bubble',
             'size': 'kilo',
@@ -910,7 +943,7 @@ def flex_booking_confirm(booking) -> dict:
                         _chip(f'{booking.attendees} 人'),
                     ]},
                     # 時段視覺化
-                    _time_badge(booking.start_time, booking.end_time),
+                    *(_multi_time_badges(booking)),
                     _divider(),
                     # 資訊列
                     {'type': 'box', 'layout': 'vertical', 'spacing': 'sm',
@@ -994,7 +1027,7 @@ def flex_booking_cancel(booking) -> dict:
                          {'type': 'text', 'text': room,
                           'size': 'xl', 'color': '#ffffff', 'weight': 'bold',
                           'margin': 'lg', 'wrap': True},
-                         {'type': 'text', 'text': f'{date_fmt} {booking.start_time}–{booking.end_time}',
+                         {'type': 'text', 'text': f'{date_fmt} {_fmt_segments(booking)}',
                           'size': 'sm', 'color': '#8CBFBF', 'margin': 'sm'},
                      ]},
                 ]
@@ -1071,7 +1104,7 @@ def flex_admin_notify(booking) -> dict:
 
     return {
         'type': 'flex',
-        'altText': f'【新預約】{booking.customer_name}・{room}｜{booking.date} {booking.start_time}–{booking.end_time}',
+        'altText': f'【新預約】{booking.customer_name}・{room}｜{booking.date} {_fmt_segments(booking)}',
         'contents': {
             'type': 'bubble',
             'size': 'kilo',
@@ -1116,7 +1149,7 @@ def flex_admin_notify(booking) -> dict:
                         _chip(f'{date_fmt}', bg='#f5f2ed', color='#B8965A'),
                     ]},
                     # 時段視覺化
-                    _time_badge(booking.start_time, booking.end_time),
+                    *(_multi_time_badges(booking)),
                     _divider(),
                     # 詳細資訊
                     {'type': 'box', 'layout': 'vertical', 'spacing': 'sm',

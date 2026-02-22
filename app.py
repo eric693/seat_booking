@@ -1269,17 +1269,33 @@ def allowed_file(fn):
 
 
 def check_availability(room_id, date, start_time, end_time, exclude_id=None):
-    q = Booking.query.filter_by(room_id=room_id, date=date, status='confirmed')
+    """檢查單一時段是否可用（支援多段預約的 segments 展開）"""
+    import json as _json
+    bookings = Booking.query.filter_by(room_id=room_id, date=date).filter(
+        Booking.status.in_(['confirmed', 'completed'])).all()
     if exclude_id:
-        q = q.filter(Booking.id != exclude_id)
-    def m(t):
-        h, mn = map(int, t.split(':'))
-        return h * 60 + mn
+        bookings = [b for b in bookings if b.id != exclude_id]
+    def m(t): h, mn = map(int, t.split(':')); return h*60+mn
     s, e = m(start_time), m(end_time)
-    for b in q.all():
-        if not (e <= m(b.start_time) or s >= m(b.end_time)):
-            return False
+    for b in bookings:
+        segs = []
+        if b.segments:
+            try: segs = _json.loads(b.segments)
+            except Exception: pass
+        if not segs:
+            segs = [{'start': b.start_time, 'end': b.end_time}]
+        for seg in segs:
+            if not (e <= m(seg['start']) or s >= m(seg['end'])):
+                return False
     return True
+
+
+def check_segments_availability(room_id, date, segments, exclude_id=None):
+    """檢查多段時段是否全部可用"""
+    for seg in segments:
+        if not check_availability(room_id, date, seg['start'], seg['end'], exclude_id):
+            return False, seg
+    return True, None
 
 
 def get_booked_slots(room_id, date):

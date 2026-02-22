@@ -289,9 +289,9 @@ def _booking_email_html(booking) -> str:
   .row:last-child{{border-bottom:none;}}
   .lbl{{color:#999;min-width:64px;}}
   .val{{color:#111;font-weight:600;text-align:right;}}
-  .price{{background:#1a1a1a;border-radius:8px;padding:16px 20px;margin-top:16px;display:flex;justify-content:space-between;align-items:center;}}
-  .price .pl{{color:#888;font-size:12px;}}
-  .price .pv{{color:#B8965A;font-size:22px;font-weight:700;}}
+  .price{{background:#1a1a1a;border-radius:8px;padding:20px 24px;margin-top:16px;}}
+  .price .pl{{color:#888;font-size:12px;margin-bottom:6px;display:block;}}
+  .price .pv{{color:#B8965A;font-size:26px;font-weight:700;display:block;}}
   .ft{{text-align:center;padding:16px;color:#aaa;font-size:12px;background:#f8f8f8;}}
 </style></head><body>
 <div class="wrap">

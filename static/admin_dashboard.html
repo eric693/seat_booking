@@ -508,6 +508,23 @@ tr:hover td { background: #fafafa; }
 }
 
 /* ── ROOM CARDS ADMIN ── */
+.floor-section{margin-bottom:22px;}
+.floor-label{font-size:11px;font-weight:700;letter-spacing:.1em;text-transform:uppercase;color:var(--ink-60);margin-bottom:8px;padding-bottom:5px;border-bottom:1px solid var(--border);}
+.room-row{display:grid;grid-template-columns:150px 1fr;align-items:center;gap:10px;margin-bottom:7px;min-width:640px;}
+.room-row-name{font-size:13px;font-weight:600;color:var(--ink);white-space:nowrap;overflow:hidden;text-overflow:ellipsis;}
+.room-row-cap{font-size:11px;color:var(--ink-60);}
+.slots-wrap{display:flex;gap:2px;}
+.slot-cell{flex:1;height:30px;border-radius:3px;position:relative;cursor:default;min-width:16px;transition:transform .1s;}
+.slot-cell:hover{transform:scaleY(1.2);z-index:2;}
+.slot-cell.free{background:#3A7C55;}
+.slot-cell.booked{background:#C44B3A;}
+.slot-cell.now-free{background:#B8965A;}
+.slot-cell.now-booked{background:#8B3022;}
+.slot-cell.past{background:var(--ink-20);}
+.slot-cell .stip{display:none;position:absolute;bottom:calc(100% + 6px);left:50%;transform:translateX(-50%);background:var(--ink);color:#fff;font-size:11px;padding:4px 8px;border-radius:4px;white-space:nowrap;z-index:100;pointer-events:none;}
+.slot-cell:hover .stip{display:block;}
+.time-axis{display:flex;gap:2px;padding-left:160px;margin-bottom:4px;min-width:640px;}
+.time-tick{flex:1;font-size:10px;color:var(--ink-60);min-width:16px;}
 .room-admin-grid {
   display: grid;
   grid-template-columns: repeat(auto-fill, minmax(300px, 1fr));
@@ -693,6 +710,39 @@ tr:hover td { background: #fafafa; }
           <div class="stat-lbl">已完成</div>
           <div class="stat-val" id="st-completed">—</div>
           <div class="stat-sub">完成數</div>
+        </div>
+      </div>
+
+      <!-- ── 樓層時段看板 ── -->
+      <div class="card" style="margin-bottom:20px;">
+        <div class="card-head">
+          <div class="card-title">樓層時段看板</div>
+          <div style="display:flex;align-items:center;gap:12px;">
+            <input type="date" id="floor-date" class="filter-input"
+              style="font-size:13px;padding:6px 10px;border:1px solid var(--border);border-radius:6px;background:var(--white);"
+              onchange="loadFloorStatus()">
+            <button class="btn btn-outline btn-sm" onclick="loadFloorStatus()">重新整理</button>
+          </div>
+        </div>
+        <div class="card-body" style="padding:16px 20px;">
+          <!-- 圖例 -->
+          <div style="display:flex;align-items:center;gap:16px;margin-bottom:16px;flex-wrap:wrap;">
+            <div style="display:flex;align-items:center;gap:6px;font-size:12px;color:var(--ink-60);">
+              <div style="width:14px;height:14px;border-radius:3px;background:#3A7C55;"></div> 空閒
+            </div>
+            <div style="display:flex;align-items:center;gap:6px;font-size:12px;color:var(--ink-60);">
+              <div style="width:14px;height:14px;border-radius:3px;background:#C44B3A;"></div> 已預約
+            </div>
+            <div style="display:flex;align-items:center;gap:6px;font-size:12px;color:var(--ink-60);">
+              <div style="width:14px;height:14px;border-radius:3px;background:#B8965A;"></div> 進行中
+            </div>
+            <div style="display:flex;align-items:center;gap:6px;font-size:12px;color:var(--ink-60);">
+              <div style="width:14px;height:14px;border-radius:3px;background:var(--ink-20);"></div> 非服務時段
+            </div>
+          </div>
+          <div id="floor-board" style="overflow-x:auto;">
+            <div style="text-align:center;padding:30px;color:var(--ink-60);">載入中...</div>
+          </div>
         </div>
       </div>
 
@@ -1036,7 +1086,11 @@ function showPage(id, navEl) {
   };
   document.getElementById('topbarTitle').textContent = titles[id] || '';
   switch(id) {
-    case 'dashboard': loadDashboard(); break;
+    case 'dashboard': initFloorDate(); loadFloorStatus();
+initFloorDate();
+loadDashboard();
+loadFloorStatus();
+loadFloorStatus(); break;
     case 'bookings': loadBookings(); break;
     case 'rooms': loadRoomsAdmin(); break;
     case 'content': loadContent(); break;
@@ -1050,6 +1104,124 @@ function logout() {
 }
 
 // ── DASHBOARD ──
+// ── 樓層時段看板 ──────────────────────────────────
+function initFloorDate() {
+  const el = document.getElementById('floor-date');
+  if (el && !el.value) el.value = new Date().toISOString().split('T')[0];
+}
+
+async function loadFloorStatus() {
+  const dateEl = document.getElementById('floor-date');
+  const date = dateEl ? dateEl.value : new Date().toISOString().split('T')[0];
+  const board = document.getElementById('floor-board');
+  if (!board) return;
+  board.innerHTML = '<div style="text-align:center;padding:20px;color:var(--ink-60);">載入中...</div>';
+  try {
+    const res = await fetch(`/admin/api/floor-status?date=${date}`, { headers: H });
+    const data = await res.json();
+    if (!data.rooms || !data.rooms.length) {
+      board.innerHTML = '<div style="text-align:center;padding:20px;color:var(--ink-60);">無會議室資料</div>';
+      return;
+    }
+
+    // 時間軸（每小時顯示一個刻度，8:00~22:00）
+    const hours = [];
+    for (let h = 8; h <= 22; h++) hours.push(h === 22 ? '' : h + ':00');
+    // 28格，每兩格一小時
+    const ticks = [];
+    for (let i = 0; i < 28; i++) {
+      ticks.push(i % 2 === 0 ? `${8 + Math.floor(i/2)}:00` : '');
+    }
+
+    // 現在時間 → 計算哪個 slot 是 "now"
+    const now = new Date();
+    const nowDate = now.toISOString().split('T')[0];
+    const isToday = date === nowDate;
+    const nowSlot = isToday
+      ? Math.floor((now.getHours() * 60 + now.getMinutes() - 480) / 30)
+      : -1;
+
+    // 按樓層分組
+    const floors = {};
+    data.rooms.forEach(r => {
+      const f = r.floor || '未分層';
+      if (!floors[f]) floors[f] = [];
+      floors[f].push(r);
+    });
+
+    // 排序樓層
+    const floorOrder = Object.keys(floors).sort((a, b) => {
+      const na = parseInt(a) || 0, nb = parseInt(b) || 0;
+      return na - nb;
+    });
+
+    // 時間軸
+    const axisHtml = `
+      <div class="time-axis">
+        ${ticks.map(t => `<div class="time-tick">${t}</div>`).join('')}
+      </div>`;
+
+    let html = axisHtml;
+
+    floorOrder.forEach(floor => {
+      html += `<div class="floor-section">
+        <div class="floor-label">${floor}</div>`;
+
+      floors[floor].forEach(r => {
+        // 找每個 slot 的預約資訊（用來做 tooltip）
+        const slotBookings = new Array(28).fill(null);
+        r.bookings.forEach(b => {
+          const sh = parseInt(b.start.split(':')[0]);
+          const sm = parseInt(b.start.split(':')[1]);
+          const eh = parseInt(b.end.split(':')[0]);
+          const em = parseInt(b.end.split(':')[1]);
+          const si = (sh * 60 + sm - 480) / 30;
+          const ei = (eh * 60 + em - 480) / 30;
+          for (let i = Math.max(0,si); i < Math.min(28,ei); i++) {
+            slotBookings[i] = b;
+          }
+        });
+
+        const cells = r.slots.map((booked, i) => {
+          let cls = 'free';
+          if (booked) cls = (i === nowSlot) ? 'now' : 'booked';
+          else if (i < nowSlot) cls = 'past';
+          else if (i === nowSlot) cls = 'now';
+
+          const startH = 8 + Math.floor(i / 2);
+          const startM = (i % 2) * 30;
+          const endH = startH + (startM === 30 ? 1 : 0);
+          const endM = startM === 30 ? 0 : 30;
+          const timeLabel = `${String(startH).padStart(2,'0')}:${String(startM).padStart(2,'0')}–${String(endH).padStart(2,'0')}:${String(endM).padStart(2,'0')}`;
+
+          let tip = timeLabel;
+          if (booked && slotBookings[i]) {
+            tip = `${timeLabel}｜${slotBookings[i].name}（${slotBookings[i].number}）`;
+          }
+
+          return `<div class="slot-cell ${cls}" title="${tip}"><span class="tip">${tip}</span></div>`;
+        }).join('');
+
+        html += `
+          <div class="room-row">
+            <div class="room-row-info">
+              <div class="room-row-name" title="${r.name}">${r.name}</div>
+              <div class="room-row-cap">${r.room_type}  ·  ${r.capacity} 人</div>
+            </div>
+            <div class="slots-wrap">${cells}</div>
+          </div>`;
+      });
+
+      html += `</div>`; // floor-section
+    });
+
+    board.innerHTML = html;
+  } catch(e) {
+    board.innerHTML = '<div style="text-align:center;padding:20px;color:var(--red);">載入失敗，請重試</div>';
+    console.error(e);
+  }
+}
+
 async function loadDashboard() {
   try {
     const [statsRes, bookingsRes] = await Promise.all([

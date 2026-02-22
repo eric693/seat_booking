@@ -477,16 +477,6 @@ def _header_box(title: str, subtitle: str = '', bg: str = None) -> dict:
     }
 
 
-def _chip(text: str, bg: str, color: str) -> dict:
-    return {
-        'type': 'box', 'layout': 'vertical',
-        'backgroundColor': bg, 'cornerRadius': '20px',
-        'paddingTop': '4px', 'paddingBottom': '4px',
-        'paddingStart': '12px', 'paddingEnd': '12px',
-        'contents': [{'type': 'text', 'text': text,
-                      'size': 'xs', 'color': color, 'weight': 'bold'}],
-    }
-
 
 def _divider() -> dict:
     return {'type': 'separator', 'color': _C['border'], 'margin': 'md'}
@@ -2100,6 +2090,38 @@ def admin_login():
 # ─────────────────────────────────────────────
 # Admin — Rooms
 # ─────────────────────────────────────────────
+
+@app.route('/admin/api/floor-status')
+def admin_floor_status():
+    err = check_admin()
+    if err: return err
+    from datetime import datetime as _dt
+    date_str = request.args.get('date', _dt.now().strftime('%Y-%m-%d'))
+    rooms = Room.query.filter_by(is_active=True).order_by(Room.floor, Room.name).all()
+    result = []
+    for r in rooms:
+        bookings = Booking.query.filter_by(
+            room_id=r.id, date=date_str, status='confirmed').all()
+        occupied = [False] * 28
+        for b in bookings:
+            sh, sm = map(int, b.start_time.split(':'))
+            eh, em = map(int, b.end_time.split(':'))
+            si = (sh * 60 + sm - 480) // 30
+            ei = (eh * 60 + em - 480) // 30
+            for i in range(max(0, si), min(28, ei)):
+                occupied[i] = True
+        result.append({
+            'id': r.id, 'name': r.name,
+            'floor': r.floor or '未分層',
+            'capacity': r.capacity,
+            'room_type': r.room_type or '',
+            'occupied': occupied,
+            'bookings': [{'start': b.start_time, 'end': b.end_time,
+                          'name': b.customer_name,
+                          'number': b.booking_number} for b in bookings]
+        })
+    return jsonify({'date': date_str, 'rooms': result})
+
 
 @app.route('/admin/api/rooms', methods=['GET'])
 def admin_get_rooms():

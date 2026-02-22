@@ -775,7 +775,7 @@ def flex_booking_confirm(booking) -> dict:
     room     = booking.room.name if booking.room else '—'
     floor    = (booking.room.floor or '') if booking.room else ''
     room_type= (booking.room.room_type or '') if booking.room else ''
-    site_url = SiteContent.get('site_url', 'https://your-app.onrender.com')
+    site_url = SiteContent.get('site_url', 'https://seat-booking-rlf2.onrender.com')
 
     # 日期格式化
     try:
@@ -894,7 +894,7 @@ def flex_booking_cancel(booking) -> dict:
     """
     room     = booking.room.name if booking.room else '—'
     floor    = (booking.room.floor or '') if booking.room else ''
-    site_url = SiteContent.get('site_url', 'https://your-app.onrender.com')
+    site_url = SiteContent.get('site_url', 'https://seat-booking-rlf2.onrender.com')
 
     try:
         from datetime import datetime as dt
@@ -2363,7 +2363,7 @@ DEFAULT_CONTENT = {
     'service_hours':    '週一至週五 08:00 – 22:00 ／ 週六 09:00 – 18:00',
     'contact_phone':    '02-1234-5678',
     'contact_email':    'booking@example.com',
-    'site_url':         'https://your-app.onrender.com',
+    'site_url':         'https://seat-booking-rlf2.onrender.com',
     'notice_1': '請提前 15 分鐘辦理入場手續',
     'notice_2': '取消或更改請提前 2 小時通知',
     'notice_3': '禁止攜帶食物進入精緻會議室',
@@ -2414,10 +2414,16 @@ def seed():
         '大型簡報廳':     '2F',
         '視訊會議中心':   '3F',
         '行政套房':       '3F',
+        '主管行政套房':   '3F',
         '創意腦力激盪室': '3F',
     }
     for name, floor in floor_updates.items():
         Room.query.filter_by(name=name).update({'floor': floor})
+    # 兜底：把所有不是 2F/3F 的房間都改成 3F
+    from sqlalchemy import not_, or_
+    Room.query.filter(
+        ~Room.floor.in_(['2F', '3F'])
+    ).update({'floor': '3F'}, synchronize_session=False)
     db.session.commit()
     print('資料庫初始化完成')
 

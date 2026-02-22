@@ -2015,17 +2015,26 @@ def _handle_line_text(uid, rtok, text):
 
     # ── 我的預約 ──
     if lower in ('我的預約', '預約紀錄'):
-        lu = LineUser.query.filter_by(line_user_id=uid).first()
-        if not lu or not lu.phone:
-            reply_line(rtok, [flex_not_found(
-                '尚未綁定手機號碼',
-                '請先輸入：綁定 0912345678')])
-            return
-        bs = (Booking.query.filter_by(customer_phone=lu.phone)
-              .order_by(Booking.created_at.desc()).limit(3).all())
+        # 優先用 line_user_id 查，再 fallback 到綁定手機號碼
+        q_uid   = Booking.query.filter_by(line_user_id=uid)
+        q_phone = (Booking.query.filter_by(customer_phone=lu.phone)
+                   if lu and lu.phone else None)
+        # 合併兩個來源（去重）
+        seen, bs = set(), []
+        for b in (q_uid.order_by(Booking.created_at.desc()).limit(10).all()):
+            if b.id not in seen:
+                seen.add(b.id); bs.append(b)
+        if q_phone:
+            for b in q_phone.order_by(Booking.created_at.desc()).limit(10).all():
+                if b.id not in seen:
+                    seen.add(b.id); bs.append(b)
+        # 取最新 3 筆
+        bs = sorted(bs, key=lambda b: b.created_at or b.id, reverse=True)[:3]
         if not bs:
-            reply_line(rtok, [flex_not_found('目前沒有預約紀錄',
-                '前往網站完成第一筆預約。')])
+            hint = '前往網站預約，或在 LINE 輸入「預約」開始。'
+            if not (lu and lu.phone):
+                hint = '也可輸入「綁定 0912345678」連結網頁預約紀錄。'
+            reply_line(rtok, [flex_not_found('目前沒有預約紀錄', hint)])
         else:
             reply_line(rtok, [flex_booking_confirm(b) for b in bs])
         return

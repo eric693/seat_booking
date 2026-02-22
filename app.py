@@ -1782,6 +1782,16 @@ def _handle_booking_flow(uid: str, rtok: str, text: str, lu):
     sess = _sess(lu)
     step = sess.get('step', '')
 
+    # ── 全域指令：不論 session 狀態都不攔截，交給一般 handler ──
+    GLOBAL_CMDS = ('說明', 'help', '指令', '?', '？', '選單', 'menu',
+                   '我的預約', '預約紀錄', '時段', '查詢', '綁定')
+    lower_t = text.lower()
+    if lower_t in GLOBAL_CMDS or any(lower_t.startswith(c) for c in GLOBAL_CMDS):
+        # 如果在流程中，先清除 session 再讓一般 handler 處理
+        if step:
+            _clear_sess(lu)
+        return False
+
     # ── 取消 ──
     if text in ('取消預約', '取消', 'cancel'):
         if step:

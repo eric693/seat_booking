@@ -284,11 +284,11 @@ def _booking_email_html(booking) -> str:
   .hd-chip{{display:inline-block;background:#2A6B6B;color:#fff;font-size:12px;font-weight:700;padding:4px 14px;border-radius:20px;margin-bottom:12px;}}
   .hd h1{{color:#fff;font-size:22px;margin:0 0 4px;}}
   .hd p{{color:rgba(255,255,255,.6);font-size:13px;margin:0;}}
-  .bd{{padding:24px 32px;}}
-  .row{{display:flex;justify-content:space-between;padding:10px 0;border-bottom:1px solid #eee;font-size:14px;}}
+  .bd{{padding:28px 32px;}}
+  .row{{display:flex;justify-content:space-between;padding:14px 0;border-bottom:1px solid #f0f0f0;font-size:15px;}}
   .row:last-child{{border-bottom:none;}}
-  .lbl{{color:#999;}}
-  .val{{color:#111;font-weight:600;}}
+  .lbl{{color:#999;min-width:64px;}}
+  .val{{color:#111;font-weight:600;text-align:right;}}
   .price{{background:#1a1a1a;border-radius:8px;padding:16px 20px;margin-top:16px;display:flex;justify-content:space-between;align-items:center;}}
   .price .pl{{color:#888;font-size:12px;}}
   .price .pv{{color:#B8965A;font-size:22px;font-weight:700;}}

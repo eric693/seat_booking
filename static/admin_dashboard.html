@@ -749,7 +749,7 @@ tr:hover td { background: #fafafa; }
       <div class="card">
         <div class="card-head">
           <div class="card-title">最新預約</div>
-          <button class="btn btn-outline btn-sm" onclick="showPage('bookings', document.querySelector('.nav-item:nth-child(4)'))">查看全部</button>
+          <button class="btn btn-outline btn-sm" onclick="showPage('bookings', document.querySelector('[onclick*=bookings]'))">查看全部</button>
         </div>
         <div class="card-body">
           <div class="tbl-wrap">
@@ -1086,11 +1086,7 @@ function showPage(id, navEl) {
   };
   document.getElementById('topbarTitle').textContent = titles[id] || '';
   switch(id) {
-    case 'dashboard': initFloorDate(); loadFloorStatus();
-initFloorDate();
-loadDashboard();
-loadFloorStatus();
-loadFloorStatus(); break;
+    case 'dashboard': initFloorDate(); loadDashboard(); loadFloorStatus(); break;
     case 'bookings': loadBookings(); break;
     case 'rooms': loadRoomsAdmin(); break;
     case 'content': loadContent(); break;
@@ -1184,9 +1180,9 @@ async function loadFloorStatus() {
 
         const cells = r.slots.map((booked, i) => {
           let cls = 'free';
-          if (booked) cls = (i === nowSlot) ? 'now' : 'booked';
+          if (i === nowSlot) cls = booked ? 'now-booked' : 'now-free';
+          else if (booked) cls = 'booked';
           else if (i < nowSlot) cls = 'past';
-          else if (i === nowSlot) cls = 'now';
 
           const startH = 8 + Math.floor(i / 2);
           const startM = (i % 2) * 30;
@@ -1199,7 +1195,7 @@ async function loadFloorStatus() {
             tip = `${timeLabel}｜${slotBookings[i].name}（${slotBookings[i].number}）`;
           }
 
-          return `<div class="slot-cell ${cls}" title="${tip}"><span class="tip">${tip}</span></div>`;
+          return `<div class="slot-cell ${cls}" title="${tip}"></div>`;
         }).join('');
 
         html += `
@@ -1703,7 +1699,9 @@ function badgeHtml(status) {
 }
 
 // ── INIT ──
+initFloorDate();
 loadDashboard();
+loadFloorStatus();
 </script>
 </body>
 </html>

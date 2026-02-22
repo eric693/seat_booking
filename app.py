@@ -46,14 +46,19 @@ SITE_URL       = os.environ.get('SITE_URL', 'https://seat-booking-rlf2.onrender.
 LIFF_URL       = os.environ.get('LIFF_URL', 'https://liff.line.me/2009193434-BpOSKuw9')
 LIFF_ID        = os.environ.get('LIFF_ID', '')
 
-# ── Email 通知（SendGrid 優先，fallback Gmail SMTP）────────
-SENDGRID_API_KEY = os.environ.get('SENDGRID_API_KEY', '')
-GMAIL_USER       = os.environ.get('GMAIL_USER', '')
-GMAIL_APP_PASS   = os.environ.get('GMAIL_APP_PASS', '')
-MAIL_FROM        = os.environ.get('MAIL_FROM', GMAIL_USER)  # 寄件人地址
-USE_SENDGRID     = bool(SENDGRID_API_KEY)
-USE_GMAIL        = bool(GMAIL_USER and GMAIL_APP_PASS)
-USE_EMAIL        = USE_SENDGRID or USE_GMAIL
+# ── Email 通知（Gmail API OAuth2 優先，SendGrid 次之）──────
+SENDGRID_API_KEY     = os.environ.get('SENDGRID_API_KEY', '')
+GMAIL_USER           = os.environ.get('GMAIL_USER', '')
+GMAIL_APP_PASS       = os.environ.get('GMAIL_APP_PASS', '')
+MAIL_FROM            = os.environ.get('MAIL_FROM', GMAIL_USER)
+# Gmail API OAuth2
+GOOGLE_CLIENT_ID     = os.environ.get('GOOGLE_CLIENT_ID', '')
+GOOGLE_CLIENT_SECRET = os.environ.get('GOOGLE_CLIENT_SECRET', '')
+GOOGLE_REFRESH_TOKEN = os.environ.get('GOOGLE_REFRESH_TOKEN', '')
+USE_GMAIL_API  = bool(GOOGLE_CLIENT_ID and GOOGLE_CLIENT_SECRET and GOOGLE_REFRESH_TOKEN)
+USE_SENDGRID   = bool(SENDGRID_API_KEY) and not USE_GMAIL_API
+USE_GMAIL      = bool(GMAIL_USER and GMAIL_APP_PASS) and not USE_GMAIL_API and not USE_SENDGRID
+USE_EMAIL      = USE_GMAIL_API or USE_SENDGRID or USE_GMAIL
 
 # ── Twilio SMS（選用）───────────────────────────
 TWILIO_SID    = os.environ.get('TWILIO_SID', '')
@@ -114,15 +119,67 @@ def reply_line(reply_token: str, messages: list):
 # ─────────────────────────────────────────────
 
 def send_email(to_addr: str, subject: str, body_html: str):
-    """寄送 HTML 信件：優先 SendGrid，fallback Gmail SMTP"""
+    """寄送 HTML 信件：Gmail API > SendGrid > Gmail SMTP"""
     if not to_addr:
         return
-    if USE_SENDGRID:
+    if USE_GMAIL_API:
+        _send_via_gmail_api(to_addr, subject, body_html)
+    elif USE_SENDGRID:
         _send_via_sendgrid(to_addr, subject, body_html)
     elif USE_GMAIL:
         _send_via_gmail(to_addr, subject, body_html)
     else:
-        print('[Email] 未設定 SENDGRID_API_KEY 或 GMAIL，略過寄信')
+        print('[Email] 未設定任何 Email 服務，略過寄信')
+
+
+def _send_via_gmail_api(to_addr: str, subject: str, body_html: str):
+    """透過 Gmail API（OAuth2 Refresh Token）寄信 — 100% 不進垃圾桶"""
+    import base64
+    from email.mime.multipart import MIMEMultipart
+    from email.mime.text import MIMEText
+    try:
+        # Step 1: 用 refresh token 換 access token
+        token_resp = http_requests.post(
+            'https://oauth2.googleapis.com/token',
+            data={
+                'client_id':     GOOGLE_CLIENT_ID,
+                'client_secret': GOOGLE_CLIENT_SECRET,
+                'refresh_token': GOOGLE_REFRESH_TOKEN,
+                'grant_type':    'refresh_token',
+            },
+            timeout=10
+        )
+        token_data = token_resp.json()
+        access_token = token_data.get('access_token')
+        if not access_token:
+            print(f'[Gmail API] 取得 access token 失敗：{token_data}')
+            return
+
+        # Step 2: 組裝 MIME 郵件
+        from_addr = MAIL_FROM or GMAIL_USER
+        msg = MIMEMultipart('alternative')
+        msg['Subject'] = subject
+        msg['From']    = from_addr
+        msg['To']      = to_addr
+        msg.attach(MIMEText(body_html, 'html', 'utf-8'))
+        raw = base64.urlsafe_b64encode(msg.as_bytes()).decode('utf-8')
+
+        # Step 3: 透過 Gmail API 發送
+        resp = http_requests.post(
+            'https://gmail.googleapis.com/gmail/v1/users/me/messages/send',
+            headers={
+                'Authorization': f'Bearer {access_token}',
+                'Content-Type':  'application/json',
+            },
+            json={'raw': raw},
+            timeout=15
+        )
+        if resp.status_code == 200:
+            print(f'[Gmail API] sent to {to_addr}')
+        else:
+            print(f'[Gmail API error] {resp.status_code}: {resp.text[:300]}')
+    except Exception as e:
+        print(f'[Gmail API error] {e}')
 
 
 def _send_via_sendgrid(to_addr: str, subject: str, body_html: str):
@@ -147,13 +204,21 @@ def _send_via_sendgrid(to_addr: str, subject: str, body_html: str):
         if resp.status_code in (200, 202):
             print(f'[SendGrid] sent to {to_addr}')
         else:
-            print(f'[SendGrid error] {resp.status_code}: {resp.text[:200]}')
+            print(f'[SendGrid error] {resp.status_code}: {resp.text[:500]}')
+            # 403 = sender not verified; 401 = wrong API key
+            if resp.status_code == 403:
+                print('[SendGrid] ★ 寄件人未驗證！請至 SendGrid → Settings → Sender Authentication 驗證寄件人')
+            elif resp.status_code == 401:
+                print('[SendGrid] ★ API Key 錯誤，請確認 SENDGRID_API_KEY 環境變數')
     except Exception as e:
         print(f'[SendGrid error] {e}')
 
 
 def _send_via_gmail(to_addr: str, subject: str, body_html: str):
-    """透過 Gmail SMTP SSL 寄信（備用）"""
+    """透過 Gmail SMTP SSL 寄信（備用）
+    注意：Render 免費方案封鎖 outbound SMTP（port 465/587），此方法無法在 Render 上使用。
+    請改用 SendGrid（HTTP API）。
+    """
     import smtplib
     from email.mime.multipart import MIMEMultipart
     from email.mime.text import MIMEText
@@ -2067,7 +2132,7 @@ def _handle_line_text(uid, rtok, text):
                 f'找不到預約編號 {number}',
                 '請確認編號是否正確')])
             return
-        # 確認是本人的預約（by line_user_id 或 phone）
+        # 確認是本人的預約（by line_user_id 或綁定手機）
         is_owner = (b.line_user_id == uid or
                     (lu and lu.phone and b.customer_phone == lu.phone))
         if not is_owner:
@@ -2075,14 +2140,13 @@ def _handle_line_text(uid, rtok, text):
                 '無法取消此預約',
                 '只能取消您自己的預約')])
             return
-        if b.status != 'confirmed':
-            status_txt = '已完成' if b.status == 'completed' else '已取消'
+        if b.status == 'cancelled':
             reply_line(rtok, [flex_not_found(
-                f'此預約{status_txt}，無法取消',
+                '此預約已取消',
                 '如有疑問請聯繫管理員')])
             return
-        # 取消
-        from datetime import datetime as _dt, date as _date, timedelta
+        # 時間限制：距使用不足 2 小時
+        from datetime import datetime as _dt
         try:
             booking_dt = _dt.strptime(f"{b.date} {b.start_time}", '%Y-%m-%d %H:%M')
             if (booking_dt - _dt.now()).total_seconds() < 7200:
@@ -2094,7 +2158,6 @@ def _handle_line_text(uid, rtok, text):
             pass
         b.status = 'cancelled'
         db.session.commit()
-        # 推播取消通知
         push_line(uid, [flex_booking_cancel(b)])
         for aid in admin_line_ids():
             push_line(aid, [flex_admin_notify(b)])

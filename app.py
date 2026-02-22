@@ -1310,70 +1310,76 @@ def line_bind_profile():
 
 @app.route('/api/book', methods=['POST'])
 def create_booking():
-    data = request.get_json()
-    room = Room.query.get(data.get('room_id'))
-    if not room:
-        return jsonify({'error': '找不到此會議室'}), 404
-    if not check_availability(room.id, data['date'], data['start_time'], data['end_time']):
-        return jsonify({'error': '此時段已被預約，請選擇其他時間'}), 400
+    try:
+        data = request.get_json()
+        if not data:
+            return jsonify({'error': '請求格式錯誤'}), 400
 
-    def m(t):
-        h, mn = map(int, t.split(':'))
-        return h * 60 + mn
-    dur   = (m(data['end_time']) - m(data['start_time'])) / 60
-    price = int(dur * room.hourly_rate)
+        room = Room.query.get(data.get('room_id'))
+        if not room:
+            return jsonify({'error': '找不到此會議室'}), 404
+        if not check_availability(room.id, data['date'], data['start_time'], data['end_time']):
+            return jsonify({'error': '此時段已被預約，請選擇其他時間'}), 400
 
-    # 嘗試從 LineUser 查詢 line_user_id（若使用者有綁定手機）
-    line_uid = data.get('line_user_id', '')
-    if not line_uid and data.get('phone'):
-        lu = LineUser.query.filter_by(phone=data['phone']).first()
-        if lu:
-            line_uid = lu.line_user_id
+        if not data.get('phone', '').strip():
+            return jsonify({'error': '請填寫手機號碼'}), 400
+        if not data.get('email', '').strip():
+            return jsonify({'error': '請填寫 Email，用於接收預約確認信'}), 400
 
-    # 手機與 Email 都必填
-    if not data.get('phone', '').strip():
-        return jsonify({'error': '請填寫手機號碼'}), 400
-    if not data.get('email', '').strip():
-        return jsonify({'error': '請填寫 Email，用於接收預約確認信'}), 400
+        def _m(t):
+            h, mn = map(int, t.split(':'))
+            return h * 60 + mn
+        dur   = (_m(data['end_time']) - _m(data['start_time'])) / 60
+        price = int(dur * room.hourly_rate)
 
-    booking = Booking(
-        booking_number=generate_booking_number(),
-        room_id=room.id,
-        customer_name=data['name'],
-        customer_phone=data['phone'],
-        customer_email=data.get('email', ''),
-        department=data.get('department', ''),
-        date=data['date'],
-        start_time=data['start_time'],
-        end_time=data['end_time'],
-        duration=dur,
-        total_price=price,
-        attendees=data.get('attendees', 1),
-        purpose=data.get('purpose', ''),
-        note=data.get('note', ''),
-        line_user_id=line_uid,
-    )
-    db.session.add(booking)
-    db.session.commit()
-    booking = Booking.query.get(booking.id)
+        line_uid = data.get('line_user_id', '')
+        if not line_uid and data.get('phone'):
+            lu = LineUser.query.filter_by(phone=data['phone']).first()
+            if lu:
+                line_uid = lu.line_user_id
 
-    # ── 通知：LINE + Email + SMS ──
-    if booking.line_user_id:
-        push_line(booking.line_user_id, [flex_booking_confirm(booking)])
-    for aid in admin_line_ids():
-        push_line(aid, [flex_admin_notify(booking)])
-    # Email 確認信
-    if booking.customer_email:
-        send_email(
-            booking.customer_email,
-            f'【預約確認】{booking.room.name} – {booking.date}',
-            _booking_email_html(booking)
+        booking = Booking(
+            booking_number = generate_booking_number(),
+            room_id        = room.id,
+            customer_name  = data['name'],
+            customer_phone = data['phone'],
+            customer_email = data.get('email', ''),
+            department     = data.get('department', ''),
+            date           = data['date'],
+            start_time     = data['start_time'],
+            end_time       = data['end_time'],
+            duration       = dur,
+            total_price    = price,
+            attendees      = data.get('attendees', 1),
+            purpose        = data.get('purpose', ''),
+            note           = data.get('note', ''),
+            line_user_id   = line_uid,
         )
-    # SMS 確認簡訊
-    send_sms(booking.customer_phone, _booking_sms_body(booking))
+        db.session.add(booking)
+        db.session.commit()
+        booking = Booking.query.get(booking.id)
 
-    return jsonify({'success': True, 'booking': booking.to_dict()}), 201
+        # 通知（失敗不影響預約成立）
+        try:
+            if booking.line_user_id:
+                push_line(booking.line_user_id, [flex_booking_confirm(booking)])
+            for aid in admin_line_ids():
+                push_line(aid, [flex_admin_notify(booking)])
+            if booking.customer_email:
+                send_email(booking.customer_email,
+                           f'【預約確認】{booking.room.name} – {booking.date}',
+                           _booking_email_html(booking))
+            send_sms(booking.customer_phone, _booking_sms_body(booking))
+        except Exception as ne:
+            print(f'[通知錯誤] {ne}')
 
+        return jsonify({'success': True, 'booking': booking.to_dict()}), 201
+
+    except Exception as e:
+        db.session.rollback()
+        print(f'[create_booking error] {type(e).__name__}: {e}')
+        import traceback; traceback.print_exc()
+        return jsonify({'error': f'預約失敗，請稍後再試（{type(e).__name__}）'}), 500
 
 @app.route('/api/bookings/check')
 def check_booking():
@@ -2363,6 +2369,18 @@ def seed():
 
 with app.app_context():
     db.create_all()
+    # ── 欄位遷移：補上舊資料庫缺少的欄位 ──
+    try:
+        with db.engine.connect() as conn:
+            existing = db.engine.dialect.get_columns(conn, 'line_users')
+            col_names = [c['name'] for c in existing]
+            if 'booking_session' not in col_names:
+                conn.execute(db.text(
+                    'ALTER TABLE line_users ADD COLUMN booking_session TEXT'))
+                conn.commit()
+                print('[migrate] 新增 line_users.booking_session 欄位')
+    except Exception as e:
+        print(f'[migrate] 欄位檢查略過：{e}')
     seed()
 
 # ─────────────────────────────────────────────

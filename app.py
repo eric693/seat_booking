@@ -863,16 +863,16 @@ def flex_booking_confirm(booking) -> dict:
                 'backgroundColor': '#f8f8f8',
                 'paddingAll': '14px', 'spacing': 'sm',
                 'contents': [
-                    # CTA 按鈕
                     {'type': 'button',
                      'action': {'type': 'message', 'label': '查詢此預約',
                                 'text': f'查詢 {booking.booking_number}'},
                      'style': 'primary', 'color': '#2A6B6B',
                      'height': 'sm'},
-                    {'type': 'text',
-                     'text': '如需取消或更改，請提前 2 小時聯繫管理員',
-                     'size': 'xxs', 'color': '#aaaaaa', 'wrap': True, 'align': 'center',
-                     'margin': 'sm'},
+                    {'type': 'button',
+                     'action': {'type': 'message', 'label': '取消此預約',
+                                'text': f'取消預約 {booking.booking_number}'},
+                     'style': 'secondary', 'height': 'sm',
+                     'color': '#C44B3A'},
                 ]
             }
         }
@@ -951,8 +951,8 @@ def flex_booking_cancel(booking) -> dict:
                 'backgroundColor': '#f8f8f8', 'paddingAll': '14px',
                 'contents': [
                     {'type': 'button',
-                     'action': {'type': 'uri', 'label': '重新預約',
-                                'uri': site_url},
+                     'action': {'type': 'message', 'label': '重新預約',
+                                'text': '預約'},
                      'style': 'primary', 'color': '#2A6B6B', 'height': 'sm'},
                 ]
             }
@@ -2056,6 +2056,48 @@ def _handle_line_text(uid, rtok, text):
             slots = get_booked_slots(room.id, date_str)
             rooms_data.append({'name': room.name, 'slots': slots})
         reply_line(rtok, [flex_timeslot(date_str, rooms_data)])
+        return
+
+    # ── 取消特定預約：取消預約 MR2026XXXXXX ──
+    if lower.startswith('取消預約 '):
+        number = text[5:].strip().upper()
+        b = Booking.query.filter_by(booking_number=number).first()
+        if not b:
+            reply_line(rtok, [flex_not_found(
+                f'找不到預約編號 {number}',
+                '請確認編號是否正確')])
+            return
+        # 確認是本人的預約（by line_user_id 或 phone）
+        is_owner = (b.line_user_id == uid or
+                    (lu and lu.phone and b.customer_phone == lu.phone))
+        if not is_owner:
+            reply_line(rtok, [flex_not_found(
+                '無法取消此預約',
+                '只能取消您自己的預約')])
+            return
+        if b.status != 'confirmed':
+            status_txt = '已完成' if b.status == 'completed' else '已取消'
+            reply_line(rtok, [flex_not_found(
+                f'此預約{status_txt}，無法取消',
+                '如有疑問請聯繫管理員')])
+            return
+        # 取消
+        from datetime import datetime as _dt, date as _date, timedelta
+        try:
+            booking_dt = _dt.strptime(f"{b.date} {b.start_time}", '%Y-%m-%d %H:%M')
+            if (booking_dt - _dt.now()).total_seconds() < 7200:
+                reply_line(rtok, [flex_not_found(
+                    '距離使用時間不足 2 小時',
+                    '請直接聯繫管理員處理')])
+                return
+        except Exception:
+            pass
+        b.status = 'cancelled'
+        db.session.commit()
+        # 推播取消通知
+        push_line(uid, [flex_booking_cancel(b)])
+        for aid in admin_line_ids():
+            push_line(aid, [flex_admin_notify(b)])
         return
 
     # ── 綁定手機 ──

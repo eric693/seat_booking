@@ -752,6 +752,29 @@ tr:hover td { background: #fafafa; }
           <button class="btn btn-outline btn-sm" onclick="showPage('bookings', document.querySelector('[onclick*=bookings]'))">查看全部</button>
         </div>
         <div class="card-body">
+          <!-- 篩選列 -->
+          <div class="filters" style="margin-bottom:16px;">
+            <div class="filter-group">
+              <span class="filter-lbl">日期</span>
+              <input type="date" class="filter-input" id="dash-fil-date" onchange="loadDashboardBookings()" style="font-size:13px;padding:6px 10px;">
+            </div>
+            <div class="filter-group">
+              <span class="filter-lbl">狀態</span>
+              <select class="filter-select" id="dash-fil-status" onchange="loadDashboardBookings()" style="font-size:13px;padding:6px 10px;">
+                <option value="">全部</option>
+                <option value="confirmed">已確認</option>
+                <option value="cancelled">已取消</option>
+                <option value="completed">已完成</option>
+              </select>
+            </div>
+            <div class="filter-group">
+              <span class="filter-lbl">會議室</span>
+              <select class="filter-select" id="dash-fil-room" onchange="loadDashboardBookings()" style="font-size:13px;padding:6px 10px;">
+                <option value="">全部</option>
+              </select>
+            </div>
+            <button class="btn btn-outline btn-sm" onclick="clearDashFilters()">清除篩選</button>
+          </div>
           <div class="tbl-wrap">
             <table>
               <thead><tr>
@@ -1180,9 +1203,9 @@ async function loadFloorStatus() {
 
         const cells = r.slots.map((booked, i) => {
           let cls = 'free';
-          if (i === nowSlot) cls = booked ? 'now-booked' : 'now-free';
+          if (i < nowSlot) cls = 'past';
+          else if (i === nowSlot) cls = booked ? 'now-booked' : 'now-free';
           else if (booked) cls = 'booked';
-          else if (i < nowSlot) cls = 'past';
 
           const startH = 8 + Math.floor(i / 2);
           const startM = (i % 2) * 30;
@@ -1220,10 +1243,7 @@ async function loadFloorStatus() {
 
 async function loadDashboard() {
   try {
-    const [statsRes, bookingsRes] = await Promise.all([
-      fetch('/admin/api/stats', { headers: H }),
-      fetch('/admin/api/bookings', { headers: H })
-    ]);
+    const statsRes = await fetch('/admin/api/stats', { headers: H });
     const stats = await statsRes.json();
     document.getElementById('st-total').textContent = stats.total_bookings;
     document.getElementById('st-today').textContent = stats.today_bookings;
@@ -1232,13 +1252,40 @@ async function loadDashboard() {
     document.getElementById('st-cancelled').textContent = stats.cancelled;
     document.getElementById('st-completed').textContent = stats.completed;
 
-    const bookings = await bookingsRes.json();
+    // 填充會議室篩選選項
+    const rr = await fetch('/admin/api/rooms', { headers: H });
+    const rooms = await rr.json();
+    const sel = document.getElementById('dash-fil-room');
+    if (sel && sel.options.length <= 1) {
+      rooms.forEach(r => {
+        const opt = document.createElement('option');
+        opt.value = r.id;
+        opt.textContent = r.name;
+        sel.appendChild(opt);
+      });
+    }
+  } catch(e) { console.error(e); }
+  loadDashboardBookings();
+}
+
+async function loadDashboardBookings() {
+  try {
+    const date   = document.getElementById('dash-fil-date')?.value || '';
+    const status = document.getElementById('dash-fil-status')?.value || '';
+    const room   = document.getElementById('dash-fil-room')?.value || '';
+    let url = '/admin/api/bookings?';
+    if (date)   url += `date=${date}&`;
+    if (status) url += `status=${status}&`;
+    if (room)   url += `room_id=${room}&`;
+
+    const res = await fetch(url, { headers: H });
+    const bookings = await res.json();
     const tbody = document.getElementById('dash-bookings');
     if (!bookings.length) {
-      tbody.innerHTML = '<tr><td colspan="6" style="text-align:center;padding:30px;color:var(--ink-60);">尚無預約</td></tr>';
+      tbody.innerHTML = '<tr><td colspan="6" style="text-align:center;padding:30px;color:var(--ink-60);">找不到符合的預約</td></tr>';
       return;
     }
-    tbody.innerHTML = bookings.slice(0, 10).map(b => `
+    tbody.innerHTML = bookings.slice(0, 20).map(b => `
       <tr>
         <td><strong>${b.booking_number}</strong></td>
         <td>${b.customer_name}</td>
@@ -1248,6 +1295,16 @@ async function loadDashboard() {
         <td>${badgeHtml(b.status)}</td>
       </tr>`).join('');
   } catch(e) { console.error(e); }
+}
+
+function clearDashFilters() {
+  const d = document.getElementById('dash-fil-date');
+  const s = document.getElementById('dash-fil-status');
+  const r = document.getElementById('dash-fil-room');
+  if (d) d.value = '';
+  if (s) s.value = '';
+  if (r) r.value = '';
+  loadDashboardBookings();
 }
 
 // ── BOOKINGS ──

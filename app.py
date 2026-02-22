@@ -805,17 +805,20 @@ def flex_booking_confirm(booking) -> dict:
                     {'type': 'box', 'layout': 'vertical',
                      'paddingAll': '20px',
                      'contents': [
-                         # 狀態標籤
-                         {'type': 'box', 'layout': 'horizontal', 'contents': [
+                         # 狀態標籤（上排）
+                         {'type': 'box', 'layout': 'horizontal',
+                          'contents': [
                              {'type': 'box', 'layout': 'vertical',
                               'backgroundColor': '#2A6B6B', 'cornerRadius': '20px',
                               'paddingAll': '4px', 'paddingStart': '12px', 'paddingEnd': '12px',
+                              'flex': 0,
                               'contents': [{'type': 'text', 'text': '預約已確認',
                                             'size': 'xs', 'color': '#ffffff', 'weight': 'bold'}]},
-                             {'type': 'filler'},
-                             {'type': 'text', 'text': booking.booking_number,
-                              'size': 'xs', 'color': '#66AAAA', 'gravity': 'center'},
                          ]},
+                         # 預約編號（獨立一行，完整顯示）
+                         {'type': 'text', 'text': booking.booking_number,
+                          'size': 'xs', 'color': '#66AAAA',
+                          'margin': 'sm', 'wrap': False},
                          # 會議室名稱
                          {'type': 'text', 'text': room,
                           'size': 'xl', 'color': '#ffffff', 'weight': 'bold',

@@ -1306,6 +1306,7 @@ const state = {
   date: null,
   startTime: null,
   endTime: null,
+  segments: [],
   price: 0,
 };
 
@@ -1743,6 +1744,7 @@ function commitSelection() {
   if (selectedSlots.size === 0) {
     selStart = -1; selEnd = -1;
     state.startTime = null; state.endTime = null;
+    state.segments  = [];
     document.getElementById('tsbBar').style.display = 'none';
     updatePrice(); updateSumTime();
     return;
@@ -1751,11 +1753,20 @@ function commitSelection() {
   const slots = [...selectedSlots].sort((a,b) => a-b);
   selStart = slots[0];
   selEnd   = slots[slots.length - 1];
-  state.startTime = slotToTime(selStart);
-  state.endTime   = slotToTime(selEnd + 1);
 
-  // 不連續時段檢查
-  state.selectedSlots = slots; // 傳給 submitBooking
+  // 計算連續段落（segments）
+  const segs = [];
+  let segStart = slots[0];
+  for (let i = 1; i <= slots.length; i++) {
+    if (i === slots.length || slots[i] !== slots[i-1] + 1) {
+      segs.push({ start: slotToTime(segStart), end: slotToTime(slots[i-1] + 1) });
+      if (i < slots.length) segStart = slots[i];
+    }
+  }
+  state.segments  = segs;
+  state.startTime = segs[0].start;
+  state.endTime   = segs[segs.length - 1].end;
+  state.selectedSlots = slots;
 
   updateSumTime();
   updatePrice();
@@ -1766,10 +1777,15 @@ function showSelectionBar() {
   if (selectedSlots.size === 0) return;
   const bar = document.getElementById('tsbBar');
   bar.style.display = 'flex';
-  const slots  = [...selectedSlots].sort((a,b) => a-b);
-  const startT = slotToTime(slots[0]);
-  const endT   = slotToTime(slots[slots.length-1] + 1);
-  document.getElementById('tsbTime').textContent = `${startT} – ${endT}`;
+  if (state.segments && state.segments.length > 1) {
+    document.getElementById('tsbTime').textContent =
+      state.segments.map(s => `${s.start}–${s.end}`).join('  +  ');
+  } else {
+    const slots  = [...selectedSlots].sort((a,b) => a-b);
+    const startT = slotToTime(slots[0]);
+    const endT   = slotToTime(slots[slots.length-1] + 1);
+    document.getElementById('tsbTime').textContent = `${startT} – ${endT}`;
+  }
   const dur = selectedSlots.size * 0.5;
   let durLbl;
   if (dur < 1) durLbl = Math.round(dur*60) + ' 分鐘';
@@ -1782,6 +1798,7 @@ function clearTimeSelection() {
   selectedSlots.clear();
   selStart = -1; selEnd = -1;
   state.startTime = null; state.endTime = null;
+  state.segments = [];
   state.selectedSlots = [];
   document.querySelectorAll('.ts').forEach(el =>
     el.classList.remove('ts-selected','ts-range-start','ts-range-end','ts-range-mid','ts-conflict'));
@@ -1793,7 +1810,14 @@ function clearTimeSelection() {
 
 function updateSumTime() {
   const el = document.getElementById('sum-time');
-  if (state.startTime && state.endTime) {
+  if (state.segments && state.segments.length > 0) {
+    if (state.segments.length === 1) {
+      el.textContent = `${state.segments[0].start} – ${state.segments[0].end}`;
+    } else {
+      el.textContent = state.segments.map(s => `${s.start}–${s.end}`).join('、');
+    }
+    el.classList.remove('empty');
+  } else if (state.startTime && state.endTime) {
     el.textContent = `${state.startTime} – ${state.endTime}`;
     el.classList.remove('empty');
   } else {
@@ -1815,7 +1839,19 @@ function updateSummary() {
 }
 
 function updatePrice() {
-  if (state.startTime && state.endTime && state.roomRate) {
+  if (state.segments && state.segments.length > 0 && state.roomRate) {
+    // 用所有 segments 的總時長計算
+    const totalMin = state.segments.reduce((acc, s) => acc + toMin(s.end) - toMin(s.start), 0);
+    const dur = totalMin / 60;
+    state.price = Math.round(dur * state.roomRate);
+    let durText;
+    if (dur < 1) { durText = Math.round(dur * 60) + ' 分鐘'; }
+    else if (dur === Math.floor(dur)) { durText = dur + ' 小時'; }
+    else { const h = Math.floor(dur); const m = Math.round((dur - h) * 60);
+           durText = h + ' 小時 ' + m + ' 分鐘'; }
+    document.getElementById('sum-dur').textContent = durText;
+    document.getElementById('sum-price').textContent = formatMoney(state.price);
+  } else if (state.startTime && state.endTime && state.roomRate) {
     const dur = (toMin(state.endTime) - toMin(state.startTime)) / 60;
     state.price = Math.round(dur * state.roomRate);
     let durText;
@@ -1863,6 +1899,7 @@ async function submitBooking() {
         date: state.date,
         start_time: state.startTime,
         end_time: state.endTime,
+        segments: state.segments || [],
         name, phone,
         email: document.getElementById('fEmail').value.trim(),
         department: document.getElementById('fDept').value.trim(),

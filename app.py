@@ -1177,6 +1177,7 @@ class Booking(db.Model):
     start_time     = db.Column(db.String(5), nullable=False)
     end_time       = db.Column(db.String(5), nullable=False)
     duration       = db.Column(db.Float, default=1)
+    segments       = db.Column(db.Text)   # JSON: [{"start":"08:30","end":"10:00"},...]
     total_price    = db.Column(db.Integer, default=0)
     attendees      = db.Column(db.Integer, default=1)
     purpose        = db.Column(db.Text)
@@ -1195,6 +1196,7 @@ class Booking(db.Model):
             'customer_name': self.customer_name, 'customer_phone': self.customer_phone,
             'customer_email': self.customer_email, 'department': self.department,
             'date': self.date, 'start_time': self.start_time, 'end_time': self.end_time,
+            'segments': self.segments,
             'duration': self.duration, 'total_price': self.total_price,
             'attendees': self.attendees, 'purpose': self.purpose,
             'status': self.status, 'note': self.note,
@@ -1281,10 +1283,21 @@ def check_availability(room_id, date, start_time, end_time, exclude_id=None):
 
 
 def get_booked_slots(room_id, date):
-    bookings = Booking.query.filter_by(
-        room_id=room_id, date=date, status='confirmed').all()
-    return [{'start': b.start_time, 'end': b.end_time,
-             'booking_number': b.booking_number} for b in bookings]
+    import json as _json
+    bookings = Booking.query.filter_by(room_id=room_id, date=date).filter(
+        Booking.status.in_(['confirmed', 'completed'])).all()
+    result = []
+    for b in bookings:
+        segs = []
+        if b.segments:
+            try: segs = _json.loads(b.segments)
+            except Exception: pass
+        if not segs:
+            segs = [{'start': b.start_time, 'end': b.end_time}]
+        for seg in segs:
+            result.append({'start': seg['start'], 'end': seg['end'],
+                           'booking_number': b.booking_number})
+    return result
 
 
 def admin_line_ids():
@@ -1373,21 +1386,42 @@ def create_booking():
         if not data:
             return jsonify({'error': '請求格式錯誤'}), 400
 
+        import json as _json
         room = Room.query.get(data.get('room_id'))
         if not room:
             return jsonify({'error': '找不到此會議室'}), 404
-        if not check_availability(room.id, data['date'], data['start_time'], data['end_time']):
-            return jsonify({'error': '此時段已被預約，請選擇其他時間'}), 400
+
+        # 支援多段時段
+        segments = data.get('segments')  # [{"start":"08:30","end":"10:00"},...]
+        if segments and len(segments) > 0:
+            ok, conflict = check_segments_availability(room.id, data['date'], segments)
+            if not ok:
+                return jsonify({'error': f'時段 {conflict["start"]}–{conflict["end"]} 已被預約，請選擇其他時間'}), 400
+            def _m(t):
+                h, mn = map(int, t.split(':'))
+                return h * 60 + mn
+            dur = sum((_m(s['end']) - _m(s['start'])) for s in segments) / 60
+            start_time = segments[0]['start']
+            end_time   = segments[-1]['end']
+            segments_json = _json.dumps(segments, ensure_ascii=False)
+        else:
+            # 單段時段（向下相容）
+            segments = None
+            if not check_availability(room.id, data['date'], data['start_time'], data['end_time']):
+                return jsonify({'error': '此時段已被預約，請選擇其他時間'}), 400
+            def _m(t):
+                h, mn = map(int, t.split(':'))
+                return h * 60 + mn
+            dur = (_m(data['end_time']) - _m(data['start_time'])) / 60
+            start_time = data['start_time']
+            end_time   = data['end_time']
+            segments_json = None
 
         if not data.get('phone', '').strip():
             return jsonify({'error': '請填寫手機號碼'}), 400
         if not data.get('email', '').strip():
             return jsonify({'error': '請填寫 Email，用於接收預約確認信'}), 400
 
-        def _m(t):
-            h, mn = map(int, t.split(':'))
-            return h * 60 + mn
-        dur   = (_m(data['end_time']) - _m(data['start_time'])) / 60
         price = int(dur * room.hourly_rate)
 
         line_uid = data.get('line_user_id', '')
@@ -1404,8 +1438,9 @@ def create_booking():
             customer_email = data.get('email', ''),
             department     = data.get('department', ''),
             date           = data['date'],
-            start_time     = data['start_time'],
-            end_time       = data['end_time'],
+            start_time     = start_time,
+            end_time       = end_time,
+            segments       = segments_json,
             duration       = dur,
             total_price    = price,
             attendees      = data.get('attendees', 1),
@@ -2545,6 +2580,12 @@ with app.app_context():
                     'ALTER TABLE line_users ADD COLUMN booking_session TEXT'))
                 conn.commit()
                 print('[migrate] 新增 line_users.booking_session 欄位')
+            # bookings.segments
+            bk_cols = [c['name'] for c in db.engine.dialect.get_columns(conn, 'bookings')]
+            if 'segments' not in bk_cols:
+                conn.execute(db.text('ALTER TABLE bookings ADD COLUMN segments TEXT'))
+                conn.commit()
+                print('[migrate] 新增 bookings.segments 欄位')
     except Exception as e:
         print(f'[migrate] 欄位檢查略過：{e}')
     seed()

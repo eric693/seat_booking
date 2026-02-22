@@ -2292,23 +2292,34 @@ def admin_floor_status():
     rooms = Room.query.filter_by(is_active=True).order_by(Room.floor, Room.name).all()
     result = []
     for r in rooms:
+        import json as _json
         bookings = Booking.query.filter_by(
-            room_id=r.id, date=date_str, status='confirmed').all()
+            room_id=r.id, date=date_str).filter(
+            Booking.status.in_(['confirmed', 'completed'])).all()
         occupied = [False] * 28
         for b in bookings:
-            sh, sm = map(int, b.start_time.split(':'))
-            eh, em = map(int, b.end_time.split(':'))
-            si = (sh * 60 + sm - 480) // 30
-            ei = (eh * 60 + em - 480) // 30
-            for i in range(max(0, si), min(28, ei)):
-                occupied[i] = True
+            # 展開 segments（多段時段）
+            segs = []
+            if b.segments:
+                try: segs = _json.loads(b.segments)
+                except Exception: pass
+            if not segs:
+                segs = [{'start': b.start_time, 'end': b.end_time}]
+            for seg in segs:
+                sh, sm = map(int, seg['start'].split(':'))
+                eh, em = map(int, seg['end'].split(':'))
+                si = (sh * 60 + sm - 480) // 30
+                ei = (eh * 60 + em - 480) // 30
+                for i in range(max(0, si), min(28, ei)):
+                    occupied[i] = True
         result.append({
             'id': r.id, 'name': r.name,
             'floor': r.floor or '未分層',
             'capacity': r.capacity,
             'room_type': r.room_type or '',
-            'slots': occupied,       # 前端使用 r.slots
+            'slots': occupied,
             'bookings': [{'start': b.start_time, 'end': b.end_time,
+                          'segments': b.segments,
                           'name': b.customer_name,
                           'number': b.booking_number} for b in bookings]
         })

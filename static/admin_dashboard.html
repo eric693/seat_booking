@@ -1291,7 +1291,7 @@ async function loadDashboardBookings() {
         <td>${b.customer_name}</td>
         <td>${b.room_name}</td>
         <td>${b.date}</td>
-        <td>${b.start_time} – ${b.end_time}</td>
+        <td>${fmtSegments(b)}</td>
         <td>${badgeHtml(b.status)}</td>
       </tr>`).join('');
   } catch(e) { console.error(e); }
@@ -1355,7 +1355,7 @@ async function loadBookings() {
         <td>${b.department || '—'}</td>
         <td>${b.room_name}</td>
         <td>${b.date}</td>
-        <td>${b.start_time} – ${b.end_time}</td>
+        <td>${fmtSegments(b)}</td>
         <td>${b.duration}h</td>
         <td>${b.attendees}人</td>
         <td>NT$ ${(b.total_price||0).toLocaleString()}</td>
@@ -1745,6 +1745,19 @@ async function removeRoomPhoto(roomId) {
 }
 
 // ── HELPERS ──
+function fmtSegments(b) {
+  if (b.segments) {
+    try {
+      const segs = typeof b.segments === 'string' ? JSON.parse(b.segments) : b.segments;
+      if (segs && segs.length > 1)
+        return segs.map(s => `${s.start}–${s.end}`).join('<br>');
+      if (segs && segs.length === 1)
+        return `${segs[0].start} – ${segs[0].end}`;
+    } catch(e) {}
+  }
+  return `${b.start_time} – ${b.end_time}`;
+}
+
 function badgeHtml(status) {
   const map = {
     confirmed: ['badge-green', '已確認'],

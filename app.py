@@ -530,7 +530,7 @@ def flex_main_menu() -> dict:
                 'backgroundColor': _C['bg'],
                 'paddingAll': '12px', 'spacing': 'sm',
                 'contents': [
-                    _btn('在 LINE 內預約', 'uri', LIFF_URL),
+                    _btn('開始預約', 'uri', LIFF_URL),
                     _btn('我的預約', 'message', '我的預約',
                          bg='#2D2D2D'),
                 ]
@@ -619,7 +619,7 @@ def flex_timeslot(date_str: str, rooms_data: list) -> dict:
                 'backgroundColor': _C['bg'],
                 'paddingAll': '12px',
                 'contents': [
-                    _btn('在 LINE 內預約', 'uri', LIFF_URL),
+                    _btn('開始預約', 'uri', LIFF_URL),
                 ]
             }
         }
@@ -650,7 +650,7 @@ def flex_bind_success(phone: str) -> dict:
                 'type': 'box', 'layout': 'vertical',
                 'backgroundColor': _C['bg'],
                 'paddingAll': '12px',
-                'contents': [_btn('在 LINE 內預約', 'uri', LIFF_URL)]
+                'contents': [_btn('開始預約', 'uri', LIFF_URL)]
             }
         }
     }
@@ -726,7 +726,7 @@ def flex_welcome() -> dict:
                 'backgroundColor': _C['bg'],
                 'paddingAll': '12px', 'spacing': 'sm',
                 'contents': [
-                    _btn('在 LINE 內預約', 'uri', LIFF_URL),
+                    _btn('開始預約', 'uri', LIFF_URL),
                     _btn('查看所有指令', 'message', '說明', bg='#2D2D2D'),
                 ]
             }
@@ -2115,7 +2115,7 @@ def admin_floor_status():
             'floor': r.floor or '未分層',
             'capacity': r.capacity,
             'room_type': r.room_type or '',
-            'occupied': occupied,
+            'slots': occupied,       # 前端使用 r.slots
             'bookings': [{'start': b.start_time, 'end': b.end_time,
                           'name': b.customer_name,
                           'number': b.booking_number} for b in bookings]
@@ -2378,16 +2378,16 @@ ROOM_SEED = [
      'amenities':['螢幕共享','視訊攝影機','噪音隔絕','WiFi','白板','咖啡機'],'floor':'2F'},
     {'name':'大型簡報廳','room_type':'簡報廳','capacity':50,'hourly_rate':2000,
      'description':'專業簡報空間，配備劇院式座椅、雙螢幕投影、麥克風系統。',
-     'amenities':['雙投影幕','麥克風系統','劇院座椅','燈光控制','錄影設備','舞台'],'floor':'1F'},
+     'amenities':['雙投影幕','麥克風系統','劇院座椅','燈光控制','錄影設備','舞台'],'floor':'2F'},
     {'name':'視訊會議中心','room_type':'視訊會議','capacity':12,'hourly_rate':1000,
      'description':'4K 攝影機搭配環繞音響，遠端與現場皆有絕佳體驗。',
-     'amenities':['4K 攝影機','環繞音響','自動追蹤','雙顯示器','噪音抑制麥克風','WiFi 6'],'floor':'4F'},
+     'amenities':['4K 攝影機','環繞音響','自動追蹤','雙顯示器','噪音抑制麥克風','WiFi 6'],'floor':'3F'},
     {'name':'主管行政套房','room_type':'行政套房','capacity':6,'hourly_rate':1500,
      'description':'頂層行政會議室，俯瞰城市景觀，適合董事會議、VIP 接待。',
-     'amenities':['城市景觀','高端家具','私人衛浴','秘書服務','餐飲服務','私人停車'],'floor':'12F'},
+     'amenities':['城市景觀','高端家具','私人衛浴','秘書服務','餐飲服務','私人停車'],'floor':'3F'},
     {'name':'多功能培訓教室','room_type':'培訓教室','capacity':30,'hourly_rate':1200,
      'description':'彈性空間配置，適合員工培訓、研討會、工作坊。',
-     'amenities':['電子白板','個人顯示器','彈性座位','錄音設備','茶水站','停車場'],'floor':'5F'},
+     'amenities':['電子白板','個人顯示器','彈性座位','錄音設備','茶水站','停車場'],'floor':'2F'},
 ]
 
 
@@ -2404,6 +2404,17 @@ def seed():
                 amenities=json.dumps(r['amenities'], ensure_ascii=False),
                 floor=r['floor'], is_active=True
             ))
+    # 更新現有房間樓層（確保舊資料也套用正確樓層）
+    floor_updates = {
+        '多功能培訓教室': '2F',
+        '精緻洽談室 A':   '2F',
+        '大型簡報廳':     '2F',
+        '視訊會議中心':   '3F',
+        '行政套房':       '3F',
+        '創意腦力激盪室': '3F',
+    }
+    for name, floor in floor_updates.items():
+        Room.query.filter_by(name=name).update({'floor': floor})
     db.session.commit()
     print('資料庫初始化完成')
 

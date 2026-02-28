@@ -1183,17 +1183,41 @@ class Room(db.Model):
     description = db.Column(db.Text)
     amenities   = db.Column(db.Text)
     photo_url   = db.Column(db.String(500))
+    photos      = db.Column(db.Text)   # JSON: ["url1","url2",...] 最多5張
+    cover_index = db.Column(db.Integer, default=0)  # 主封面為第幾張
     is_active   = db.Column(db.Boolean, default=True)
     floor       = db.Column(db.String(20))
     created_at  = db.Column(db.DateTime, default=datetime.now)
 
+    def get_photos(self):
+        """回傳照片陣列（含舊 photo_url 相容）"""
+        if self.photos:
+            try:
+                arr = json.loads(self.photos)
+                if arr: return arr
+            except Exception: pass
+        if self.photo_url:
+            return [self.photo_url]
+        return []
+
+    def get_cover(self):
+        """回傳主封面 URL"""
+        photos = self.get_photos()
+        if not photos: return ''
+        idx = self.cover_index or 0
+        return photos[idx] if idx < len(photos) else photos[0]
+
     def to_dict(self):
+        photos = self.get_photos()
         return {
             'id': self.id, 'name': self.name, 'room_type': self.room_type,
             'capacity': self.capacity, 'hourly_rate': self.hourly_rate,
             'description': self.description,
             'amenities': json.loads(self.amenities) if self.amenities else [],
-            'photo_url': self.photo_url, 'is_active': self.is_active, 'floor': self.floor,
+            'photo_url': self.get_cover(),
+            'photos': photos,
+            'cover_index': self.cover_index or 0,
+            'is_active': self.is_active, 'floor': self.floor,
         }
 
 
@@ -2376,6 +2400,102 @@ def admin_delete_room(rid):
 # Admin — Photo Upload
 # ─────────────────────────────────────────────
 
+@app.route('/admin/api/rooms/<int:rid>/photos', methods=['GET'])
+def admin_get_room_photos(rid):
+    err = check_admin(); 
+    if err: return err
+    r = Room.query.get_or_404(rid)
+    return jsonify({'photos': r.get_photos(), 'cover_index': r.cover_index or 0})
+
+@app.route('/admin/api/rooms/<int:rid>/photos', methods=['POST'])
+def admin_add_room_photo(rid):
+    """上傳照片並加入 room.photos（最多5張）"""
+    err = check_admin()
+    if err: return err
+    r = Room.query.get_or_404(rid)
+    if 'photo' not in request.files:
+        return jsonify({'error': '未選擇檔案'}), 400
+    f = request.files['photo']
+    if f.filename == '' or not allowed_file(f.filename):
+        return jsonify({'error': '不支援的檔案格式'}), 400
+    # 上傳
+    if USE_CLOUDINARY:
+        url = _upload_to_cloudinary(f)
+        if not url:
+            return jsonify({'error': 'Cloudinary 上傳失敗'}), 500
+    else:
+        ext = f.filename.rsplit('.', 1)[1].lower()
+        filename = f'{uuid.uuid4().hex}.{ext}'
+        f.save(os.path.join(UPLOAD_FOLDER, filename))
+        url = f'/static/uploads/{filename}'
+    photos = r.get_photos()
+    if len(photos) >= 5:
+        return jsonify({'error': '最多只能上傳 5 張照片'}), 400
+    photos.append(url)
+    r.photos = json.dumps(photos, ensure_ascii=False)
+    r.photo_url = r.get_cover()
+    db.session.commit()
+    return jsonify({'success': True, 'photos': photos, 'cover_index': r.cover_index or 0})
+
+@app.route('/admin/api/rooms/<int:rid>/photos/<int:idx>', methods=['DELETE'])
+def admin_delete_room_photo(rid, idx):
+    """刪除指定索引的照片"""
+    err = check_admin()
+    if err: return err
+    r = Room.query.get_or_404(rid)
+    photos = r.get_photos()
+    if idx < 0 or idx >= len(photos):
+        return jsonify({'error': '無效的照片索引'}), 400
+    photos.pop(idx)
+    cover = r.cover_index or 0
+    if cover >= len(photos):
+        cover = 0
+    r.photos = json.dumps(photos, ensure_ascii=False)
+    r.cover_index = cover
+    r.photo_url = photos[cover] if photos else ''
+    db.session.commit()
+    return jsonify({'success': True, 'photos': photos, 'cover_index': cover})
+
+@app.route('/admin/api/rooms/<int:rid>/photos/cover', methods=['PUT'])
+def admin_set_cover_photo(rid):
+    """設定主封面（傳 index）"""
+    err = check_admin()
+    if err: return err
+    r = Room.query.get_or_404(rid)
+    data = request.get_json()
+    idx = data.get('index', 0)
+    photos = r.get_photos()
+    if idx < 0 or idx >= len(photos):
+        return jsonify({'error': '無效的索引'}), 400
+    r.cover_index = idx
+    r.photo_url = photos[idx]
+    db.session.commit()
+    return jsonify({'success': True, 'cover_index': idx})
+
+@app.route('/admin/api/site-logo', methods=['POST'])
+def admin_upload_logo():
+    """上傳 Logo 圖片，儲存至 SiteContent"""
+    err = check_admin()
+    if err: return err
+    if 'photo' not in request.files:
+        return jsonify({'error': '未選擇檔案'}), 400
+    f = request.files['photo']
+    if f.filename == '' or not allowed_file(f.filename):
+        return jsonify({'error': '不支援的檔案格式'}), 400
+    if USE_CLOUDINARY:
+        url = _upload_to_cloudinary(f)
+        if not url:
+            return jsonify({'error': 'Cloudinary 上傳失敗'}), 500
+    else:
+        ext = f.filename.rsplit('.', 1)[1].lower()
+        filename = f'{uuid.uuid4().hex}.{ext}'
+        f.save(os.path.join(UPLOAD_FOLDER, filename))
+        url = f'/static/uploads/{filename}'
+    SiteContent.query.filter_by(key='logo_url').delete()
+    db.session.add(SiteContent(key='logo_url', value=url))
+    db.session.commit()
+    return jsonify({'success': True, 'logo_url': url})
+
 @app.route('/admin/api/upload-photo', methods=['POST'])
 def upload_photo():
     err = check_admin()
@@ -2646,6 +2766,16 @@ with app.app_context():
                 conn.execute(db.text('ALTER TABLE bookings ADD COLUMN segments TEXT'))
                 conn.commit()
                 print('[migrate] 新增 bookings.segments 欄位')
+            # rooms.photos / cover_index
+            rm_cols = [c['name'] for c in db.engine.dialect.get_columns(conn, 'rooms')]
+            if 'photos' not in rm_cols:
+                conn.execute(db.text('ALTER TABLE rooms ADD COLUMN photos TEXT'))
+                conn.commit()
+                print('[migrate] 新增 rooms.photos 欄位')
+            if 'cover_index' not in rm_cols:
+                conn.execute(db.text('ALTER TABLE rooms ADD COLUMN cover_index INTEGER DEFAULT 0'))
+                conn.commit()
+                print('[migrate] 新增 rooms.cover_index 欄位')
     except Exception as e:
         print(f'[migrate] 欄位檢查略過：{e}')
     seed()

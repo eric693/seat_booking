@@ -636,7 +636,7 @@ tr:hover td { background: #fafafa; }
 <!-- Sidebar -->
 <div class="sidebar">
   <div class="sidebar-logo">
-    <div class="sidebar-logo-icon">MR</div>
+    <div class="sidebar-logo-icon" id="sidebarLogoIcon">MR</div>
     <div class="sidebar-logo-text">
       會議室系統
       <small>Admin Panel</small>
@@ -978,10 +978,35 @@ tr:hover td { background: #fafafa; }
 
     <!-- ── PHOTOS ── -->
     <div class="page" id="page-photos">
+
+      <!-- Logo 上傳 -->
+      <div class="card" style="margin-bottom:20px;">
+        <div class="card-head">
+          <div class="card-title">系統 Logo</div>
+          <div style="font-size:13px;color:var(--ink-60);">更換後台與前台左上角 Logo</div>
+        </div>
+        <div class="card-body">
+          <div style="display:flex;align-items:center;gap:24px;flex-wrap:wrap;">
+            <div id="logoPreviewWrap" style="width:80px;height:80px;border-radius:12px;background:var(--sidebar-bg);display:flex;align-items:center;justify-content:center;font-size:22px;font-weight:700;color:var(--gold);flex-shrink:0;overflow:hidden;">
+              <span id="logoPreviewText">MR</span>
+            </div>
+            <div style="flex:1;min-width:200px;">
+              <label class="btn btn-outline" style="cursor:pointer;display:inline-block;">
+                <input type="file" accept="image/*" style="display:none;" onchange="uploadLogo(event)">
+                &#128247; 選擇 Logo 圖片
+              </label>
+              <div style="font-size:12px;color:var(--ink-60);margin-top:8px;">支援 JPG、PNG、WEBP，建議尺寸 80×80px 以上，最大 16MB</div>
+            </div>
+            <div id="logoUploadStatus" style="font-size:13px;color:var(--teal);display:none;">上傳中...</div>
+          </div>
+        </div>
+      </div>
+
+      <!-- 會議室照片管理 -->
       <div class="card">
         <div class="card-head">
           <div class="card-title">會議室照片管理</div>
-          <div style="font-size:13px;color:var(--ink-60);">支援 JPG、PNG、GIF、WEBP，最大 16MB</div>
+          <div style="font-size:13px;color:var(--ink-60);">每間最多 5 張，可設定主封面</div>
         </div>
         <div class="card-body">
           <div id="photoRoomList">
@@ -1265,6 +1290,11 @@ async function loadDashboard() {
       });
     }
   } catch(e) { console.error(e); }
+  // 載入 logo
+  try {
+    const sc = await (await fetch('/api/site-content', { headers: H })).json();
+    if (sc.logo_url) applyLogo(sc.logo_url);
+  } catch(e) {}
   loadDashboardBookings();
 }
 
@@ -1622,44 +1652,45 @@ async function loadPhotos() {
 
     document.getElementById('photoRoomList').innerHTML = allRooms.map(r => {
       const icon = ICONS[r.room_type] || 'MR';
+      const photos = r.photos || (r.photo_url ? [r.photo_url] : []);
+      const coverIdx = r.cover_index || 0;
+      const canUpload = photos.length < 5;
+
+      const photoGrid = photos.length > 0
+        ? `<div style="display:flex;flex-wrap:wrap;gap:10px;margin-bottom:12px;" id="photo-grid-${r.id}">
+            ${photos.map((url, i) => `
+              <div style="position:relative;width:120px;flex-shrink:0;">
+                <img src="${url}" style="width:120px;height:90px;object-fit:cover;border-radius:8px;border:2px solid ${i===coverIdx?'var(--gold)':'var(--border)'};display:block;">
+                ${i===coverIdx ? '<div style="position:absolute;top:4px;left:4px;background:var(--gold);color:#1a1a1a;font-size:10px;font-weight:700;padding:2px 6px;border-radius:4px;">主封面</div>' : ''}
+                <div style="display:flex;gap:4px;margin-top:4px;">
+                  ${i!==coverIdx ? `<button class="btn btn-outline btn-sm" style="flex:1;font-size:11px;padding:3px;" onclick="setCover(${r.id},${i})">設為封面</button>` : '<div style="flex:1;text-align:center;font-size:11px;color:var(--gold);">✓ 封面</div>'}
+                  <button class="btn btn-sm" style="background:#c44b3a;color:#fff;border:none;font-size:11px;padding:3px 8px;border-radius:4px;cursor:pointer;" onclick="deletePhoto(${r.id},${i})">✕</button>
+                </div>
+              </div>`).join('')}
+          </div>`
+        : `<div style="color:var(--ink-60);font-size:13px;margin-bottom:12px;">尚未上傳照片</div>`;
+
       return `
       <div class="card" style="margin-bottom:20px;">
         <div class="card-head">
           <div style="display:flex;align-items:center;gap:12px;">
-            <span style="font-size:22px;">${icon}</span>
             <div>
               <div class="card-title">${r.name}</div>
-              <div style="font-size:12px;color:var(--ink-60);">${r.room_type} · ${r.floor || 'F—'} · 容納 ${r.capacity} 人</div>
+              <div style="font-size:12px;color:var(--ink-60);">${r.room_type} · ${r.floor||'F—'} · ${photos.length}/5 張</div>
             </div>
           </div>
-          <span class="badge ${r.is_active ? 'badge-green' : 'badge-gray'}">${r.is_active ? '啟用中' : '已停用'}</span>
+          <span class="badge ${r.is_active?'badge-green':'badge-gray'}">${r.is_active?'啟用中':'已停用'}</span>
         </div>
         <div class="card-body">
-          <div style="display:grid;grid-template-columns:240px 1fr;gap:28px;align-items:start;">
-            <div>
-              <div style="font-size:12px;font-weight:600;text-transform:uppercase;letter-spacing:0.08em;color:var(--ink-60);margin-bottom:10px;">目前照片</div>
-              ${r.photo_url
-                ? `<img src="${r.photo_url}" alt="${r.name}" style="width:100%;height:160px;object-fit:cover;border-radius:8px;border:1px solid var(--border);" id="photo-thumb-${r.id}" onerror="this.outerHTML='<div style=width:100%;height:160px;border-radius:8px;background:linear-gradient(135deg,#1a1a2e,#16213e);display:flex;align-items:center;justify-content:center;font-size:40px;>${icon}</div>'">`
-                : `<div style="width:100%;height:160px;border-radius:8px;background:linear-gradient(135deg,#1a1a2e,#16213e);display:flex;align-items:center;justify-content:center;font-size:40px;color:rgba(255,255,255,0.2);" id="photo-thumb-${r.id}">${icon}</div>`
-              }
-              ${r.photo_url ? `<div style="margin-top:8px;"><button class="btn btn-outline btn-sm" onclick="removeRoomPhoto(${r.id})" style="width:100%;"> 移除照片</button></div>` : ''}
-            </div>
-            <div>
-              <div style="font-size:12px;font-weight:600;text-transform:uppercase;letter-spacing:0.08em;color:var(--ink-60);margin-bottom:10px;">上傳新照片</div>
-              <div class="photo-upload-area" style="position:relative;" id="drop-${r.id}"
-                ondragover="dragover(event,${r.id})" ondragleave="dragleave(event,${r.id})" ondrop="handleDrop(event,${r.id})">
-                <input type="file" accept="image/*" onchange="uploadRoomPhoto(event,${r.id})" style="position:absolute;inset:0;opacity:0;cursor:pointer;">
-                <div class="photo-upload-icon">&#9728;</div>
-                <div class="photo-upload-text">
-                  <strong>點擊選擇照片</strong>，或拖曳至此<br>
-                  <small>JPG、PNG、GIF、WEBP，最大 16MB</small>
-                </div>
-                <div class="upload-progress" id="prog-${r.id}">
-                  <div class="upload-progress-bar" id="progbar-${r.id}" style="width:0%"></div>
-                </div>
-              </div>
-            </div>
-          </div>
+          ${photoGrid}
+          ${canUpload ? `
+          <div class="photo-upload-area" style="position:relative;" id="drop-${r.id}"
+            ondragover="dragover(event,${r.id})" ondragleave="dragleave(event,${r.id})" ondrop="handleDrop(event,${r.id})">
+            <input type="file" accept="image/*" onchange="uploadRoomPhoto(event,${r.id})" style="position:absolute;inset:0;opacity:0;cursor:pointer;">
+            <div class="photo-upload-icon">&#43;</div>
+            <div class="photo-upload-text"><strong>新增照片</strong>（還可上傳 ${5-photos.length} 張）<br><small>JPG、PNG、GIF、WEBP，最大 16MB</small></div>
+            <div class="upload-progress" id="prog-${r.id}"><div class="upload-progress-bar" id="progbar-${r.id}" style="width:0%"></div></div>
+          </div>` : `<div style="color:var(--ink-60);font-size:13px;text-align:center;padding:12px;">已達上限（5 張），請先刪除舊照片再上傳</div>`}
         </div>
       </div>`;
     }).join('');
@@ -1676,61 +1707,48 @@ function handleDrop(e, id) {
 }
 
 async function uploadRoomPhoto(event, roomId) {
-  uploadRoomPhotoFile(event.target.files[0], roomId);
-}
-
-async function uploadRoomPhotoFile(file, roomId) {
+  const file = event.target.files[0];
   if (!file) return;
   const prog = document.getElementById(`prog-${roomId}`);
-  const bar = document.getElementById(`progbar-${roomId}`);
-  prog.style.display = 'block';
-  bar.style.width = '20%';
-
-  const formData = new FormData();
-  formData.append('photo', file);
+  const bar  = document.getElementById(`progbar-${roomId}`);
+  if (prog) { prog.style.display = 'block'; bar.style.width = '30%'; }
+  const fd = new FormData();
+  fd.append('photo', file);
   try {
-    bar.style.width = '60%';
-    const uploadRes = await fetch('/admin/api/upload-photo', {
-      method: 'POST',
-      headers: { 'X-Admin-Password': PW },
-      body: formData
+    if (bar) bar.style.width = '70%';
+    const res  = await fetch(`/admin/api/rooms/${roomId}/photos`, {
+      method: 'POST', headers: { 'X-Admin-Password': PW }, body: fd
     });
-    bar.style.width = '80%';
-    const uploadData = await uploadRes.json();
-    if (!uploadRes.ok || !uploadData.photo_url) {
-      throw new Error(uploadData.error || '上傳失敗');
-    }
-
-    // Update room
-    const updateRes = await fetch(`/admin/api/rooms/${roomId}`, {
-      method: 'PUT',
-      headers: { ...H, 'Content-Type': 'application/json' },
-      body: JSON.stringify({ photo_url: uploadData.photo_url })
-    });
-    bar.style.width = '100%';
-
-    if (updateRes.ok) {
-      toast('照片已更新');
-      // Update thumb live
-      const thumb = document.getElementById(`photo-thumb-${roomId}`);
-      if (thumb) {
-        const newImg = document.createElement('img');
-        newImg.src = uploadData.photo_url;
-        newImg.alt = '照片';
-        newImg.style.cssText = 'width:100%;height:160px;object-fit:cover;border-radius:8px;border:1px solid var(--border);';
-        newImg.id = `photo-thumb-${roomId}`;
-        thumb.replaceWith(newImg);
-      }
-      // Refresh to show remove button
-      setTimeout(() => loadPhotos(), 500);
-    } else {
-      throw new Error('更新失敗');
-    }
+    const data = await res.json();
+    if (!res.ok) throw new Error(data.error || '上傳失敗');
+    if (bar) bar.style.width = '100%';
+    toast('照片已上傳');
+    setTimeout(() => loadPhotos(), 400);
   } catch(e) {
     toast(e.message || '上傳失敗', 'error');
   } finally {
-    setTimeout(() => { prog.style.display = 'none'; bar.style.width = '0%'; }, 1000);
+    setTimeout(() => { if(prog){prog.style.display='none';bar.style.width='0%';} }, 1000);
   }
+}
+
+async function deletePhoto(roomId, idx) {
+  if (!confirm('確定要刪除這張照片？')) return;
+  const res = await fetch(`/admin/api/rooms/${roomId}/photos/${idx}`, {
+    method: 'DELETE', headers: H
+  });
+  const data = await res.json();
+  if (res.ok) { toast('已刪除'); loadPhotos(); }
+  else toast(data.error || '刪除失敗', 'error');
+}
+
+async function setCover(roomId, idx) {
+  const res = await fetch(`/admin/api/rooms/${roomId}/photos/cover`, {
+    method: 'PUT',
+    headers: { ...H, 'Content-Type': 'application/json' },
+    body: JSON.stringify({ index: idx })
+  });
+  if (res.ok) { toast('主封面已設定'); loadPhotos(); }
+  else toast('設定失敗', 'error');
 }
 
 async function removeRoomPhoto(roomId) {
@@ -1742,6 +1760,38 @@ async function removeRoomPhoto(roomId) {
   });
   if (res.ok) { toast('照片已移除'); loadPhotos(); }
   else toast('操作失敗', 'error');
+}
+
+async function uploadLogo(event) {
+  const file = event.target.files[0];
+  if (!file) return;
+  const status = document.getElementById('logoUploadStatus');
+  status.style.display = 'block'; status.textContent = '上傳中...';
+  const fd = new FormData();
+  fd.append('photo', file);
+  try {
+    const res  = await fetch('/admin/api/site-logo', {
+      method: 'POST', headers: { 'X-Admin-Password': PW }, body: fd
+    });
+    const data = await res.json();
+    if (!res.ok) throw new Error(data.error || '上傳失敗');
+    status.textContent = '✓ 已更新';
+    // 即時更新 sidebar logo
+    applyLogo(data.logo_url);
+    toast('Logo 已更新');
+  } catch(e) {
+    status.textContent = '上傳失敗：' + e.message;
+    toast(e.message, 'error');
+  }
+}
+
+function applyLogo(url) {
+  const wrap = document.getElementById('logoPreviewWrap');
+  const icon = document.getElementById('sidebarLogoIcon');
+  if (url) {
+    if (wrap) wrap.innerHTML = `<img src="${url}" style="width:100%;height:100%;object-fit:contain;border-radius:8px;">`;
+    if (icon) icon.innerHTML = `<img src="${url}" style="width:44px;height:44px;object-fit:contain;border-radius:6px;">`;
+  }
 }
 
 // ── HELPERS ──

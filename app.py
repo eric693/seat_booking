@@ -3050,6 +3050,10 @@ with app.app_context():
                 conn.execute(db.text('ALTER TABLE rooms ADD COLUMN capacity_min INTEGER DEFAULT 0'))
                 conn.commit()
                 print('[migrate] 新增 rooms.capacity_min 欄位')
+            if 'min_hours' not in rm_cols:
+                conn.execute(db.text('ALTER TABLE rooms ADD COLUMN min_hours FLOAT DEFAULT 1.0'))
+                conn.commit()
+                print('[migrate] 新增 rooms.min_hours 欄位')
     except Exception as e:
         print(f'[migrate] 欄位檢查略過：{e}')
     try:

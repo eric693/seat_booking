@@ -664,6 +664,9 @@ tr:hover td { background: #fafafa; }
     <div class="nav-item" onclick="showPage('formfields',this)">
       <span class="nav-icon">&#9783;</span> 表單欄位
     </div>
+    <div class="nav-item" onclick="showPage('blocked',this)">
+      <span class="nav-icon">&#128683;</span> 封鎖時段
+    </div>
   </nav>
   <div class="sidebar-bottom">
     <button class="logout-btn" onclick="logout()">登出後台</button>
@@ -1041,6 +1044,59 @@ tr:hover td { background: #fafafa; }
       </div>
     </div>
 
+    <div class="page" id="page-blocked">
+      <div class="card" style="margin-bottom:20px;">
+        <div class="card-head">
+          <div class="card-title">新增封鎖時段</div>
+        </div>
+        <div class="card-body">
+          <div style="display:grid;grid-template-columns:1fr 1fr 1fr 1fr;gap:12px;align-items:end;flex-wrap:wrap;">
+            <div>
+              <label style="font-size:12px;color:var(--ink-60);display:block;margin-bottom:4px;">日期</label>
+              <input type="date" class="finput" id="bl-date" style="padding:8px;">
+            </div>
+            <div>
+              <label style="font-size:12px;color:var(--ink-60);display:block;margin-bottom:4px;">開始時間</label>
+              <select class="fselect" id="bl-start" style="padding:8px;" onchange="updateBlEndOptions()"></select>
+            </div>
+            <div>
+              <label style="font-size:12px;color:var(--ink-60);display:block;margin-bottom:4px;">結束時間</label>
+              <select class="fselect" id="bl-end" style="padding:8px;"></select>
+            </div>
+            <div>
+              <label style="font-size:12px;color:var(--ink-60);display:block;margin-bottom:4px;">會議室</label>
+              <select class="fselect" id="bl-room" style="padding:8px;">
+                <option value="">全館（所有會議室）</option>
+              </select>
+            </div>
+            <div style="grid-column:1/-1;">
+              <label style="font-size:12px;color:var(--ink-60);display:block;margin-bottom:4px;">原因（選填）</label>
+              <input type="text" class="finput" id="bl-reason" placeholder="例：清潔維護、場地整修..." style="padding:8px;">
+            </div>
+          </div>
+          <div style="margin-top:14px;display:flex;gap:10px;align-items:center;">
+            <button class="btn btn-primary" onclick="addBlockedSlot()">+ 新增封鎖</button>
+            <span id="blAddStatus" style="font-size:13px;color:var(--teal);display:none;"></span>
+          </div>
+        </div>
+      </div>
+
+      <div class="card">
+        <div class="card-head">
+          <div class="card-title">封鎖時段列表</div>
+          <div style="display:flex;gap:8px;align-items:center;">
+            <input type="date" class="finput" id="bl-filter-from" style="padding:6px 8px;font-size:13px;" onchange="loadBlockedSlots()">
+            <span style="color:var(--ink-60);">至</span>
+            <input type="date" class="finput" id="bl-filter-to" style="padding:6px 8px;font-size:13px;" onchange="loadBlockedSlots()">
+            <button class="btn btn-outline btn-sm" onclick="clearBlFilter()">清除</button>
+          </div>
+        </div>
+        <div class="card-body">
+          <div id="blList"><div style="text-align:center;padding:40px;color:var(--ink-60);">載入中...</div></div>
+        </div>
+      </div>
+    </div>
+
 <!-- Room Modal -->
 <div class="modal" id="roomModal">
   <div class="modal-box">
@@ -1158,7 +1214,7 @@ function showPage(id, navEl) {
   if (navEl) navEl.classList.add('active');
   const titles = {
     dashboard: '儀表板', bookings: '預約管理', rooms: '會議室管理',
-    content: '文字內容編輯', photos: '照片管理', formfields: '表單欄位管理'
+    content: '文字內容編輯', photos: '照片管理', formfields: '表單欄位管理', blocked: '封鎖時段管理'
   };
   document.getElementById('topbarTitle').textContent = titles[id] || '';
   switch(id) {
@@ -1168,6 +1224,7 @@ function showPage(id, navEl) {
     case 'content': loadContent(); break;
     case 'photos': loadPhotos(); break;
     case 'formfields': loadFormFields(); break;
+    case 'blocked': loadBlockedSlots(); break;
   }
 }
 
@@ -1958,6 +2015,115 @@ async function resetFormFields() {
   _ffFields = JSON.parse(JSON.stringify(FF_DEFAULT));
   renderFFList();
   await saveFormFields();
+}
+
+
+// ══════════════════════════════════════════
+// 封鎖時段管理
+// ══════════════════════════════════════════
+const SLOT_TIMES = [];
+for (let h = 8; h < 22; h++) {
+  SLOT_TIMES.push(`${String(h).padStart(2,'0')}:00`);
+  SLOT_TIMES.push(`${String(h).padStart(2,'0')}:30`);
+}
+SLOT_TIMES.push('22:00');
+
+function initBlTimeSelects() {
+  const startSel = document.getElementById('bl-start');
+  if (!startSel || startSel.options.length > 0) return;
+  SLOT_TIMES.slice(0, -1).forEach(t => {
+    startSel.add(new Option(t, t));
+  });
+  updateBlEndOptions();
+}
+
+function updateBlEndOptions() {
+  const startSel = document.getElementById('bl-start');
+  const endSel   = document.getElementById('bl-end');
+  if (!startSel || !endSel) return;
+  const startIdx = SLOT_TIMES.indexOf(startSel.value);
+  endSel.innerHTML = '';
+  SLOT_TIMES.slice(startIdx + 1).forEach(t => {
+    endSel.add(new Option(t, t));
+  });
+}
+
+async function initBlRoomSelect() {
+  const sel = document.getElementById('bl-room');
+  if (!sel || sel.options.length > 1) return;
+  const rooms = await (await fetch('/admin/api/rooms', {headers:H})).json();
+  rooms.forEach(r => sel.add(new Option(`${r.floor||''} ${r.name}`, r.id)));
+}
+
+async function loadBlockedSlots() {
+  initBlTimeSelects();
+  initBlRoomSelect();
+  const today = new Date().toISOString().slice(0,10);
+  const fromEl = document.getElementById('bl-filter-from');
+  const toEl   = document.getElementById('bl-filter-to');
+  if (!fromEl.value) fromEl.value = today;
+  let url = `/admin/api/blocked-slots?from=${fromEl.value}`;
+  if (toEl.value) url += `&to=${toEl.value}`;
+  const slots = await (await fetch(url, {headers:H})).json();
+  const list = document.getElementById('blList');
+  if (!slots.length) {
+    list.innerHTML = '<div style="text-align:center;padding:40px;color:var(--ink-60);">此期間沒有封鎖時段</div>';
+    return;
+  }
+  // 依日期分組
+  const byDate = {};
+  slots.forEach(s => { if (!byDate[s.date]) byDate[s.date] = []; byDate[s.date].push(s); });
+  list.innerHTML = Object.entries(byDate).map(([date, items]) => `
+    <div style="margin-bottom:16px;">
+      <div style="font-size:13px;font-weight:600;color:var(--ink-60);margin-bottom:8px;padding-bottom:4px;border-bottom:1px solid var(--border);">${date}</div>
+      ${items.map(s => `
+        <div style="display:flex;align-items:center;gap:12px;padding:10px 0;border-bottom:1px solid var(--border-light,#f0f0f0);">
+          <div style="width:120px;font-weight:600;">${s.start_time} – ${s.end_time}</div>
+          <div style="flex:1;color:var(--ink-60);font-size:13px;">${s.room_name}${s.reason ? ' · ' + s.reason : ''}</div>
+          <button class="btn btn-sm" style="background:#c44b3a;color:#fff;border:none;border-radius:4px;cursor:pointer;padding:4px 12px;"
+            onclick="deleteBlockedSlot(${s.id})">刪除</button>
+        </div>`).join('')}
+    </div>`).join('');
+}
+
+function clearBlFilter() {
+  document.getElementById('bl-filter-from').value = '';
+  document.getElementById('bl-filter-to').value = '';
+  loadBlockedSlots();
+}
+
+async function addBlockedSlot() {
+  const date  = document.getElementById('bl-date').value;
+  const start = document.getElementById('bl-start').value;
+  const end   = document.getElementById('bl-end').value;
+  const room  = document.getElementById('bl-room').value;
+  const reason= document.getElementById('bl-reason').value.trim();
+  if (!date) { toast('請選擇日期', 'error'); return; }
+  const status = document.getElementById('blAddStatus');
+  status.style.display = 'block'; status.textContent = '新增中...';
+  const res = await fetch('/admin/api/blocked-slots', {
+    method: 'POST',
+    headers: {...H, 'Content-Type':'application/json'},
+    body: JSON.stringify({ date, start_time: start, end_time: end,
+                           room_id: room ? parseInt(room) : null, reason })
+  });
+  if (res.ok) {
+    status.textContent = '✓ 已新增';
+    toast('封鎖時段已新增');
+    loadBlockedSlots();
+    setTimeout(() => { status.style.display='none'; }, 2000);
+  } else {
+    const d = await res.json();
+    toast(d.error || '新增失敗', 'error');
+    status.style.display = 'none';
+  }
+}
+
+async function deleteBlockedSlot(id) {
+  if (!confirm('確定刪除此封鎖時段？')) return;
+  const res = await fetch(`/admin/api/blocked-slots/${id}`, { method:'DELETE', headers:H });
+  if (res.ok) { toast('已刪除'); loadBlockedSlots(); }
+  else toast('刪除失敗', 'error');
 }
 
 // ── HELPERS ──

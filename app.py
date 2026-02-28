@@ -1293,6 +1293,27 @@ class SiteContent(db.Model):
         db.session.commit()
 
 
+class BlockedSlot(db.Model):
+    """管理員封鎖的時段（不開放預約）"""
+    __tablename__ = 'blocked_slots'
+    id         = db.Column(db.Integer, primary_key=True)
+    room_id    = db.Column(db.Integer, db.ForeignKey('rooms.id'), nullable=True)  # None = 全館
+    date       = db.Column(db.String(10), nullable=False)   # YYYY-MM-DD
+    start_time = db.Column(db.String(5), nullable=False)    # HH:MM
+    end_time   = db.Column(db.String(5), nullable=False)    # HH:MM
+    reason     = db.Column(db.String(200), default='')
+    created_at = db.Column(db.DateTime, default=datetime.now)
+    room       = db.relationship('Room', backref='blocked_slots')
+
+    def to_dict(self):
+        return {
+            'id': self.id, 'room_id': self.room_id,
+            'room_name': self.room.name if self.room else '全館',
+            'date': self.date, 'start_time': self.start_time, 'end_time': self.end_time,
+            'reason': self.reason,
+        }
+
+
 class LineUser(db.Model):
     """LINE Bot 使用者記錄"""
     __tablename__ = 'line_users'
@@ -1334,14 +1355,15 @@ def allowed_file(fn):
 
 
 def check_availability(room_id, date, start_time, end_time, exclude_id=None):
-    """檢查單一時段是否可用（支援多段預約的 segments 展開）"""
+    """檢查單一時段是否可用（支援多段預約的 segments 展開，含封鎖時段）"""
     import json as _json
+    def m(t): h, mn = map(int, t.split(':')); return h*60+mn
+    s, e = m(start_time), m(end_time)
+    # 一般預約衝突
     bookings = Booking.query.filter_by(room_id=room_id, date=date).filter(
         Booking.status.in_(['confirmed', 'completed'])).all()
     if exclude_id:
         bookings = [b for b in bookings if b.id != exclude_id]
-    def m(t): h, mn = map(int, t.split(':')); return h*60+mn
-    s, e = m(start_time), m(end_time)
     for b in bookings:
         segs = []
         if b.segments:
@@ -1352,6 +1374,13 @@ def check_availability(room_id, date, start_time, end_time, exclude_id=None):
         for seg in segs:
             if not (e <= m(seg['start']) or s >= m(seg['end'])):
                 return False
+    # 封鎖時段衝突（全館 + 指定房間）
+    blocked = BlockedSlot.query.filter_by(date=date).filter(
+        (BlockedSlot.room_id == room_id) | (BlockedSlot.room_id.is_(None))
+    ).all()
+    for bl in blocked:
+        if not (e <= m(bl.start_time) or s >= m(bl.end_time)):
+            return False
     return True
 
 
@@ -1378,6 +1407,13 @@ def get_booked_slots(room_id, date):
         for seg in segs:
             result.append({'start': seg['start'], 'end': seg['end'],
                            'booking_number': b.booking_number})
+    # 加入封鎖時段（全館 + 指定房間）
+    blocked = BlockedSlot.query.filter_by(date=date).filter(
+        (BlockedSlot.room_id == room_id) | (BlockedSlot.room_id.is_(None))
+    ).all()
+    for bl in blocked:
+        result.append({'start': bl.start_time, 'end': bl.end_time,
+                       'blocked': True, 'reason': bl.reason or '不開放'})
     return result
 
 
@@ -2794,6 +2830,12 @@ with app.app_context():
                 conn.execute(db.text('ALTER TABLE rooms ADD COLUMN cover_index INTEGER DEFAULT 0'))
                 conn.commit()
                 print('[migrate] 新增 rooms.cover_index 欄位')
+            # blocked_slots table
+            inspector = db.inspect(db.engine)
+            existing_tables = inspector.get_table_names()
+            if 'blocked_slots' not in existing_tables:
+                db.create_all()
+                print('[migrate] 新增 blocked_slots table')
             if 'capacity_min' not in rm_cols:
                 conn.execute(db.text('ALTER TABLE rooms ADD COLUMN capacity_min INTEGER DEFAULT 0'))
                 conn.commit()
@@ -2801,6 +2843,67 @@ with app.app_context():
     except Exception as e:
         print(f'[migrate] 欄位檢查略過：{e}')
     seed()
+
+# ─────────────────────────────────────────────
+# Admin — Blocked Slots
+# ─────────────────────────────────────────────
+
+@app.route('/admin/api/blocked-slots', methods=['GET'])
+def admin_get_blocked_slots():
+    err = check_admin()
+    if err: return err
+    from datetime import datetime as _dt
+    date_from = request.args.get('from', _dt.now().strftime('%Y-%m-%d'))
+    date_to   = request.args.get('to', '')
+    room_id   = request.args.get('room_id')
+    q = BlockedSlot.query.filter(BlockedSlot.date >= date_from)
+    if date_to:
+        q = q.filter(BlockedSlot.date <= date_to)
+    if room_id:
+        q = q.filter((BlockedSlot.room_id == int(room_id)) | (BlockedSlot.room_id.is_(None)))
+    slots = q.order_by(BlockedSlot.date, BlockedSlot.start_time).all()
+    return jsonify([s.to_dict() for s in slots])
+
+@app.route('/admin/api/blocked-slots', methods=['POST'])
+def admin_add_blocked_slot():
+    err = check_admin()
+    if err: return err
+    d = request.get_json()
+    slots_data = d.get('slots', [])
+    if not slots_data:
+        slots_data = [d]
+    created = []
+    for s in slots_data:
+        bs = BlockedSlot(
+            room_id    = s.get('room_id') or None,
+            date       = s['date'],
+            start_time = s['start_time'],
+            end_time   = s['end_time'],
+            reason     = s.get('reason', ''),
+        )
+        db.session.add(bs)
+        created.append(bs)
+    db.session.commit()
+    return jsonify({'success': True, 'count': len(created)}), 201
+
+@app.route('/admin/api/blocked-slots/<int:bid>', methods=['DELETE'])
+def admin_delete_blocked_slot(bid):
+    err = check_admin()
+    if err: return err
+    bs = BlockedSlot.query.get_or_404(bid)
+    db.session.delete(bs)
+    db.session.commit()
+    return jsonify({'success': True})
+
+@app.route('/admin/api/blocked-slots/bulk-delete', methods=['POST'])
+def admin_bulk_delete_blocked_slots():
+    err = check_admin()
+    if err: return err
+    ids = request.get_json().get('ids', [])
+    BlockedSlot.query.filter(BlockedSlot.id.in_(ids)).delete(synchronize_session=False)
+    db.session.commit()
+    return jsonify({'success': True})
+
 
 # ─────────────────────────────────────────────
 # Health Check（供 UptimeRobot / Render ping 用）

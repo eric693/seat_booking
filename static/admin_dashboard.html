@@ -290,6 +290,10 @@ tr:hover td { background: #fafafa; }
 .badge-red { background: var(--red-light); color: var(--red); }
 .badge-gold { background: var(--gold-light); color: #8a6e3e; }
 .badge-gray { background: #f0f0f0; color: #666; }
+.badge-superadmin { background: #fff3cd; color: #856404; border: 1px solid #ffc107; }
+.badge-admin { background: var(--teal-light); color: var(--teal); }
+.badge-manager { background: #f0f0f0; color: #555; }
+.badge-staff { background: #f8f9fa; color: #888; }
 
 /* ── FILTERS ── */
 .filters {
@@ -645,7 +649,7 @@ tr:hover td { background: #fafafa; }
   <nav>
     <div class="nav-section">總覽</div>
     <div class="nav-item active" onclick="showPage('dashboard',this)">
-      <span class="nav-icon">■</span> 儀表板
+      <span class="nav-icon">&#9632;</span> 儀表板
     </div>
     <div class="nav-section">管理</div>
     <div class="nav-item" onclick="showPage('bookings',this)">
@@ -667,8 +671,16 @@ tr:hover td { background: #fafafa; }
     <div class="nav-item" onclick="showPage('blocked',this)">
       <span class="nav-icon">&#128683;</span> 封鎖時段
     </div>
+    <div class="nav-section">系統</div>
+    <div class="nav-item" onclick="showPage('accounts',this)">
+      <span class="nav-icon">&#128100;</span> 帳號管理
+    </div>
+    <div class="nav-item" onclick="showPage('logs',this)">
+      <span class="nav-icon">&#128196;</span> 登入紀錄
+    </div>
   </nav>
   <div class="sidebar-bottom">
+    <div id="currentUserInfo" style="margin-bottom:10px;font-size:12px;color:rgba(255,255,255,0.5);line-height:1.6;"></div>
     <button class="logout-btn" onclick="logout()">登出後台</button>
   </div>
 </div>
@@ -731,7 +743,6 @@ tr:hover td { background: #fafafa; }
           </div>
         </div>
         <div class="card-body" style="padding:16px 20px;">
-          <!-- 圖例 -->
           <div style="display:flex;align-items:center;gap:16px;margin-bottom:16px;flex-wrap:wrap;">
             <div style="display:flex;align-items:center;gap:6px;font-size:12px;color:var(--ink-60);">
               <div style="width:14px;height:14px;border-radius:3px;background:#3A7C55;"></div> 空閒
@@ -758,7 +769,6 @@ tr:hover td { background: #fafafa; }
           <button class="btn btn-outline btn-sm" onclick="showPage('bookings', document.querySelector('[onclick*=bookings]'))">查看全部</button>
         </div>
         <div class="card-body">
-          <!-- 篩選列 -->
           <div class="filters" style="margin-bottom:16px;">
             <div class="filter-group">
               <span class="filter-lbl">日期</span>
@@ -858,8 +868,6 @@ tr:hover td { background: #fafafa; }
         </div>
         <div class="card-body">
           <div class="content-sections">
-
-            <!-- ── 主頁 Hero 區塊 ── -->
             <div class="content-section" style="grid-column:1/-1;">
               <div class="cs-head">主頁 Hero 區塊</div>
               <div class="cs-body">
@@ -873,109 +881,62 @@ tr:hover td { background: #fafafa; }
                     <input class="finput" type="text" id="c-hero_badge" placeholder="專業會議空間">
                   </div>
                   <div class="cs-field" style="grid-column:1/-1;">
-                    <label class="cs-label">主標題（支援 &lt;em&gt; 強調色，例：企業&lt;em&gt;會議室&lt;/em&gt;&lt;br&gt;即時預約）</label>
+                    <label class="cs-label">主標題（支援 &lt;em&gt; 強調色）</label>
                     <input class="finput" type="text" id="c-site_subtitle" placeholder="企業&lt;em&gt;會議室&lt;/em&gt;&lt;br&gt;即時預約">
                   </div>
                   <div class="cs-field" style="grid-column:1/-1;">
                     <label class="cs-label">Hero 副標說明文字</label>
-                    <textarea class="ftarea" id="c-site_description" placeholder="提供多種類型會議室，彈性時段預約，滿足各種商務需求。" rows="2"></textarea>
+                    <textarea class="ftarea" id="c-site_description" rows="2"></textarea>
                   </div>
                 </div>
               </div>
             </div>
-
-            <!-- ── 三大步驟標題 ── -->
             <div class="content-section">
               <div class="cs-head">預約步驟標題</div>
               <div class="cs-body">
-                <div class="cs-field">
-                  <label class="cs-label">Step 1 標題</label>
-                  <input class="finput" type="text" id="c-step1_title" placeholder="選擇會議室">
-                </div>
-                <div class="cs-field">
-                  <label class="cs-label">Step 2 標題</label>
-                  <input class="finput" type="text" id="c-step2_title" placeholder="選擇日期與時段">
-                </div>
-                <div class="cs-field">
-                  <label class="cs-label">Step 3 標題</label>
-                  <input class="finput" type="text" id="c-step3_title" placeholder="填寫聯絡資料">
-                </div>
+                <div class="cs-field"><label class="cs-label">Step 1 標題</label><input class="finput" type="text" id="c-step1_title"></div>
+                <div class="cs-field"><label class="cs-label">Step 2 標題</label><input class="finput" type="text" id="c-step2_title"></div>
+                <div class="cs-field"><label class="cs-label">Step 3 標題</label><input class="finput" type="text" id="c-step3_title"></div>
               </div>
             </div>
-
-            <!-- ── 聯絡與服務 ── -->
             <div class="content-section">
               <div class="cs-head">聯絡與服務資訊</div>
               <div class="cs-body">
-                <div class="cs-field">
-                  <label class="cs-label">服務時間</label>
-                  <input class="finput" type="text" id="c-service_hours" placeholder="週一至週五 08:00 – 22:00">
-                </div>
-                <div class="cs-field">
-                  <label class="cs-label">聯絡電話（顯示於導覽列）</label>
-                  <input class="finput" type="text" id="c-contact_phone" placeholder="02-1234-5678">
-                </div>
-                <div class="cs-field">
-                  <label class="cs-label">聯絡 Email</label>
-                  <input class="finput" type="email" id="c-contact_email" placeholder="booking@example.com">
-                </div>
-                <div class="cs-field">
-                  <label class="cs-label">頁尾版權文字</label>
-                  <input class="finput" type="text" id="c-footer_text" placeholder="© 2026 會議室預約系統">
-                </div>
+                <div class="cs-field"><label class="cs-label">服務時間</label><input class="finput" type="text" id="c-service_hours"></div>
+                <div class="cs-field"><label class="cs-label">聯絡電話</label><input class="finput" type="text" id="c-contact_phone"></div>
+                <div class="cs-field"><label class="cs-label">聯絡 Email</label><input class="finput" type="email" id="c-contact_email"></div>
+                <div class="cs-field"><label class="cs-label">頁尾版權文字</label><input class="finput" type="text" id="c-footer_text"></div>
               </div>
             </div>
-
-            <!-- ── 預約須知 ── -->
             <div class="content-section" style="grid-column:1/-1;">
-              <div class="cs-head">預約須知（顯示於確認側邊欄，最多 5 條）</div>
+              <div class="cs-head">預約須知（最多 5 條）</div>
               <div class="cs-body">
                 <div class="fgrid">
-                  <div class="cs-field">
-                    <label class="cs-label">須知 1</label>
-                    <input class="finput" type="text" id="c-notice_1" placeholder="請提前 15 分鐘辦理入場手續">
-                  </div>
-                  <div class="cs-field">
-                    <label class="cs-label">須知 2</label>
-                    <input class="finput" type="text" id="c-notice_2" placeholder="取消或更改請提前 2 小時通知">
-                  </div>
-                  <div class="cs-field">
-                    <label class="cs-label">須知 3</label>
-                    <input class="finput" type="text" id="c-notice_3" placeholder="禁止攜帶食物進入精緻會議室">
-                  </div>
-                  <div class="cs-field">
-                    <label class="cs-label">須知 4</label>
-                    <input class="finput" type="text" id="c-notice_4" placeholder="使用後請恢復設備原始設定">
-                  </div>
-                  <div class="cs-field">
-                    <label class="cs-label">須知 5</label>
-                    <input class="finput" type="text" id="c-notice_5" placeholder="逾時使用將依時薪計費">
-                  </div>
+                  <div class="cs-field"><label class="cs-label">須知 1</label><input class="finput" type="text" id="c-notice_1"></div>
+                  <div class="cs-field"><label class="cs-label">須知 2</label><input class="finput" type="text" id="c-notice_2"></div>
+                  <div class="cs-field"><label class="cs-label">須知 3</label><input class="finput" type="text" id="c-notice_3"></div>
+                  <div class="cs-field"><label class="cs-label">須知 4</label><input class="finput" type="text" id="c-notice_4"></div>
+                  <div class="cs-field"><label class="cs-label">須知 5</label><input class="finput" type="text" id="c-notice_5"></div>
                 </div>
               </div>
             </div>
-
           </div>
           <div style="margin-top:20px;text-align:right;">
             <button class="btn btn-primary" onclick="saveContent()" style="padding:12px 28px;font-size:15px;">儲存所有變更</button>
           </div>
-
-          <!-- 通知設定說明 -->
           <div style="margin-top:28px;padding:20px;background:var(--paper);border-radius:8px;border:1px solid var(--border);">
             <div style="font-size:13px;font-weight:700;text-transform:uppercase;letter-spacing:.08em;color:var(--ink);margin-bottom:12px;">通知服務設定（Render 環境變數）</div>
             <div style="font-size:13px;color:var(--ink-60);line-height:1.9;">
               以下設定需在 <strong>Render → Environment</strong> 頁面填入：<br>
               <strong style="color:var(--ink);">Email（二選一）</strong><br>
-              <code style="background:#e8e8e8;padding:2px 6px;border-radius:3px;font-size:12px;">SENDGRID_API_KEY</code> — SendGrid API Key（推薦，免費方案每天 100 封）<br>
-              <code style="background:#e8e8e8;padding:2px 6px;border-radius:3px;font-size:12px;">MAIL_FROM</code> — 寄件人地址（需與 SendGrid 驗證的寄件人一致）<br>
+              <code style="background:#e8e8e8;padding:2px 6px;border-radius:3px;font-size:12px;">SENDGRID_API_KEY</code> — SendGrid API Key<br>
+              <code style="background:#e8e8e8;padding:2px 6px;border-radius:3px;font-size:12px;">MAIL_FROM</code> — 寄件人地址<br>
               <span style="color:#888;font-size:12px;">— 或 —</span><br>
-              <code style="background:#e8e8e8;padding:2px 6px;border-radius:3px;font-size:12px;">GMAIL_USER</code> — Gmail 帳號（備用方案）<br>
-              <code style="background:#e8e8e8;padding:2px 6px;border-radius:3px;font-size:12px;">GMAIL_APP_PASS</code> — Gmail 應用程式密碼（需先開啟 2FA）<br>
+              <code style="background:#e8e8e8;padding:2px 6px;border-radius:3px;font-size:12px;">GMAIL_USER</code> — Gmail 帳號<br>
+              <code style="background:#e8e8e8;padding:2px 6px;border-radius:3px;font-size:12px;">GMAIL_APP_PASS</code> — Gmail 應用程式密碼<br>
               <br><strong style="color:var(--ink);">SMS 簡訊</strong><br>
-              <code style="background:#e8e8e8;padding:2px 6px;border-radius:3px;font-size:12px;">TWILIO_SID</code> — Twilio Account SID（免費試用可用）<br>
-              <code style="background:#e8e8e8;padding:2px 6px;border-radius:3px;font-size:12px;">TWILIO_TOKEN</code> — Twilio Auth Token<br>
-              <code style="background:#e8e8e8;padding:2px 6px;border-radius:3px;font-size:12px;">TWILIO_FROM</code> — Twilio 發送號碼，例：+15005550006<br>
-              <span style="color:var(--green);font-size:12px;">未填入則略過該通知，不影響預約功能。</span>
+              <code style="background:#e8e8e8;padding:2px 6px;border-radius:3px;font-size:12px;">TWILIO_SID</code> / <code style="background:#e8e8e8;padding:2px 6px;border-radius:3px;font-size:12px;">TWILIO_TOKEN</code> / <code style="background:#e8e8e8;padding:2px 6px;border-radius:3px;font-size:12px;">TWILIO_FROM</code><br>
+              <span style="color:var(--green);font-size:12px;">未填入則略過，不影響預約功能。</span>
             </div>
           </div>
         </div>
@@ -984,8 +945,6 @@ tr:hover td { background: #fafafa; }
 
     <!-- ── PHOTOS ── -->
     <div class="page" id="page-photos">
-
-      <!-- Logo 上傳 -->
       <div class="card" style="margin-bottom:20px;">
         <div class="card-head">
           <div class="card-title">系統 Logo</div>
@@ -993,7 +952,7 @@ tr:hover td { background: #fafafa; }
         </div>
         <div class="card-body">
           <div style="display:flex;align-items:center;gap:24px;flex-wrap:wrap;">
-            <div id="logoPreviewWrap" style="width:80px;height:80px;border-radius:12px;background:var(--sidebar-bg);display:flex;align-items:center;justify-content:center;font-size:22px;font-weight:700;color:var(--gold);flex-shrink:0;overflow:hidden;">
+            <div id="logoPreviewWrap" style="width:80px;height:80px;border-radius:12px;background:#111;display:flex;align-items:center;justify-content:center;font-size:22px;font-weight:700;color:var(--gold);flex-shrink:0;overflow:hidden;">
               <span id="logoPreviewText">MR</span>
             </div>
             <div style="flex:1;min-width:200px;">
@@ -1007,24 +966,18 @@ tr:hover td { background: #fafafa; }
           </div>
         </div>
       </div>
-
-      <!-- 會議室照片管理 -->
       <div class="card">
         <div class="card-head">
           <div class="card-title">會議室照片管理</div>
           <div style="font-size:13px;color:var(--ink-60);">每間最多 5 張，可設定主封面</div>
         </div>
         <div class="card-body">
-          <div id="photoRoomList">
-            <div style="text-align:center;padding:40px;color:var(--ink-60);">載入中...</div>
-          </div>
+          <div id="photoRoomList"><div style="text-align:center;padding:40px;color:var(--ink-60);">載入中...</div></div>
         </div>
       </div>
     </div>
 
-  </div>
-</div>
-
+    <!-- ── FORM FIELDS ── -->
     <div class="page" id="page-formfields">
       <div class="card">
         <div class="card-head">
@@ -1044,43 +997,43 @@ tr:hover td { background: #fafafa; }
       </div>
     </div>
 
+    <!-- ── BLOCKED SLOTS ── -->
     <div class="page" id="page-blocked">
       <div class="card" style="margin-bottom:20px;">
-        <div class="card-head">
-          <div class="card-title">新增封鎖時段</div>
-        </div>
+        <div class="card-head"><div class="card-title">新增封鎖時段</div></div>
         <div class="card-body">
-          <div style="display:grid;grid-template-columns:1fr 1fr 1fr 1fr;gap:12px;align-items:end;flex-wrap:wrap;">
-            <div>
+          <div style="display:flex;flex-wrap:wrap;gap:12px;align-items:flex-end;">
+            <div style="min-width:140px;">
               <label style="font-size:12px;color:var(--ink-60);display:block;margin-bottom:4px;">日期</label>
               <input type="date" class="finput" id="bl-date" style="padding:8px;">
             </div>
-            <div>
+            <div style="min-width:110px;">
               <label style="font-size:12px;color:var(--ink-60);display:block;margin-bottom:4px;">開始時間</label>
               <select class="fselect" id="bl-start" style="padding:8px;" onchange="updateBlEndOptions()"></select>
             </div>
-            <div>
+            <div style="min-width:110px;">
               <label style="font-size:12px;color:var(--ink-60);display:block;margin-bottom:4px;">結束時間</label>
               <select class="fselect" id="bl-end" style="padding:8px;"></select>
             </div>
-            <div>
+            <div style="min-width:160px;">
               <label style="font-size:12px;color:var(--ink-60);display:block;margin-bottom:4px;">會議室</label>
               <select class="fselect" id="bl-room" style="padding:8px;">
                 <option value="">全館（所有會議室）</option>
               </select>
             </div>
-            <div style="grid-column:1/-1;">
+            <div style="flex:1;min-width:200px;">
               <label style="font-size:12px;color:var(--ink-60);display:block;margin-bottom:4px;">原因（選填）</label>
               <input type="text" class="finput" id="bl-reason" placeholder="例：清潔維護、場地整修..." style="padding:8px;">
             </div>
+            <div>
+              <button class="btn btn-primary" onclick="addBlockedSlot()" style="white-space:nowrap;">+ 新增封鎖</button>
+            </div>
           </div>
-          <div style="margin-top:14px;display:flex;gap:10px;align-items:center;">
-            <button class="btn btn-primary" onclick="addBlockedSlot()">+ 新增封鎖</button>
+          <div style="margin-top:8px;height:20px;">
             <span id="blAddStatus" style="font-size:13px;color:var(--teal);display:none;"></span>
           </div>
         </div>
       </div>
-
       <div class="card">
         <div class="card-head">
           <div class="card-title">封鎖時段列表</div>
@@ -1097,12 +1050,43 @@ tr:hover td { background: #fafafa; }
       </div>
     </div>
 
+    <!-- ── ACCOUNTS ── -->
+    <div class="page" id="page-accounts">
+      <div class="card">
+        <div class="card-head">
+          <div class="card-title">帳號管理</div>
+          <button class="btn btn-primary btn-sm" onclick="openAddAccount()">＋ 新增帳號</button>
+        </div>
+        <div class="card-body">
+          <div id="accountList"><div style="text-align:center;padding:40px;color:var(--ink-60);">載入中...</div></div>
+        </div>
+      </div>
+    </div>
+
+    <!-- ── LOGIN LOGS ── -->
+    <div class="page" id="page-logs">
+      <div class="card">
+        <div class="card-head">
+          <div class="card-title">登入紀錄</div>
+          <div style="display:flex;align-items:center;gap:12px;">
+            <div id="lastLoginInfo" style="font-size:12px;color:var(--ink-60);"></div>
+            <button class="btn btn-outline btn-sm" onclick="loadLoginLogs()">重新載入</button>
+          </div>
+        </div>
+        <div class="card-body">
+          <div id="loginLogList"><div style="text-align:center;padding:40px;color:var(--ink-60);">載入中...</div></div>
+        </div>
+      </div>
+    </div>
+
+  </div>
+</div>
+
 <!-- Room Modal -->
 <div class="modal" id="roomModal">
   <div class="modal-box">
     <div class="modal-title" id="roomModalTitle">新增會議室</div>
     <input type="hidden" id="rm-id">
-
     <div class="fgrid">
       <div class="fg">
         <label>會議室名稱</label>
@@ -1111,12 +1095,8 @@ tr:hover td { background: #fafafa; }
       <div class="fg">
         <label>類型</label>
         <select class="fselect" id="rm-type">
-          <option>腦力激盪</option>
-          <option>洽談室</option>
-          <option>簡報廳</option>
-          <option>視訊會議</option>
-          <option>行政套房</option>
-          <option>培訓教室</option>
+          <option>腦力激盪</option><option>洽談室</option><option>簡報廳</option>
+          <option>視訊會議</option><option>行政套房</option><option>培訓教室</option>
         </select>
       </div>
       <div class="fg">
@@ -1140,17 +1120,14 @@ tr:hover td { background: #fafafa; }
       <div class="fg">
         <label>狀態</label>
         <select class="fselect" id="rm-active">
-          <option value="true">啟用</option>
-          <option value="false">停用</option>
+          <option value="true">啟用</option><option value="false">停用</option>
         </select>
       </div>
     </div>
-
     <div class="fg">
       <label>描述說明</label>
-      <textarea class="ftarea" id="rm-desc" placeholder="詳細描述此會議室的特色、適用場景、注意事項..." rows="4" style="min-height:100px;"></textarea>
+      <textarea class="ftarea" id="rm-desc" placeholder="詳細描述此會議室的特色..." rows="4" style="min-height:100px;"></textarea>
     </div>
-
     <div class="fg">
       <label>設備設施 <span>（輸入後按 Enter 新增）</span></label>
       <div class="amenity-input-row">
@@ -1159,7 +1136,6 @@ tr:hover td { background: #fafafa; }
       </div>
       <div class="amenity-tags" id="amenityTags"></div>
     </div>
-
     <div class="fg">
       <label>封面照片</label>
       <div class="current-photo-row" id="currentPhotoRow" style="display:none;">
@@ -1181,10 +1157,55 @@ tr:hover td { background: #fafafa; }
       <div id="modalPhotoPreview"></div>
       <input type="hidden" id="rm-photo-url">
     </div>
-
     <div class="modal-footer">
       <button class="btn btn-outline" onclick="closeRoomModal()">取消</button>
       <button class="btn btn-primary" onclick="saveRoom()">儲存</button>
+    </div>
+  </div>
+</div>
+
+<!-- Account Modal -->
+<div class="modal" id="accountModal">
+  <div class="modal-box" style="max-width:560px;">
+    <div class="modal-title" id="accountModalTitle">新增帳號</div>
+    <input type="hidden" id="acc-id">
+    <div class="fgrid">
+      <div class="fg">
+        <label>帳號 <span>（登入用）</span></label>
+        <input class="finput" id="acc-username" placeholder="例：john" autocomplete="off">
+      </div>
+      <div class="fg">
+        <label>顯示名稱</label>
+        <input class="finput" id="acc-display" placeholder="例：王小明">
+      </div>
+      <div class="fg">
+        <label>密碼 <span>（編輯時留空表示不變更）</span></label>
+        <input class="finput" type="password" id="acc-pw" autocomplete="new-password">
+      </div>
+      <div class="fg">
+        <label>角色</label>
+        <select class="fselect" id="acc-role" onchange="onRoleChange()">
+          <option value="superadmin">超級管理員</option>
+          <option value="admin">管理員</option>
+          <option value="manager" selected>店長/經理</option>
+          <option value="staff">門市人員</option>
+        </select>
+      </div>
+      <div class="fg">
+        <label>狀態</label>
+        <select class="fselect" id="acc-active">
+          <option value="true">啟用</option>
+          <option value="false">停用</option>
+        </select>
+      </div>
+    </div>
+    <div style="margin-top:8px;">
+      <div style="font-size:13px;font-weight:600;margin-bottom:6px;">功能權限 <span style="font-weight:400;color:var(--ink-60);font-size:12px;">（超級管理員自動擁有全部）</span></div>
+      <div id="accPermGrid" style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:8px;padding:14px;background:var(--paper);border-radius:6px;border:1px solid var(--border);"></div>
+    </div>
+    <div class="modal-footer">
+      <button class="btn btn-outline" onclick="closeAccountModal()">取消</button>
+      <button class="btn btn-primary" onclick="saveAccount()">儲存</button>
     </div>
   </div>
 </div>
@@ -1202,7 +1223,7 @@ let allRooms = [];
 
 function toast(msg, type = 'success') {
   const el = document.getElementById('toast');
-  el.textContent = (type === 'success' ? '' : '') + msg;
+  el.textContent = msg;
   el.className = `toast show ${type}`;
   setTimeout(() => el.classList.remove('show'), 3000);
 }
@@ -1214,7 +1235,8 @@ function showPage(id, navEl) {
   if (navEl) navEl.classList.add('active');
   const titles = {
     dashboard: '儀表板', bookings: '預約管理', rooms: '會議室管理',
-    content: '文字內容編輯', photos: '照片管理', formfields: '表單欄位管理', blocked: '封鎖時段管理'
+    content: '文字內容編輯', photos: '照片管理', formfields: '表單欄位管理',
+    blocked: '封鎖時段管理', accounts: '帳號管理', logs: '登入紀錄'
   };
   document.getElementById('topbarTitle').textContent = titles[id] || '';
   switch(id) {
@@ -1225,16 +1247,18 @@ function showPage(id, navEl) {
     case 'photos': loadPhotos(); break;
     case 'formfields': loadFormFields(); break;
     case 'blocked': loadBlockedSlots(); break;
+    case 'accounts': loadAccounts(); break;
+    case 'logs': loadLoginLogs(); break;
   }
 }
 
 function logout() {
-  sessionStorage.removeItem('adminPw');
+  fetch('/admin/api/logout', {method:'POST', headers:H}).catch(()=>{});
+  sessionStorage.clear();
   window.location.href = '/admin';
 }
 
 // ── DASHBOARD ──
-// ── 樓層時段看板 ──────────────────────────────────
 function initFloorDate() {
   const el = document.getElementById('floor-date');
   if (el && !el.value) el.value = new Date().toISOString().split('T')[0];
@@ -1253,98 +1277,43 @@ async function loadFloorStatus() {
       board.innerHTML = '<div style="text-align:center;padding:20px;color:var(--ink-60);">無會議室資料</div>';
       return;
     }
-
-    // 時間軸（每小時顯示一個刻度，8:00~22:00）
-    const hours = [];
-    for (let h = 8; h <= 22; h++) hours.push(h === 22 ? '' : h + ':00');
-    // 28格，每兩格一小時
-    const ticks = [];
-    for (let i = 0; i < 28; i++) {
-      ticks.push(i % 2 === 0 ? `${8 + Math.floor(i/2)}:00` : '');
-    }
-
-    // 現在時間 → 計算哪個 slot 是 "now"
     const now = new Date();
     const nowDate = now.toISOString().split('T')[0];
     const isToday = date === nowDate;
-    const nowSlot = isToday
-      ? Math.floor((now.getHours() * 60 + now.getMinutes() - 480) / 30)
-      : -1;
-
-    // 按樓層分組
+    const nowSlot = isToday ? Math.floor((now.getHours() * 60 + now.getMinutes() - 480) / 30) : -1;
+    const ticks = [];
+    for (let i = 0; i < 28; i++) { ticks.push(i % 2 === 0 ? `${8 + Math.floor(i/2)}:00` : ''); }
     const floors = {};
-    data.rooms.forEach(r => {
-      const f = r.floor || '未分層';
-      if (!floors[f]) floors[f] = [];
-      floors[f].push(r);
-    });
-
-    // 排序樓層
-    const floorOrder = Object.keys(floors).sort((a, b) => {
-      const na = parseInt(a) || 0, nb = parseInt(b) || 0;
-      return na - nb;
-    });
-
-    // 時間軸
-    const axisHtml = `
-      <div class="time-axis">
-        ${ticks.map(t => `<div class="time-tick">${t}</div>`).join('')}
-      </div>`;
-
+    data.rooms.forEach(r => { const f = r.floor || '未分層'; if (!floors[f]) floors[f] = []; floors[f].push(r); });
+    const floorOrder = Object.keys(floors).sort((a, b) => (parseInt(a)||0) - (parseInt(b)||0));
+    const axisHtml = `<div class="time-axis">${ticks.map(t => `<div class="time-tick">${t}</div>`).join('')}</div>`;
     let html = axisHtml;
-
     floorOrder.forEach(floor => {
-      html += `<div class="floor-section">
-        <div class="floor-label">${floor}</div>`;
-
+      html += `<div class="floor-section"><div class="floor-label">${floor}</div>`;
       floors[floor].forEach(r => {
-        // 找每個 slot 的預約資訊（用來做 tooltip）
         const slotBookings = new Array(28).fill(null);
         r.bookings.forEach(b => {
-          const sh = parseInt(b.start.split(':')[0]);
-          const sm = parseInt(b.start.split(':')[1]);
-          const eh = parseInt(b.end.split(':')[0]);
-          const em = parseInt(b.end.split(':')[1]);
-          const si = (sh * 60 + sm - 480) / 30;
-          const ei = (eh * 60 + em - 480) / 30;
-          for (let i = Math.max(0,si); i < Math.min(28,ei); i++) {
-            slotBookings[i] = b;
-          }
+          const sh = parseInt(b.start.split(':')[0]), sm = parseInt(b.start.split(':')[1]);
+          const eh = parseInt(b.end.split(':')[0]),   em = parseInt(b.end.split(':')[1]);
+          const si = (sh * 60 + sm - 480) / 30, ei = (eh * 60 + em - 480) / 30;
+          for (let i = Math.max(0,si); i < Math.min(28,ei); i++) slotBookings[i] = b;
         });
-
         const cells = r.slots.map((booked, i) => {
           let cls = 'free';
           if (i < nowSlot) cls = 'past';
           else if (i === nowSlot) cls = booked ? 'now-booked' : 'now-free';
           else if (booked) cls = 'booked';
-
-          const startH = 8 + Math.floor(i / 2);
-          const startM = (i % 2) * 30;
-          const endH = startH + (startM === 30 ? 1 : 0);
-          const endM = startM === 30 ? 0 : 30;
+          const startH = 8 + Math.floor(i / 2), startM = (i % 2) * 30;
+          const endH = startH + (startM === 30 ? 1 : 0), endM = startM === 30 ? 0 : 30;
           const timeLabel = `${String(startH).padStart(2,'0')}:${String(startM).padStart(2,'0')}–${String(endH).padStart(2,'0')}:${String(endM).padStart(2,'0')}`;
-
           let tip = timeLabel;
-          if (booked && slotBookings[i]) {
-            tip = `${timeLabel}｜${slotBookings[i].name}（${slotBookings[i].number}）`;
-          }
-
+          if (booked && slotBookings[i]) tip = `${timeLabel}｜${slotBookings[i].name}（${slotBookings[i].number}）`;
           return `<div class="slot-cell ${cls}" title="${tip}"></div>`;
         }).join('');
-
-        html += `
-          <div class="room-row">
-            <div class="room-row-info">
-              <div class="room-row-name" title="${r.name}">${r.name}</div>
-              <div class="room-row-cap">${r.room_type}  ·  ${r.capacity_label || r.capacity + ' 人'}</div>
-            </div>
-            <div class="slots-wrap">${cells}</div>
-          </div>`;
+        html += `<div class="room-row"><div class="room-row-info"><div class="room-row-name" title="${r.name}">${r.name}</div><div class="room-row-cap">${r.room_type} · ${r.capacity_label || r.capacity + ' 人'}</div></div><div class="slots-wrap">${cells}</div></div>`;
       });
-
-      html += `</div>`; // floor-section
+      html += `</div>`;
     });
-
     board.innerHTML = html;
   } catch(e) {
     board.innerHTML = '<div style="text-align:center;padding:20px;color:var(--red);">載入失敗，請重試</div>';
@@ -1362,26 +1331,19 @@ async function loadDashboard() {
     document.getElementById('st-revenue').textContent = 'NT$' + (stats.total_revenue || 0).toLocaleString();
     document.getElementById('st-cancelled').textContent = stats.cancelled;
     document.getElementById('st-completed').textContent = stats.completed;
-
-    // 填充會議室篩選選項
     const rr = await fetch('/admin/api/rooms', { headers: H });
     const rooms = await rr.json();
     const sel = document.getElementById('dash-fil-room');
     if (sel && sel.options.length <= 1) {
-      rooms.forEach(r => {
-        const opt = document.createElement('option');
-        opt.value = r.id;
-        opt.textContent = r.name;
-        sel.appendChild(opt);
-      });
+      rooms.forEach(r => { const opt = document.createElement('option'); opt.value = r.id; opt.textContent = r.name; sel.appendChild(opt); });
     }
   } catch(e) { console.error(e); }
-  // 載入 logo
   try {
     const sc = await (await fetch('/api/site-content', { headers: H })).json();
     if (sc.logo_url) applyLogo(sc.logo_url);
   } catch(e) {}
   loadDashboardBookings();
+  loadCurrentUser();
 }
 
 async function loadDashboardBookings() {
@@ -1393,7 +1355,6 @@ async function loadDashboardBookings() {
     if (date)   url += `date=${date}&`;
     if (status) url += `status=${status}&`;
     if (room)   url += `room_id=${room}&`;
-
     const res = await fetch(url, { headers: H });
     const bookings = await res.json();
     const tbody = document.getElementById('dash-bookings');
@@ -1414,41 +1375,21 @@ async function loadDashboardBookings() {
 }
 
 function clearDashFilters() {
-  const d = document.getElementById('dash-fil-date');
-  const s = document.getElementById('dash-fil-status');
-  const r = document.getElementById('dash-fil-room');
-  if (d) d.value = '';
-  if (s) s.value = '';
-  if (r) r.value = '';
+  ['dash-fil-date','dash-fil-status','dash-fil-room'].forEach(id => { const el = document.getElementById(id); if (el) el.value = ''; });
   loadDashboardBookings();
 }
 
 // ── BOOKINGS ──
 async function loadBookings() {
   try {
-    // populate room filter
-    if (allRooms.length) {
-      const sel = document.getElementById('fil-room');
-      if (sel.options.length < 2) {
-        allRooms.forEach(r => {
-          const opt = document.createElement('option');
-          opt.value = r.id;
-          opt.textContent = r.name;
-          sel.appendChild(opt);
-        });
-      }
-    } else {
+    if (!allRooms.length) {
       const rr = await fetch('/admin/api/rooms', { headers: H });
       allRooms = await rr.json();
-      const sel = document.getElementById('fil-room');
-      allRooms.forEach(r => {
-        const opt = document.createElement('option');
-        opt.value = r.id;
-        opt.textContent = r.name;
-        sel.appendChild(opt);
-      });
     }
-
+    const sel = document.getElementById('fil-room');
+    if (sel.options.length < 2) {
+      allRooms.forEach(r => { const opt = document.createElement('option'); opt.value = r.id; opt.textContent = r.name; sel.appendChild(opt); });
+    }
     const date = document.getElementById('fil-date').value;
     const status = document.getElementById('fil-status').value;
     const room = document.getElementById('fil-room').value;
@@ -1456,7 +1397,6 @@ async function loadBookings() {
     if (date) url += `date=${date}&`;
     if (status) url += `status=${status}&`;
     if (room) url += `room_id=${room}`;
-
     const res = await fetch(url, { headers: H });
     const bookings = await res.json();
     const tbody = document.getElementById('bookings-tbody');
@@ -1477,10 +1417,13 @@ async function loadBookings() {
         <td>NT$ ${(b.total_price||0).toLocaleString()}</td>
         <td>${badgeHtml(b.status)}</td>
         <td>
-          ${b.status === 'confirmed' ? `
-            <button class="btn btn-outline btn-sm" onclick="completeBooking(${b.id})" title="完成">完成</button>
-            <button class="btn btn-danger btn-sm" onclick="cancelBooking(${b.id})" title="取消">取消</button>
-          ` : '—'}
+          <div style="display:flex;gap:4px;flex-wrap:wrap;">
+            ${b.status === 'confirmed' ? `
+              <button class="btn btn-outline btn-sm" onclick="completeBooking(${b.id})">完成</button>
+              <button class="btn btn-danger btn-sm" onclick="cancelBooking(${b.id})">取消</button>
+            ` : ''}
+            <button class="btn btn-danger btn-sm" onclick="deleteBooking(${b.id})" title="永久刪除此紀錄" style="opacity:0.7;">刪除</button>
+          </div>
         </td>
       </tr>`).join('');
   } catch(e) { console.error(e); }
@@ -1498,6 +1441,13 @@ async function completeBooking(id) {
   const res = await fetch(`/admin/api/bookings/${id}/complete`, { method: 'POST', headers: H });
   if (res.ok) { toast('已標記為完成'); loadBookings(); }
   else toast('操作失敗', 'error');
+}
+
+async function deleteBooking(id) {
+  if (!confirm('確定永久刪除此預約紀錄？此操作無法復原。')) return;
+  const res = await fetch(`/admin/api/bookings/${id}`, { method: 'DELETE', headers: H });
+  if (res.ok) { toast('預約紀錄已刪除'); loadBookings(); }
+  else toast('刪除失敗', 'error');
 }
 
 // ── ROOMS ADMIN ──
@@ -1530,17 +1480,13 @@ async function loadRoomsAdmin() {
 }
 
 async function toggleRoomStatus(id, newActive) {
-  const res = await fetch(`/admin/api/rooms/${id}`, {
-    method: 'PUT',
-    headers: { ...H, 'Content-Type': 'application/json' },
-    body: JSON.stringify({ is_active: newActive })
-  });
+  const res = await fetch(`/admin/api/rooms/${id}`, { method: 'PUT', headers: { ...H, 'Content-Type': 'application/json' }, body: JSON.stringify({ is_active: newActive }) });
   if (res.ok) { toast(newActive ? '已啟用' : '已停用'); loadRoomsAdmin(); }
   else toast('操作失敗', 'error');
 }
 
 // ── ROOM MODAL ──
-function openRoomModal(roomData = null) {
+function openRoomModal() {
   document.getElementById('rm-id').value = '';
   document.getElementById('rm-name').value = '';
   document.getElementById('rm-type').value = '洽談室';
@@ -1574,31 +1520,21 @@ function editRoom(id) {
   document.getElementById('rm-photo-url').value = r.photo_url || '';
   amenities = [...(r.amenities || [])];
   renderAmenities();
-
   const photoRow = document.getElementById('currentPhotoRow');
-  if (r.photo_url) {
-    photoRow.style.display = 'flex';
-    document.getElementById('currentPhotoThumb').src = r.photo_url;
-  } else {
-    photoRow.style.display = 'none';
-  }
-
+  if (r.photo_url) { photoRow.style.display = 'flex'; document.getElementById('currentPhotoThumb').src = r.photo_url; }
+  else { photoRow.style.display = 'none'; }
   document.getElementById('roomModalTitle').textContent = `編輯：${r.name}`;
   document.getElementById('roomModal').classList.add('show');
 }
 
-function closeRoomModal() {
-  document.getElementById('roomModal').classList.remove('show');
-}
+function closeRoomModal() { document.getElementById('roomModal').classList.remove('show'); }
 
-// Amenities
 function amenityKeydown(e) { if (e.key === 'Enter') { e.preventDefault(); addAmenity(); } }
 function addAmenity() {
   const input = document.getElementById('rm-amenity-input');
   const val = input.value.trim();
   if (val && !amenities.includes(val)) { amenities.push(val); renderAmenities(); }
-  input.value = '';
-  input.focus();
+  input.value = ''; input.focus();
 }
 function removeAmenity(idx) { amenities.splice(idx, 1); renderAmenities(); }
 function renderAmenities() {
@@ -1607,11 +1543,7 @@ function renderAmenities() {
   ).join('');
 }
 
-// Photo upload in modal
-function triggerModalFileInput() {
-  // handled by input overlay
-}
-
+function triggerModalFileInput() {}
 let pendingPhotoUrl = '';
 
 async function handleModalPhotoSelect(event) {
@@ -1619,39 +1551,24 @@ async function handleModalPhotoSelect(event) {
   if (!file) return;
   const progress = document.getElementById('modalUploadProgress');
   const bar = document.getElementById('modalUploadBar');
-  progress.style.display = 'block';
-  bar.style.width = '30%';
-
+  progress.style.display = 'block'; bar.style.width = '30%';
   const formData = new FormData();
   formData.append('photo', file);
   try {
     bar.style.width = '70%';
-    const res = await fetch('/admin/api/upload-photo', {
-      method: 'POST',
-      headers: { 'X-Admin-Password': PW },
-      body: formData
-    });
+    const res = await fetch('/admin/api/upload-photo', { method: 'POST', headers: { 'X-Admin-Password': PW }, body: formData });
     bar.style.width = '100%';
     const data = await res.json();
     if (res.ok && data.photo_url) {
       document.getElementById('rm-photo-url').value = data.photo_url;
       pendingPhotoUrl = data.photo_url;
-      document.getElementById('modalPhotoPreview').innerHTML = `
-        <div class="photo-preview">
-          <img src="${data.photo_url}" alt="預覽">
-        </div>`;
-      // Update current photo row
+      document.getElementById('modalPhotoPreview').innerHTML = `<div class="photo-preview"><img src="${data.photo_url}" alt="預覽"></div>`;
       document.getElementById('currentPhotoRow').style.display = 'flex';
       document.getElementById('currentPhotoThumb').src = data.photo_url;
       toast('照片上傳成功');
-    } else {
-      toast(data.error || '上傳失敗', 'error');
-    }
-  } catch {
-    toast('上傳失敗', 'error');
-  } finally {
-    setTimeout(() => { progress.style.display = 'none'; bar.style.width = '0%'; }, 800);
-  }
+    } else { toast(data.error || '上傳失敗', 'error'); }
+  } catch { toast('上傳失敗', 'error'); }
+  finally { setTimeout(() => { progress.style.display = 'none'; bar.style.width = '0%'; }, 800); }
 }
 
 function clearModalPhoto() {
@@ -1679,19 +1596,9 @@ async function saveRoom() {
   try {
     const url = id ? `/admin/api/rooms/${id}` : '/admin/api/rooms';
     const method = id ? 'PUT' : 'POST';
-    const res = await fetch(url, {
-      method,
-      headers: { ...H, 'Content-Type': 'application/json' },
-      body: JSON.stringify(payload)
-    });
-    if (res.ok) {
-      toast(id ? '會議室已更新' : '會議室已新增');
-      closeRoomModal();
-      loadRoomsAdmin();
-    } else {
-      const err = await res.json();
-      toast(err.error || '儲存失敗', 'error');
-    }
+    const res = await fetch(url, { method, headers: { ...H, 'Content-Type': 'application/json' }, body: JSON.stringify(payload) });
+    if (res.ok) { toast(id ? '會議室已更新' : '會議室已新增'); closeRoomModal(); loadRoomsAdmin(); }
+    else { const err = await res.json(); toast(err.error || '儲存失敗', 'error'); }
   } catch { toast('儲存失敗', 'error'); }
 }
 
@@ -1704,10 +1611,7 @@ async function loadContent() {
                   'step1_title','step2_title','step3_title',
                   'service_hours','contact_phone','contact_email','footer_text',
                   'notice_1','notice_2','notice_3','notice_4','notice_5'];
-    keys.forEach(k => {
-      const el = document.getElementById(`c-${k}`);
-      if (el && data[k] !== undefined) el.value = data[k];
-    });
+    keys.forEach(k => { const el = document.getElementById(`c-${k}`); if (el && data[k] !== undefined) el.value = data[k]; });
   } catch { toast('載入失敗', 'error'); }
 }
 
@@ -1717,16 +1621,9 @@ async function saveContent() {
                 'service_hours','contact_phone','contact_email','footer_text',
                 'notice_1','notice_2','notice_3','notice_4','notice_5'];
   const payload = {};
-  keys.forEach(k => {
-    const el = document.getElementById(`c-${k}`);
-    if (el) payload[k] = el.value.trim();
-  });
+  keys.forEach(k => { const el = document.getElementById(`c-${k}`); if (el) payload[k] = el.value.trim(); });
   try {
-    const res = await fetch('/admin/api/site-content', {
-      method: 'POST',
-      headers: { ...H, 'Content-Type': 'application/json' },
-      body: JSON.stringify(payload)
-    });
+    const res = await fetch('/admin/api/site-content', { method: 'POST', headers: { ...H, 'Content-Type': 'application/json' }, body: JSON.stringify(payload) });
     if (res.ok) toast('已儲存，前台將即時更新');
     else toast('儲存失敗', 'error');
   } catch { toast('儲存失敗', 'error'); }
@@ -1738,13 +1635,11 @@ async function loadPhotos() {
     const res = await fetch('/admin/api/rooms', { headers: H });
     allRooms = await res.json();
     const ICONS = {'腦力激盪':'BS','洽談室':'MT','簡報廳':'PR','視訊會議':'VC','行政套房':'EX','培訓教室':'TR'};
-
     document.getElementById('photoRoomList').innerHTML = allRooms.map(r => {
       const icon = ICONS[r.room_type] || 'MR';
       const photos = r.photos || (r.photo_url ? [r.photo_url] : []);
       const coverIdx = r.cover_index || 0;
       const canUpload = photos.length < 5;
-
       const photoGrid = photos.length > 0
         ? `<div style="display:flex;flex-wrap:wrap;gap:10px;margin-bottom:12px;" id="photo-grid-${r.id}">
             ${photos.map((url, i) => `
@@ -1758,15 +1653,11 @@ async function loadPhotos() {
               </div>`).join('')}
           </div>`
         : `<div style="color:var(--ink-60);font-size:13px;margin-bottom:12px;">尚未上傳照片</div>`;
-
       return `
       <div class="card" style="margin-bottom:20px;">
         <div class="card-head">
           <div style="display:flex;align-items:center;gap:12px;">
-            <div>
-              <div class="card-title">${r.name}</div>
-              <div style="font-size:12px;color:var(--ink-60);">${r.room_type} · ${r.floor||'F—'} · ${photos.length}/5 張</div>
-            </div>
+            <div><div class="card-title">${r.name}</div><div style="font-size:12px;color:var(--ink-60);">${r.room_type} · ${r.floor||'F—'} · ${photos.length}/5 張</div></div>
           </div>
           <span class="badge ${r.is_active?'badge-green':'badge-gray'}">${r.is_active?'啟用中':'已停用'}</span>
         </div>
@@ -1788,113 +1679,73 @@ async function loadPhotos() {
 
 function dragover(e, id) { e.preventDefault(); document.getElementById(`drop-${id}`).classList.add('dragover'); }
 function dragleave(e, id) { document.getElementById(`drop-${id}`).classList.remove('dragover'); }
-function handleDrop(e, id) {
-  e.preventDefault();
-  document.getElementById(`drop-${id}`).classList.remove('dragover');
-  const file = e.dataTransfer.files[0];
-  if (file) uploadRoomPhotoFile(file, id);
-}
+function handleDrop(e, id) { e.preventDefault(); document.getElementById(`drop-${id}`).classList.remove('dragover'); const file = e.dataTransfer.files[0]; if (file) uploadRoomPhotoFile(file, id); }
 
-async function uploadRoomPhoto(event, roomId) {
-  const file = event.target.files[0];
+async function uploadRoomPhoto(event, roomId) { uploadRoomPhotoFile(event.target.files[0], roomId); }
+
+async function uploadRoomPhotoFile(file, roomId) {
   if (!file) return;
-  const prog = document.getElementById(`prog-${roomId}`);
-  const bar  = document.getElementById(`progbar-${roomId}`);
+  const prog = document.getElementById(`prog-${roomId}`), bar = document.getElementById(`progbar-${roomId}`);
   if (prog) { prog.style.display = 'block'; bar.style.width = '30%'; }
-  const fd = new FormData();
-  fd.append('photo', file);
+  const fd = new FormData(); fd.append('photo', file);
   try {
     if (bar) bar.style.width = '70%';
-    const res  = await fetch(`/admin/api/rooms/${roomId}/photos`, {
-      method: 'POST', headers: { 'X-Admin-Password': PW }, body: fd
-    });
+    const res = await fetch(`/admin/api/rooms/${roomId}/photos`, { method: 'POST', headers: { 'X-Admin-Password': PW }, body: fd });
     const data = await res.json();
     if (!res.ok) throw new Error(data.error || '上傳失敗');
     if (bar) bar.style.width = '100%';
     toast('照片已上傳');
     setTimeout(() => loadPhotos(), 400);
-  } catch(e) {
-    toast(e.message || '上傳失敗', 'error');
-  } finally {
-    setTimeout(() => { if(prog){prog.style.display='none';bar.style.width='0%';} }, 1000);
-  }
+  } catch(e) { toast(e.message || '上傳失敗', 'error'); }
+  finally { setTimeout(() => { if(prog){prog.style.display='none'; bar.style.width='0%';} }, 1000); }
 }
 
 async function deletePhoto(roomId, idx) {
   if (!confirm('確定要刪除這張照片？')) return;
-  const res = await fetch(`/admin/api/rooms/${roomId}/photos/${idx}`, {
-    method: 'DELETE', headers: H
-  });
+  const res = await fetch(`/admin/api/rooms/${roomId}/photos/${idx}`, { method: 'DELETE', headers: H });
   const data = await res.json();
   if (res.ok) { toast('已刪除'); loadPhotos(); }
   else toast(data.error || '刪除失敗', 'error');
 }
 
 async function setCover(roomId, idx) {
-  const res = await fetch(`/admin/api/rooms/${roomId}/photos/cover`, {
-    method: 'PUT',
-    headers: { ...H, 'Content-Type': 'application/json' },
-    body: JSON.stringify({ index: idx })
-  });
+  const res = await fetch(`/admin/api/rooms/${roomId}/photos/cover`, { method: 'PUT', headers: { ...H, 'Content-Type': 'application/json' }, body: JSON.stringify({ index: idx }) });
   if (res.ok) { toast('主封面已設定'); loadPhotos(); }
   else toast('設定失敗', 'error');
 }
 
-async function removeRoomPhoto(roomId) {
-  if (!confirm('確定要移除此照片？')) return;
-  const res = await fetch(`/admin/api/rooms/${roomId}`, {
-    method: 'PUT',
-    headers: { ...H, 'Content-Type': 'application/json' },
-    body: JSON.stringify({ photo_url: '' })
-  });
-  if (res.ok) { toast('照片已移除'); loadPhotos(); }
-  else toast('操作失敗', 'error');
-}
-
 async function uploadLogo(event) {
-  const file = event.target.files[0];
-  if (!file) return;
+  const file = event.target.files[0]; if (!file) return;
   const status = document.getElementById('logoUploadStatus');
   status.style.display = 'block'; status.textContent = '上傳中...';
-  const fd = new FormData();
-  fd.append('photo', file);
+  const fd = new FormData(); fd.append('photo', file);
   try {
-    const res  = await fetch('/admin/api/site-logo', {
-      method: 'POST', headers: { 'X-Admin-Password': PW }, body: fd
-    });
+    const res = await fetch('/admin/api/site-logo', { method: 'POST', headers: { 'X-Admin-Password': PW }, body: fd });
     const data = await res.json();
     if (!res.ok) throw new Error(data.error || '上傳失敗');
     status.textContent = '✓ 已更新';
-    // 即時更新 sidebar logo
     applyLogo(data.logo_url);
     toast('Logo 已更新');
-  } catch(e) {
-    status.textContent = '上傳失敗：' + e.message;
-    toast(e.message, 'error');
-  }
+  } catch(e) { status.textContent = '上傳失敗：' + e.message; toast(e.message, 'error'); }
 }
 
 function applyLogo(url) {
-  const wrap = document.getElementById('logoPreviewWrap');
-  const icon = document.getElementById('sidebarLogoIcon');
+  const wrap = document.getElementById('logoPreviewWrap'), icon = document.getElementById('sidebarLogoIcon');
   if (url) {
     if (wrap) wrap.innerHTML = `<img src="${url}" style="width:100%;height:100%;object-fit:contain;border-radius:8px;">`;
-    if (icon) icon.innerHTML = `<img src="${url}" style="width:44px;height:44px;object-fit:contain;border-radius:6px;">`;
+    if (icon) icon.innerHTML = `<img src="${url}" style="width:32px;height:32px;object-fit:contain;border-radius:4px;">`;
   }
 }
 
-
-// ══════════════════════════════════════════
-// 表單欄位管理
-// ══════════════════════════════════════════
+// ── FORM FIELDS ──
 const FF_DEFAULT = [
-  {id:"name",      label:"聯絡人姓名", type:"text",     placeholder:"請輸入姓名",         required:true,  system:true,  full:false},
-  {id:"phone",     label:"手機號碼",   type:"tel",      placeholder:"0912345678",          required:true,  system:true,  full:false},
-  {id:"email",     label:"Email",     type:"email",    placeholder:"your@email.com",      required:true,  system:true,  full:false, hint:"必填，接收確認信"},
-  {id:"department",label:"部門／公司", type:"text",     placeholder:"例：行銷部",           required:false, system:true,  full:false},
-  {id:"attendees", label:"預計出席人數",type:"select",  options:"1,2,3,4,5,6,8,10,15,20,30,50", required:false, system:true, full:false},
-  {id:"purpose",   label:"會議類型",   type:"select",   options:"部門會議,客戶洽談,員工培訓,產品發表,視訊會議,腦力激盪,其他", required:false, system:true, full:false},
-  {id:"note",      label:"備註",      type:"textarea", placeholder:"特殊需求或注意事項...", required:false, system:true,  full:true}
+  {id:"name",label:"聯絡人姓名",type:"text",placeholder:"請輸入姓名",required:true,system:true,full:false},
+  {id:"phone",label:"手機號碼",type:"tel",placeholder:"0912345678",required:true,system:true,full:false},
+  {id:"email",label:"Email",type:"email",placeholder:"your@email.com",required:true,system:true,full:false,hint:"必填，接收確認信"},
+  {id:"department",label:"部門／公司",type:"text",placeholder:"例：行銷部",required:false,system:true,full:false},
+  {id:"attendees",label:"預計出席人數",type:"select",options:"1,2,3,4,5,6,8,10,15,20,30,50",required:false,system:true,full:false},
+  {id:"purpose",label:"會議類型",type:"select",options:"部門會議,客戶洽談,員工培訓,產品發表,視訊會議,腦力激盪,其他",required:false,system:true,full:false},
+  {id:"note",label:"備註",type:"textarea",placeholder:"特殊需求或注意事項...",required:false,system:true,full:true}
 ];
 let _ffFields = [];
 let _ffDragIdx = null;
@@ -1913,15 +1764,14 @@ async function loadFormFields() {
 function renderFFList() {
   const list = document.getElementById('ffList');
   list.innerHTML = _ffFields.map((f, i) => `
-    <div class="card" style="padding:0;border:1px solid var(--border);border-radius:8px;background:var(--surface);"
+    <div class="card" style="padding:0;border:1px solid var(--border);border-radius:8px;"
       draggable="true" ondragstart="_ffDragStart(${i})" ondragover="_ffDragOver(event,${i})" ondrop="_ffDrop(event,${i})">
       <div style="display:flex;align-items:center;gap:12px;padding:12px 16px;">
-        <span style="cursor:grab;color:var(--ink-40);font-size:18px;padding:0 4px;">⠿</span>
-        <div style="flex:1;display:grid;grid-template-columns:1fr 1fr 1fr auto auto;gap:8px;align-items:center;flex-wrap:wrap;">
+        <span style="cursor:grab;color:var(--ink-60);font-size:18px;padding:0 4px;">⠿</span>
+        <div style="flex:1;display:grid;grid-template-columns:1fr 1fr 1fr auto auto;gap:8px;align-items:center;">
           <div>
             <div style="font-size:11px;color:var(--ink-60);margin-bottom:3px;">欄位名稱</div>
-            <input class="finput" style="padding:6px 8px;font-size:13px;" value="${esc(f.label)}"
-              onchange="_ffUpdate(${i},'label',this.value)" placeholder="欄位名稱">
+            <input class="finput" style="padding:6px 8px;font-size:13px;" value="${esc(f.label)}" onchange="_ffUpdate(${i},'label',this.value)">
           </div>
           <div>
             <div style="font-size:11px;color:var(--ink-60);margin-bottom:3px;">類型</div>
@@ -1936,116 +1786,68 @@ function renderFFList() {
           </div>
           <div>
             <div style="font-size:11px;color:var(--ink-60);margin-bottom:3px;">${f.type==='select'?'選項（逗號分隔）':'提示文字'}</div>
-            <input class="finput" style="padding:6px 8px;font-size:13px;"
-              value="${esc(f.type==='select'?(f.options||''):(f.placeholder||''))}"
-              onchange="_ffUpdate(${i},f.type==='select'?'options':'placeholder',this.value)"
-              placeholder="${f.type==='select'?'選項1,選項2':'提示文字'}">
+            <input class="finput" style="padding:6px 8px;font-size:13px;" value="${esc(f.type==='select'?(f.options||''):(f.placeholder||''))}"
+              onchange="_ffUpdate(${i},f.type==='select'?'options':'placeholder',this.value)">
           </div>
           <div style="text-align:center;">
             <div style="font-size:11px;color:var(--ink-60);margin-bottom:6px;">必填</div>
-            <label style="display:flex;align-items:center;justify-content:center;gap:4px;cursor:pointer;">
-              <input type="checkbox" ${f.required?'checked':''} onchange="_ffUpdate(${i},'required',this.checked)" ${f.id==='name'||f.id==='phone'||f.id==='email'?'disabled':''}>
-            </label>
+            <input type="checkbox" ${f.required?'checked':''} onchange="_ffUpdate(${i},'required',this.checked)" ${f.id==='name'||f.id==='phone'||f.id==='email'?'disabled':''}>
           </div>
           <div style="text-align:center;">
             <div style="font-size:11px;color:var(--ink-60);margin-bottom:6px;">全寬</div>
-            <label style="display:flex;align-items:center;justify-content:center;gap:4px;cursor:pointer;">
-              <input type="checkbox" ${f.full?'checked':''} onchange="_ffUpdate(${i},'full',this.checked)">
-            </label>
+            <input type="checkbox" ${f.full?'checked':''} onchange="_ffUpdate(${i},'full',this.checked)">
           </div>
         </div>
-        ${f.system ? '<span style="font-size:11px;color:var(--ink-40);padding:0 8px;">系統</span>'
-          : `<button class="btn btn-sm" style="background:#c44b3a;color:#fff;border:none;border-radius:4px;cursor:pointer;padding:4px 10px;flex-shrink:0;" onclick="_ffDelete(${i})">刪除</button>`}
+        ${f.system ? '<span style="font-size:11px;color:var(--ink-60);padding:0 8px;white-space:nowrap;">系統</span>'
+          : `<button class="btn btn-sm btn-danger" onclick="_ffDelete(${i})">刪除</button>`}
       </div>
-    </div>
-  `).join('');
+    </div>`).join('');
 }
 
 function esc(s) { return String(s||'').replace(/"/g,'&quot;').replace(/</g,'&lt;'); }
-
 function _ffUpdate(i, key, val) { _ffFields[i][key] = val; }
-function _ffDelete(i) {
-  if (!confirm(`確定刪除「${_ffFields[i].label}」欄位？`)) return;
-  _ffFields.splice(i, 1);
-  renderFFList();
-}
+function _ffDelete(i) { if (!confirm(`確定刪除「${_ffFields[i].label}」欄位？`)) return; _ffFields.splice(i, 1); renderFFList(); }
 function _ffDragStart(i) { _ffDragIdx = i; }
 function _ffDragOver(e, i) { e.preventDefault(); }
-function _ffDrop(e, i) {
-  e.preventDefault();
-  if (_ffDragIdx === null || _ffDragIdx === i) return;
-  const moved = _ffFields.splice(_ffDragIdx, 1)[0];
-  _ffFields.splice(i, 0, moved);
-  _ffDragIdx = null;
-  renderFFList();
-}
+function _ffDrop(e, i) { e.preventDefault(); if (_ffDragIdx === null || _ffDragIdx === i) return; const moved = _ffFields.splice(_ffDragIdx, 1)[0]; _ffFields.splice(i, 0, moved); _ffDragIdx = null; renderFFList(); }
 
 function addFormField() {
-  _ffFields.push({
-    id: 'custom_' + Date.now(),
-    label: '新欄位',
-    type: 'text',
-    placeholder: '',
-    required: false,
-    system: false,
-    full: false
-  });
+  _ffFields.push({id: 'custom_' + Date.now(), label: '新欄位', type: 'text', placeholder: '', required: false, system: false, full: false});
   renderFFList();
-  // scroll to bottom
   document.getElementById('ffList').lastElementChild?.scrollIntoView({behavior:'smooth'});
 }
 
 async function saveFormFields() {
-  // 同步最新 input 值
-  document.querySelectorAll('#ffList input[type=text], #ffList input[type=tel], #ffList input[type=email]').forEach(el => {
-    const m = el.getAttribute('onchange')?.match(/_ffUpdate\((\d+),'(\w+)'/);
-    if (m) _ffUpdate(parseInt(m[1]), m[2], el.value);
-  });
-  const res = await fetch('/admin/api/site-content', {
-    method: 'POST',
-    headers: {...H, 'Content-Type':'application/json'},
-    body: JSON.stringify({form_fields: JSON.stringify(_ffFields)})
-  });
+  const res = await fetch('/admin/api/site-content', { method: 'POST', headers: {...H, 'Content-Type':'application/json'}, body: JSON.stringify({form_fields: JSON.stringify(_ffFields)}) });
   if (res.ok) toast('表單欄位已儲存');
   else toast('儲存失敗', 'error');
 }
 
 async function resetFormFields() {
-  if (!confirm('確定還原為預設欄位？自訂欄位將全部清除。')) return;
+  if (!confirm('確定還原為預設欄位？')) return;
   _ffFields = JSON.parse(JSON.stringify(FF_DEFAULT));
   renderFFList();
   await saveFormFields();
 }
 
-
-// ══════════════════════════════════════════
-// 封鎖時段管理
-// ══════════════════════════════════════════
+// ── BLOCKED SLOTS ──
 const SLOT_TIMES = [];
-for (let h = 8; h < 22; h++) {
-  SLOT_TIMES.push(`${String(h).padStart(2,'0')}:00`);
-  SLOT_TIMES.push(`${String(h).padStart(2,'0')}:30`);
-}
+for (let h = 8; h < 22; h++) { SLOT_TIMES.push(`${String(h).padStart(2,'0')}:00`); SLOT_TIMES.push(`${String(h).padStart(2,'0')}:30`); }
 SLOT_TIMES.push('22:00');
 
 function initBlTimeSelects() {
   const startSel = document.getElementById('bl-start');
   if (!startSel || startSel.options.length > 0) return;
-  SLOT_TIMES.slice(0, -1).forEach(t => {
-    startSel.add(new Option(t, t));
-  });
+  SLOT_TIMES.slice(0, -1).forEach(t => startSel.add(new Option(t, t)));
   updateBlEndOptions();
 }
 
 function updateBlEndOptions() {
-  const startSel = document.getElementById('bl-start');
-  const endSel   = document.getElementById('bl-end');
+  const startSel = document.getElementById('bl-start'), endSel = document.getElementById('bl-end');
   if (!startSel || !endSel) return;
   const startIdx = SLOT_TIMES.indexOf(startSel.value);
   endSel.innerHTML = '';
-  SLOT_TIMES.slice(startIdx + 1).forEach(t => {
-    endSel.add(new Option(t, t));
-  });
+  SLOT_TIMES.slice(startIdx + 1).forEach(t => endSel.add(new Option(t, t)));
 }
 
 async function initBlRoomSelect() {
@@ -2059,64 +1861,39 @@ async function loadBlockedSlots() {
   initBlTimeSelects();
   initBlRoomSelect();
   const today = new Date().toISOString().slice(0,10);
-  const fromEl = document.getElementById('bl-filter-from');
-  const toEl   = document.getElementById('bl-filter-to');
+  const fromEl = document.getElementById('bl-filter-from'), toEl = document.getElementById('bl-filter-to');
   if (!fromEl.value) fromEl.value = today;
   let url = `/admin/api/blocked-slots?from=${fromEl.value}`;
   if (toEl.value) url += `&to=${toEl.value}`;
   const slots = await (await fetch(url, {headers:H})).json();
   const list = document.getElementById('blList');
-  if (!slots.length) {
-    list.innerHTML = '<div style="text-align:center;padding:40px;color:var(--ink-60);">此期間沒有封鎖時段</div>';
-    return;
-  }
-  // 依日期分組
+  if (!slots.length) { list.innerHTML = '<div style="text-align:center;padding:40px;color:var(--ink-60);">此期間沒有封鎖時段</div>'; return; }
   const byDate = {};
   slots.forEach(s => { if (!byDate[s.date]) byDate[s.date] = []; byDate[s.date].push(s); });
   list.innerHTML = Object.entries(byDate).map(([date, items]) => `
     <div style="margin-bottom:16px;">
       <div style="font-size:13px;font-weight:600;color:var(--ink-60);margin-bottom:8px;padding-bottom:4px;border-bottom:1px solid var(--border);">${date}</div>
       ${items.map(s => `
-        <div style="display:flex;align-items:center;gap:12px;padding:10px 0;border-bottom:1px solid var(--border-light,#f0f0f0);">
+        <div style="display:flex;align-items:center;gap:12px;padding:10px 0;border-bottom:1px solid #f5f5f5;">
           <div style="width:120px;font-weight:600;">${s.start_time} – ${s.end_time}</div>
           <div style="flex:1;color:var(--ink-60);font-size:13px;">${s.room_name}${s.reason ? ' · ' + s.reason : ''}</div>
-          <button class="btn btn-sm" style="background:#c44b3a;color:#fff;border:none;border-radius:4px;cursor:pointer;padding:4px 12px;"
-            onclick="deleteBlockedSlot(${s.id})">刪除</button>
+          <button class="btn btn-sm btn-danger" onclick="deleteBlockedSlot(${s.id})">刪除</button>
         </div>`).join('')}
     </div>`).join('');
 }
 
-function clearBlFilter() {
-  document.getElementById('bl-filter-from').value = '';
-  document.getElementById('bl-filter-to').value = '';
-  loadBlockedSlots();
-}
+function clearBlFilter() { document.getElementById('bl-filter-from').value = ''; document.getElementById('bl-filter-to').value = ''; loadBlockedSlots(); }
 
 async function addBlockedSlot() {
-  const date  = document.getElementById('bl-date').value;
-  const start = document.getElementById('bl-start').value;
-  const end   = document.getElementById('bl-end').value;
-  const room  = document.getElementById('bl-room').value;
-  const reason= document.getElementById('bl-reason').value.trim();
+  const date = document.getElementById('bl-date').value, start = document.getElementById('bl-start').value;
+  const end = document.getElementById('bl-end').value, room = document.getElementById('bl-room').value;
+  const reason = document.getElementById('bl-reason').value.trim();
   if (!date) { toast('請選擇日期', 'error'); return; }
   const status = document.getElementById('blAddStatus');
   status.style.display = 'block'; status.textContent = '新增中...';
-  const res = await fetch('/admin/api/blocked-slots', {
-    method: 'POST',
-    headers: {...H, 'Content-Type':'application/json'},
-    body: JSON.stringify({ date, start_time: start, end_time: end,
-                           room_id: room ? parseInt(room) : null, reason })
-  });
-  if (res.ok) {
-    status.textContent = '✓ 已新增';
-    toast('封鎖時段已新增');
-    loadBlockedSlots();
-    setTimeout(() => { status.style.display='none'; }, 2000);
-  } else {
-    const d = await res.json();
-    toast(d.error || '新增失敗', 'error');
-    status.style.display = 'none';
-  }
+  const res = await fetch('/admin/api/blocked-slots', { method: 'POST', headers: {...H, 'Content-Type':'application/json'}, body: JSON.stringify({ date, start_time: start, end_time: end, room_id: room ? parseInt(room) : null, reason }) });
+  if (res.ok) { status.textContent = '✓ 已新增'; toast('封鎖時段已新增'); loadBlockedSlots(); setTimeout(() => { status.style.display='none'; }, 2000); }
+  else { const d = await res.json(); toast(d.error || '新增失敗', 'error'); status.style.display = 'none'; }
 }
 
 async function deleteBlockedSlot(id) {
@@ -2126,26 +1903,210 @@ async function deleteBlockedSlot(id) {
   else toast('刪除失敗', 'error');
 }
 
+// ── ACCOUNTS ──
+const ALL_PAGES = [
+  {id:'dashboard',label:'儀表板'},{id:'bookings',label:'預約管理'},
+  {id:'rooms',label:'會議室管理'},{id:'content',label:'文字內容'},
+  {id:'photos',label:'照片管理'},{id:'formfields',label:'表單欄位'},
+  {id:'blocked',label:'封鎖時段'},{id:'accounts',label:'帳號管理'},
+  {id:'logs',label:'登入紀錄'}
+];
+
+function roleLabel(r) {
+  return {superadmin:'超級管理員',admin:'管理員',manager:'店長/經理',staff:'門市人員'}[r] || r;
+}
+
+function roleBadgeClass(r) {
+  return {superadmin:'badge-superadmin',admin:'badge-admin',manager:'badge-manager',staff:'badge-staff'}[r] || 'badge-gray';
+}
+
+async function loadAccounts() {
+  const res = await fetch('/admin/api/accounts', {headers:H});
+  const users = await res.json();
+  document.getElementById('accountList').innerHTML = `
+    <div class="tbl-wrap">
+      <table>
+        <thead><tr>
+          <th>帳號</th><th>顯示名稱</th><th>角色</th><th>狀態</th><th>建立者</th><th>建立時間</th><th>操作</th>
+        </tr></thead>
+        <tbody>
+          ${users.map(u => `<tr>
+            <td><strong>${u.username}</strong></td>
+            <td>${u.display_name||'—'}</td>
+            <td><span class="badge ${roleBadgeClass(u.role)}">${roleLabel(u.role)}</span></td>
+            <td>${u.is_active ? '<span style="color:var(--green);">● 啟用</span>' : '<span style="color:var(--red);">● 停用</span>'}</td>
+            <td style="color:var(--ink-60);">${u.created_by||'—'}</td>
+            <td style="color:var(--ink-60);">${u.created_at}</td>
+            <td>
+              <div style="display:flex;gap:6px;">
+                <button class="btn btn-outline btn-sm" onclick="editAccount(${u.id})">編輯</button>
+                ${u.role!=='superadmin' ? `<button class="btn btn-danger btn-sm" onclick="deleteAccount(${u.id})">刪除</button>` : ''}
+              </div>
+            </td>
+          </tr>`).join('')}
+        </tbody>
+      </table>
+    </div>`;
+}
+
+function onRoleChange() {
+  const role = document.getElementById('acc-role').value;
+  const grid = document.getElementById('accPermGrid');
+  const isSuperadmin = role === 'superadmin';
+  grid.querySelectorAll('input[type=checkbox]').forEach(cb => {
+    cb.disabled = isSuperadmin;
+    if (isSuperadmin) cb.checked = true;
+  });
+}
+
+function openAddAccount() {
+  document.getElementById('accountModalTitle').textContent = '新增帳號';
+  document.getElementById('acc-id').value = '';
+  document.getElementById('acc-username').value = '';
+  document.getElementById('acc-username').disabled = false;
+  document.getElementById('acc-display').value = '';
+  document.getElementById('acc-pw').value = '';
+  document.getElementById('acc-role').value = 'staff';
+  document.getElementById('acc-active').value = 'true';
+  renderPermGrid([]);
+  document.getElementById('accountModal').classList.add('show');
+}
+
+function editAccount(id) {
+  fetch('/admin/api/accounts', {headers:H}).then(r=>r.json()).then(users => {
+    const u = users.find(x => x.id === id); if (!u) return;
+    document.getElementById('accountModalTitle').textContent = `編輯帳號：${u.username}`;
+    document.getElementById('acc-id').value = id;
+    document.getElementById('acc-username').value = u.username;
+    document.getElementById('acc-username').disabled = true;
+    document.getElementById('acc-display').value = u.display_name||'';
+    document.getElementById('acc-pw').value = '';
+    document.getElementById('acc-role').value = u.role;
+    document.getElementById('acc-active').value = u.is_active ? 'true' : 'false';
+    renderPermGrid(u.permissions||[]);
+    document.getElementById('accountModal').classList.add('show');
+  });
+}
+
+function renderPermGrid(selected) {
+  const role = document.getElementById('acc-role').value;
+  const isSuperadmin = role === 'superadmin';
+  document.getElementById('accPermGrid').innerHTML = ALL_PAGES.map(p =>
+    `<label style="display:flex;align-items:center;gap:6px;cursor:pointer;font-size:13px;padding:4px;">
+      <input type="checkbox" value="${p.id}" ${selected.includes(p.id)||isSuperadmin?'checked':''} ${isSuperadmin?'disabled':''}> ${p.label}
+    </label>`).join('');
+}
+
+function getSelectedPerms() {
+  return [...document.querySelectorAll('#accPermGrid input:checked')].map(el => el.value);
+}
+
+function closeAccountModal() { document.getElementById('accountModal').classList.remove('show'); }
+
+async function saveAccount() {
+  const id      = document.getElementById('acc-id').value;
+  const uname   = document.getElementById('acc-username').value.trim();
+  const display = document.getElementById('acc-display').value.trim();
+  const pw      = document.getElementById('acc-pw').value;
+  const role    = document.getElementById('acc-role').value;
+  const active  = document.getElementById('acc-active').value === 'true';
+  const perms   = getSelectedPerms();
+  if (!uname) { toast('請填寫帳號', 'error'); return; }
+  if (!id && !pw) { toast('請設定密碼', 'error'); return; }
+  const body = {username: uname, display_name: display, role, is_active: active, permissions: perms};
+  if (pw) body.password = pw;
+  const url = id ? `/admin/api/accounts/${id}` : '/admin/api/accounts';
+  const method = id ? 'PUT' : 'POST';
+  const res = await fetch(url, {method, headers: {...H, 'Content-Type':'application/json'}, body: JSON.stringify(body)});
+  const data = await res.json();
+  if (res.ok) { toast(id ? '帳號已更新' : '帳號建立成功'); closeAccountModal(); loadAccounts(); }
+  else toast(data.error || '儲存失敗', 'error');
+}
+
+async function deleteAccount(id) {
+  if (!confirm('確定要刪除此帳號？')) return;
+  const res = await fetch(`/admin/api/accounts/${id}`, {method:'DELETE', headers:H});
+  const data = await res.json();
+  if (res.ok) { toast('帳號已刪除'); loadAccounts(); }
+  else toast(data.error || '刪除失敗', 'error');
+}
+
+// ── LOGIN LOGS ──
+async function loadLoginLogs() {
+  const res = await fetch('/admin/api/login-logs?per=100', {headers:H});
+  const data = await res.json();
+  const logs = data.logs || [];
+  const list = document.getElementById('loginLogList');
+  // 上次登入資訊
+  const successLogs = logs.filter(l => l.success);
+  const lastInfo = document.getElementById('lastLoginInfo');
+  if (lastInfo) {
+    if (successLogs.length >= 2) {
+      const prev = successLogs[1];
+      lastInfo.innerHTML = `上次登入：${prev.login_at}　IP：${prev.ip_address||'—'}`;
+    } else if (successLogs.length === 1) {
+      lastInfo.textContent = '這是首次登入';
+    }
+  }
+  if (!logs.length) { list.innerHTML = '<div style="text-align:center;padding:40px;color:var(--ink-60);">尚無登入紀錄</div>'; return; }
+  list.innerHTML = `
+    <div style="font-size:13px;color:var(--ink-60);margin-bottom:12px;">共 ${data.total||logs.length} 筆</div>
+    <div class="tbl-wrap">
+      <table>
+        <thead><tr>
+          <th>登入時間</th><th>帳號</th><th>結果</th><th>IP 位址</th><th>地區</th><th>瀏覽器</th>
+        </tr></thead>
+        <tbody>
+          ${logs.map((l, i) => `<tr style="${i===0&&l.success?'background:#f0faf5;':''}">
+            <td style="white-space:nowrap;font-weight:${i===0?'600':'400'};">${l.login_at}${i===0?` <span style="background:var(--gold);color:#fff;font-size:10px;padding:1px 6px;border-radius:10px;vertical-align:middle;">本次</span>`:''}</td>
+            <td><strong>${l.username}</strong></td>
+            <td>${l.success ? '<span style="color:var(--green);">✓ 成功</span>' : '<span style="color:var(--red);">✗ 失敗</span>'}</td>
+            <td style="font-family:monospace;font-size:12px;">${l.ip_address||'—'}</td>
+            <td style="font-size:13px;">${[l.country,l.city].filter(Boolean).join(' ')||'—'}</td>
+            <td style="color:var(--ink-60);max-width:200px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;font-size:12px;" title="${l.user_agent||''}">${l.user_agent||'—'}</td>
+          </tr>`).join('')}
+        </tbody>
+      </table>
+    </div>`;
+}
+
+// ── CURRENT USER ──
+async function loadCurrentUser() {
+  try {
+    const res = await fetch('/admin/api/me', {headers:H});
+    if (res.ok) {
+      const u = await res.json();
+      const el = document.getElementById('currentUserInfo');
+      if (el) el.innerHTML = `<span style="color:rgba(255,255,255,0.8);">&#128100; ${u.display_name||u.username}</span> <span style="color:var(--gold);font-size:11px;">${roleLabel(u.role)}</span>`;
+    }
+    // 本次 & 上次登入時間
+    const lr = await fetch('/admin/api/login-logs?per=2', {headers:H});
+    if (lr.ok) {
+      const ld = await lr.json();
+      const logs = (ld.logs||[]).filter(l => l.success);
+      const el = document.getElementById('currentUserInfo');
+      if (el && logs.length > 0) {
+        el.innerHTML += `<br><span style="font-size:11px;color:rgba(255,255,255,0.35);">本次：${logs[0].login_at}</span>`;
+        if (logs.length > 1) el.innerHTML += `<br><span style="font-size:11px;color:rgba(255,255,255,0.25);">上次：${logs[1].login_at}</span>`;
+      }
+    }
+  } catch(e) {}
+}
+
 // ── HELPERS ──
 function fmtSegments(b) {
   if (b.segments) {
     try {
       const segs = typeof b.segments === 'string' ? JSON.parse(b.segments) : b.segments;
-      if (segs && segs.length > 1)
-        return segs.map(s => `${s.start}–${s.end}`).join('<br>');
-      if (segs && segs.length === 1)
-        return `${segs[0].start} – ${segs[0].end}`;
+      if (segs && segs.length > 1) return segs.map(s => `${s.start}–${s.end}`).join('<br>');
+      if (segs && segs.length === 1) return `${segs[0].start} – ${segs[0].end}`;
     } catch(e) {}
   }
   return `${b.start_time} – ${b.end_time}`;
 }
 
 function badgeHtml(status) {
-  const map = {
-    confirmed: ['badge-green', '已確認'],
-    cancelled: ['badge-red', '已取消'],
-    completed: ['badge-gold', '已完成'],
-  };
+  const map = {confirmed: ['badge-green','已確認'], cancelled: ['badge-red','已取消'], completed: ['badge-gold','已完成']};
   const [cls, txt] = map[status] || ['badge-gray', status];
   return `<span class="badge ${cls}">${txt}</span>`;
 }

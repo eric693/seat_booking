@@ -661,6 +661,9 @@ tr:hover td { background: #fafafa; }
     <div class="nav-item" onclick="showPage('photos',this)">
       <span class="nav-icon">&#9728;</span> 照片管理
     </div>
+    <div class="nav-item" onclick="showPage('formfields',this)">
+      <span class="nav-icon">&#9783;</span> 表單欄位
+    </div>
   </nav>
   <div class="sidebar-bottom">
     <button class="logout-btn" onclick="logout()">登出後台</button>
@@ -1019,6 +1022,25 @@ tr:hover td { background: #fafafa; }
   </div>
 </div>
 
+    <div class="page" id="page-formfields">
+      <div class="card">
+        <div class="card-head">
+          <div class="card-title">表單欄位管理</div>
+          <button class="btn btn-primary btn-sm" onclick="addFormField()">+ 新增欄位</button>
+        </div>
+        <div class="card-body">
+          <div style="font-size:13px;color:var(--ink-60);margin-bottom:16px;">
+            拖曳可調整順序・系統欄位（姓名/手機/Email）無法刪除・必填欄位未填無法送出
+          </div>
+          <div id="ffList" style="display:flex;flex-direction:column;gap:10px;"></div>
+          <div style="margin-top:20px;display:flex;gap:10px;">
+            <button class="btn btn-primary" onclick="saveFormFields()">儲存變更</button>
+            <button class="btn btn-outline" onclick="resetFormFields()">還原預設</button>
+          </div>
+        </div>
+      </div>
+    </div>
+
 <!-- Room Modal -->
 <div class="modal" id="roomModal">
   <div class="modal-box">
@@ -1043,7 +1065,13 @@ tr:hover td { background: #fafafa; }
       </div>
       <div class="fg">
         <label>容納人數</label>
-        <input class="finput" type="number" id="rm-capacity" placeholder="10" min="1">
+        <div style="display:flex;gap:8px;align-items:center;">
+          <input class="finput" type="number" id="rm-capacity-min" placeholder="最少（選填）" min="1" style="flex:1;">
+          <span style="color:var(--ink-60);white-space:nowrap;">～</span>
+          <input class="finput" type="number" id="rm-capacity" placeholder="最多" min="1" style="flex:1;">
+          <span style="color:var(--ink-60);white-space:nowrap;">人</span>
+        </div>
+        <div style="font-size:12px;color:var(--ink-60);margin-top:4px;">填寫最少人數可顯示「4～6 人」範圍</div>
       </div>
       <div class="fg">
         <label>每小時費率（NT$）</label>
@@ -1130,7 +1158,7 @@ function showPage(id, navEl) {
   if (navEl) navEl.classList.add('active');
   const titles = {
     dashboard: '儀表板', bookings: '預約管理', rooms: '會議室管理',
-    content: '文字內容編輯', photos: '照片管理'
+    content: '文字內容編輯', photos: '照片管理', formfields: '表單欄位管理'
   };
   document.getElementById('topbarTitle').textContent = titles[id] || '';
   switch(id) {
@@ -1139,6 +1167,7 @@ function showPage(id, navEl) {
     case 'rooms': loadRoomsAdmin(); break;
     case 'content': loadContent(); break;
     case 'photos': loadPhotos(); break;
+    case 'formfields': loadFormFields(); break;
   }
 }
 
@@ -1250,7 +1279,7 @@ async function loadFloorStatus() {
           <div class="room-row">
             <div class="room-row-info">
               <div class="room-row-name" title="${r.name}">${r.name}</div>
-              <div class="room-row-cap">${r.room_type}  ·  ${r.capacity} 人</div>
+              <div class="room-row-cap">${r.room_type}  ·  ${r.capacity_label || r.capacity + ' 人'}</div>
             </div>
             <div class="slots-wrap">${cells}</div>
           </div>`;
@@ -1431,7 +1460,7 @@ async function loadRoomsAdmin() {
           <div class="rac-body">
             <div class="rac-type">${r.room_type}</div>
             <div class="rac-name">${r.name}</div>
-            <div class="rac-meta">容納 ${r.capacity} 人 · ${r.floor || 'F—'} · NT$ ${r.hourly_rate.toLocaleString()}/hr</div>
+            <div class="rac-meta">容納 ${r.capacity_label || r.capacity + ' 人'} · ${r.floor || 'F—'} · NT$ ${r.hourly_rate.toLocaleString()}/hr</div>
             ${r.description ? `<div class="rac-desc">${r.description.length > 60 ? r.description.slice(0,60) + '…' : r.description}</div>` : ''}
             <div class="rac-actions">
               <button class="btn btn-outline btn-sm" onclick="editRoom(${r.id})" style="flex:1;">編輯</button>
@@ -1459,6 +1488,7 @@ function openRoomModal(roomData = null) {
   document.getElementById('rm-name').value = '';
   document.getElementById('rm-type').value = '洽談室';
   document.getElementById('rm-capacity').value = '';
+  document.getElementById('rm-capacity-min').value = '';
   document.getElementById('rm-rate').value = '';
   document.getElementById('rm-floor').value = '';
   document.getElementById('rm-desc').value = '';
@@ -1479,6 +1509,7 @@ function editRoom(id) {
   document.getElementById('rm-name').value = r.name;
   document.getElementById('rm-type').value = r.room_type;
   document.getElementById('rm-capacity').value = r.capacity;
+  document.getElementById('rm-capacity-min').value = r.capacity_min || '';
   document.getElementById('rm-rate').value = r.hourly_rate;
   document.getElementById('rm-floor').value = r.floor || '';
   document.getElementById('rm-desc').value = r.description || '';
@@ -1579,6 +1610,7 @@ async function saveRoom() {
     name: document.getElementById('rm-name').value.trim(),
     room_type: document.getElementById('rm-type').value,
     capacity: parseInt(document.getElementById('rm-capacity').value) || 10,
+    capacity_min: parseInt(document.getElementById('rm-capacity-min').value) || 0,
     hourly_rate: parseInt(document.getElementById('rm-rate').value) || 500,
     floor: document.getElementById('rm-floor').value.trim(),
     description: document.getElementById('rm-desc').value.trim(),
@@ -1792,6 +1824,140 @@ function applyLogo(url) {
     if (wrap) wrap.innerHTML = `<img src="${url}" style="width:100%;height:100%;object-fit:contain;border-radius:8px;">`;
     if (icon) icon.innerHTML = `<img src="${url}" style="width:44px;height:44px;object-fit:contain;border-radius:6px;">`;
   }
+}
+
+
+// ══════════════════════════════════════════
+// 表單欄位管理
+// ══════════════════════════════════════════
+const FF_DEFAULT = [
+  {id:"name",      label:"聯絡人姓名", type:"text",     placeholder:"請輸入姓名",         required:true,  system:true,  full:false},
+  {id:"phone",     label:"手機號碼",   type:"tel",      placeholder:"0912345678",          required:true,  system:true,  full:false},
+  {id:"email",     label:"Email",     type:"email",    placeholder:"your@email.com",      required:true,  system:true,  full:false, hint:"必填，接收確認信"},
+  {id:"department",label:"部門／公司", type:"text",     placeholder:"例：行銷部",           required:false, system:true,  full:false},
+  {id:"attendees", label:"預計出席人數",type:"select",  options:"1,2,3,4,5,6,8,10,15,20,30,50", required:false, system:true, full:false},
+  {id:"purpose",   label:"會議類型",   type:"select",   options:"部門會議,客戶洽談,員工培訓,產品發表,視訊會議,腦力激盪,其他", required:false, system:true, full:false},
+  {id:"note",      label:"備註",      type:"textarea", placeholder:"特殊需求或注意事項...", required:false, system:true,  full:true}
+];
+let _ffFields = [];
+let _ffDragIdx = null;
+
+async function loadFormFields() {
+  try {
+    const sc = await (await fetch('/admin/api/site-content', {headers:H})).json();
+    let fields;
+    try { fields = sc.form_fields ? JSON.parse(sc.form_fields) : [...FF_DEFAULT]; }
+    catch(e) { fields = [...FF_DEFAULT]; }
+    _ffFields = fields;
+    renderFFList();
+  } catch(e) { console.error(e); }
+}
+
+function renderFFList() {
+  const list = document.getElementById('ffList');
+  list.innerHTML = _ffFields.map((f, i) => `
+    <div class="card" style="padding:0;border:1px solid var(--border);border-radius:8px;background:var(--surface);"
+      draggable="true" ondragstart="_ffDragStart(${i})" ondragover="_ffDragOver(event,${i})" ondrop="_ffDrop(event,${i})">
+      <div style="display:flex;align-items:center;gap:12px;padding:12px 16px;">
+        <span style="cursor:grab;color:var(--ink-40);font-size:18px;padding:0 4px;">⠿</span>
+        <div style="flex:1;display:grid;grid-template-columns:1fr 1fr 1fr auto auto;gap:8px;align-items:center;flex-wrap:wrap;">
+          <div>
+            <div style="font-size:11px;color:var(--ink-60);margin-bottom:3px;">欄位名稱</div>
+            <input class="finput" style="padding:6px 8px;font-size:13px;" value="${esc(f.label)}"
+              onchange="_ffUpdate(${i},'label',this.value)" placeholder="欄位名稱">
+          </div>
+          <div>
+            <div style="font-size:11px;color:var(--ink-60);margin-bottom:3px;">類型</div>
+            <select class="fselect" style="padding:6px 8px;font-size:13px;" onchange="_ffUpdate(${i},'type',this.value)" ${f.system?'disabled':''}>
+              <option value="text" ${f.type==='text'?'selected':''}>文字</option>
+              <option value="tel" ${f.type==='tel'?'selected':''}>電話</option>
+              <option value="email" ${f.type==='email'?'selected':''}>Email</option>
+              <option value="number" ${f.type==='number'?'selected':''}>數字</option>
+              <option value="select" ${f.type==='select'?'selected':''}>下拉選單</option>
+              <option value="textarea" ${f.type==='textarea'?'selected':''}>多行文字</option>
+            </select>
+          </div>
+          <div>
+            <div style="font-size:11px;color:var(--ink-60);margin-bottom:3px;">${f.type==='select'?'選項（逗號分隔）':'提示文字'}</div>
+            <input class="finput" style="padding:6px 8px;font-size:13px;"
+              value="${esc(f.type==='select'?(f.options||''):(f.placeholder||''))}"
+              onchange="_ffUpdate(${i},f.type==='select'?'options':'placeholder',this.value)"
+              placeholder="${f.type==='select'?'選項1,選項2':'提示文字'}">
+          </div>
+          <div style="text-align:center;">
+            <div style="font-size:11px;color:var(--ink-60);margin-bottom:6px;">必填</div>
+            <label style="display:flex;align-items:center;justify-content:center;gap:4px;cursor:pointer;">
+              <input type="checkbox" ${f.required?'checked':''} onchange="_ffUpdate(${i},'required',this.checked)" ${f.id==='name'||f.id==='phone'||f.id==='email'?'disabled':''}>
+            </label>
+          </div>
+          <div style="text-align:center;">
+            <div style="font-size:11px;color:var(--ink-60);margin-bottom:6px;">全寬</div>
+            <label style="display:flex;align-items:center;justify-content:center;gap:4px;cursor:pointer;">
+              <input type="checkbox" ${f.full?'checked':''} onchange="_ffUpdate(${i},'full',this.checked)">
+            </label>
+          </div>
+        </div>
+        ${f.system ? '<span style="font-size:11px;color:var(--ink-40);padding:0 8px;">系統</span>'
+          : `<button class="btn btn-sm" style="background:#c44b3a;color:#fff;border:none;border-radius:4px;cursor:pointer;padding:4px 10px;flex-shrink:0;" onclick="_ffDelete(${i})">刪除</button>`}
+      </div>
+    </div>
+  `).join('');
+}
+
+function esc(s) { return String(s||'').replace(/"/g,'&quot;').replace(/</g,'&lt;'); }
+
+function _ffUpdate(i, key, val) { _ffFields[i][key] = val; }
+function _ffDelete(i) {
+  if (!confirm(`確定刪除「${_ffFields[i].label}」欄位？`)) return;
+  _ffFields.splice(i, 1);
+  renderFFList();
+}
+function _ffDragStart(i) { _ffDragIdx = i; }
+function _ffDragOver(e, i) { e.preventDefault(); }
+function _ffDrop(e, i) {
+  e.preventDefault();
+  if (_ffDragIdx === null || _ffDragIdx === i) return;
+  const moved = _ffFields.splice(_ffDragIdx, 1)[0];
+  _ffFields.splice(i, 0, moved);
+  _ffDragIdx = null;
+  renderFFList();
+}
+
+function addFormField() {
+  _ffFields.push({
+    id: 'custom_' + Date.now(),
+    label: '新欄位',
+    type: 'text',
+    placeholder: '',
+    required: false,
+    system: false,
+    full: false
+  });
+  renderFFList();
+  // scroll to bottom
+  document.getElementById('ffList').lastElementChild?.scrollIntoView({behavior:'smooth'});
+}
+
+async function saveFormFields() {
+  // 同步最新 input 值
+  document.querySelectorAll('#ffList input[type=text], #ffList input[type=tel], #ffList input[type=email]').forEach(el => {
+    const m = el.getAttribute('onchange')?.match(/_ffUpdate\((\d+),'(\w+)'/);
+    if (m) _ffUpdate(parseInt(m[1]), m[2], el.value);
+  });
+  const res = await fetch('/admin/api/site-content', {
+    method: 'POST',
+    headers: {...H, 'Content-Type':'application/json'},
+    body: JSON.stringify({form_fields: JSON.stringify(_ffFields)})
+  });
+  if (res.ok) toast('表單欄位已儲存');
+  else toast('儲存失敗', 'error');
+}
+
+async function resetFormFields() {
+  if (!confirm('確定還原為預設欄位？自訂欄位將全部清除。')) return;
+  _ffFields = JSON.parse(JSON.stringify(FF_DEFAULT));
+  renderFFList();
+  await saveFormFields();
 }
 
 // ── HELPERS ──

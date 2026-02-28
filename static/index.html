@@ -1095,54 +1095,8 @@ footer {
         <h2 class="section-title" id="txt-step3-title">填寫聯絡資料</h2>
         <span class="section-step">Step 3 of 3</span>
       </div>
-      <div class="form-grid">
-        <div class="fgroup">
-          <label>聯絡人姓名</label>
-          <input class="finput" type="text" id="fName" placeholder="請輸入姓名" oninput="updateSummary()">
-        </div>
-        <div class="fgroup">
-          <label>手機號碼 <span style="color:var(--red);">*</span></label>
-          <input class="finput" type="tel" id="fPhone" placeholder="0912345678" oninput="updateSummary()">
-        </div>
-        <div class="fgroup">
-          <label>Email <span style="color:var(--red);">*</span> <span>（必填，接收確認信）</span></label>
-          <input class="finput" type="text" id="fEmail" placeholder="your@email.com" autocomplete="email" inputmode="email" oninput="updateSummary()">
-        </div>
-        <div class="fgroup">
-          <label>部門 / 公司</label>
-          <input class="finput" type="text" id="fDept" placeholder="例：行銷部">
-        </div>
-        <div class="fgroup">
-          <label>預計出席人數</label>
-          <select class="fselect" id="fAttendees">
-            <option value="1">1 人</option>
-            <option value="2">2 人</option>
-            <option value="4" selected>4 人</option>
-            <option value="6">6 人</option>
-            <option value="8">8 人</option>
-            <option value="10">10 人</option>
-            <option value="15">15 人</option>
-            <option value="20">20 人</option>
-            <option value="30">30 人</option>
-            <option value="50">50 人</option>
-          </select>
-        </div>
-        <div class="fgroup">
-          <label>會議類型</label>
-          <select class="fselect" id="fPurpose">
-            <option value="部門會議">部門會議</option>
-            <option value="客戶洽談">客戶洽談</option>
-            <option value="員工培訓">員工培訓</option>
-            <option value="產品發表">產品發表</option>
-            <option value="視訊會議">視訊會議</option>
-            <option value="腦力激盪">腦力激盪</option>
-            <option value="其他">其他</option>
-          </select>
-        </div>
-        <div class="fgroup full">
-          <label>備註 <span>（選填）</span></label>
-          <textarea class="ftextarea" id="fNote" placeholder="特殊需求或注意事項..."></textarea>
-        </div>
+      <div class="form-grid" id="dynamicFormGrid">
+        <!-- 動態載入 -->
       </div>
     </div>
 
@@ -1357,6 +1311,16 @@ async function loadContent() {
     if (notices.length) {
       document.getElementById('noticeList').innerHTML = notices.map(n => `<li>${n}</li>`).join('');
     }
+    // logo
+    if (c.logo_url) {
+      const logoEl = document.getElementById('header-logo-img');
+      if (logoEl) logoEl.src = c.logo_url;
+    }
+    // 動態表單欄位
+    try {
+      const fields = typeof c.form_fields === 'string' ? JSON.parse(c.form_fields) : c.form_fields;
+      if (fields && fields.length) renderFormFields(fields);
+    } catch(e2) {}
   } catch (e) { console.warn('Content load failed', e); }
 }
 
@@ -1389,7 +1353,7 @@ async function loadRooms() {
             <div class="room-desc">${r.description || ''}</div>
             <div class="amenities-list">${amenHTML}</div>
             <div class="room-footer">
-              <div class="room-capacity">容納 <strong>${r.capacity}</strong> 人 · ${r.floor || ''}</div>
+              <div class="room-capacity">容納 <strong>${r.capacity_label || r.capacity + ' 人'}</strong> · ${r.floor || ''}</div>
               <div class="room-rate">NT$ ${r.hourly_rate.toLocaleString()} <small>/ hr</small></div>
             </div>
           </div>
@@ -1827,8 +1791,8 @@ function updateSumTime() {
 }
 
 function updateSummary() {
-  const name = document.getElementById('fName').value.trim();
-  const phone = document.getElementById('fPhone').value.trim();
+  const name  = getFieldVal('name');
+  const phone = getFieldVal('phone');
   if (name) {
     document.getElementById('sum-name').textContent = name + (phone ? ` · ${phone}` : '');
     document.getElementById('sum-name').classList.remove('empty');
@@ -1868,6 +1832,51 @@ function updatePrice() {
 }
 
 // ── Submit ──
+// ── 動態表單欄位 ──
+let _formFields = [];
+
+function renderFormFields(fields) {
+  _formFields = fields;
+  const grid = document.getElementById('dynamicFormGrid');
+  if (!grid) return;
+  grid.innerHTML = fields.map(f => {
+    const req = f.required ? `<span style="color:var(--red);">*</span>` : '';
+    const hint = f.hint ? `<span style="font-size:12px;color:var(--ink-60);">（${f.hint}）</span>` : '';
+    const labelHtml = `<label>${f.label} ${req}${hint}</label>`;
+    let inputHtml = '';
+    if (f.type === 'select') {
+      const opts = (f.options||'').split(',').map(o=>o.trim()).filter(Boolean);
+      inputHtml = `<select class="fselect" id="f_${f.id}">${opts.map(o=>`<option value="${o}">${o}</option>`).join('')}</select>`;
+    } else if (f.type === 'textarea') {
+      inputHtml = `<textarea class="ftextarea" id="f_${f.id}" placeholder="${f.placeholder||''}"></textarea>`;
+    } else {
+      const extra = (f.id==='name'||f.id==='phone') ? ' oninput="updateSummary()"' : '';
+      const ac = f.type==='email' ? ' autocomplete="email" inputmode="email"' : '';
+      inputHtml = `<input class="finput" type="${f.type||'text'}" id="f_${f.id}" placeholder="${f.placeholder||''}"${ac}${extra}>`;
+    }
+    return `<div class="fgroup${f.full?' full':''}">${labelHtml}${inputHtml}</div>`;
+  }).join('');
+}
+
+function getFieldVal(id) {
+  const el = document.getElementById('f_' + id);
+  return el ? el.value.trim() : '';
+}
+
+function validateFormFields() {
+  for (const f of _formFields) {
+    if (!f.required) continue;
+    const val = getFieldVal(f.id);
+    if (!val) { alert(`請填寫「${f.label}」`); return false; }
+    if (f.type === 'email') {
+      if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(val)) {
+        alert('Email 格式不正確'); return false;
+      }
+    }
+  }
+  return true;
+}
+
 async function submitBooking() {
   if (!state.roomId) { alert('請選擇會議室'); return; }
   if (!state.date)   { alert('請選擇日期'); return; }
@@ -1877,14 +1886,10 @@ async function submitBooking() {
   if (selectedSlots.size < 2) {
     alert('最短預約時間為 60 分鐘（2 個時段）'); return;
   }
-  const name  = document.getElementById('fName').value.trim();
-  const phone = document.getElementById('fPhone').value.trim();
-  const email = document.getElementById('fEmail').value.trim();
-  if (!name)  { alert('請填寫聯絡人姓名'); return; }
-  if (!phone) { alert('請填寫手機號碼'); return; }
-  if (!email) { alert('請填寫 Email（用於接收確認信）'); return; }
-  const emailRe = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
-  if (!emailRe.test(email)) { alert('Email 格式不正確'); return; }
+  if (!validateFormFields()) return;
+  const name  = getFieldVal('name');
+  const phone = getFieldVal('phone');
+  const email = getFieldVal('email');
 
   const btn = document.getElementById('bookBtn');
   btn.disabled = true;
@@ -1901,11 +1906,12 @@ async function submitBooking() {
         end_time: state.endTime,
         segments: state.segments || [],
         name, phone,
-        email: document.getElementById('fEmail').value.trim(),
-        department: document.getElementById('fDept').value.trim(),
-        attendees: parseInt(document.getElementById('fAttendees').value),
-        purpose: document.getElementById('fPurpose').value,
-        note: document.getElementById('fNote').value,
+        email: getFieldVal('email'),
+        department: getFieldVal('department'),
+        attendees: parseInt(getFieldVal('attendees')) || 1,
+        purpose: getFieldVal('purpose'),
+        note: getFieldVal('note'),
+        extra_fields: Object.fromEntries(_formFields.filter(f=>!f.system).map(f=>[f.id, getFieldVal(f.id)])),
         line_user_id: window._liffUserId || '',
       })
     });

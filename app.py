@@ -1178,7 +1178,8 @@ class Room(db.Model):
     id          = db.Column(db.Integer, primary_key=True)
     name        = db.Column(db.String(100), nullable=False)
     room_type   = db.Column(db.String(50), nullable=False)
-    capacity    = db.Column(db.Integer, default=10)
+    capacity    = db.Column(db.Integer, default=10)   # 最大容納
+    capacity_min = db.Column(db.Integer, default=0)   # 最少人數（0=不設下限）
     hourly_rate = db.Column(db.Integer, default=500)
     description = db.Column(db.Text)
     amenities   = db.Column(db.Text)
@@ -1211,7 +1212,14 @@ class Room(db.Model):
         photos = self.get_photos()
         return {
             'id': self.id, 'name': self.name, 'room_type': self.room_type,
-            'capacity': self.capacity, 'hourly_rate': self.hourly_rate,
+            'capacity': self.capacity,
+            'capacity_min': self.capacity_min or 0,
+            'capacity_label': (
+                f'{self.capacity_min}–{self.capacity} 人'
+                if self.capacity_min and self.capacity_min > 0
+                else f'{self.capacity} 人'
+            ),
+            'hourly_rate': self.hourly_rate,
             'description': self.description,
             'amenities': json.loads(self.amenities) if self.amenities else [],
             'photo_url': self.get_cover(),
@@ -1416,8 +1424,11 @@ def get_site_content():
     keys = ['site_title','site_subtitle','site_description','hero_badge',
             'step1_title','step2_title','step3_title',
             'service_hours','contact_phone','contact_email','footer_text',
-            'notice_1','notice_2','notice_3','notice_4','notice_5']
-    return jsonify({k: SiteContent.get(k) for k in keys})
+            'notice_1','notice_2','notice_3','notice_4','notice_5','logo_url']
+    data = {k: SiteContent.get(k) for k in keys}
+    # form_fields：若未設定則回傳預設值
+    data['form_fields'] = SiteContent.get('form_fields') or """[{\"id\": \"name\", \"label\": \"聯絡人姓名\", \"type\": \"text\", \"placeholder\": \"請輸入姓名\", \"required\": true, \"system\": true, \"full\": false}, {\"id\": \"phone\", \"label\": \"手機號碼\", \"type\": \"tel\", \"placeholder\": \"0912345678\", \"required\": true, \"system\": true, \"full\": false}, {\"id\": \"email\", \"label\": \"Email\", \"type\": \"email\", \"placeholder\": \"your@email.com\", \"required\": true, \"system\": true, \"full\": false, \"hint\": \"必填，接收確認信\"}, {\"id\": \"department\", \"label\": \"部門／公司\", \"type\": \"text\", \"placeholder\": \"例：行銷部\", \"required\": false, \"system\": true, \"full\": false}, {\"id\": \"attendees\", \"label\": \"預計出席人數\", \"type\": \"select\", \"options\": \"1,2,3,4,5,6,8,10,15,20,30,50\", \"required\": false, \"system\": true, \"full\": false}, {\"id\": \"purpose\", \"label\": \"會議類型\", \"type\": \"select\", \"options\": \"部門會議,客戶洽談,員工培訓,產品發表,視訊會議,腦力激盪,其他\", \"required\": false, \"system\": true, \"full\": false}, {\"id\": \"note\", \"label\": \"備註\", \"type\": \"textarea\", \"placeholder\": \"特殊需求或注意事項...\", \"required\": false, \"system\": true, \"full\": true}]"""
+    return jsonify(data)
 
 
 @app.route('/api/rooms')
@@ -1617,7 +1628,10 @@ def flex_select_room(rooms) -> dict:
     """Step 1：選擇會議室 Flex（每間房間一個按鈕）"""
     room_btns = []
     for r in rooms:
-        cap  = f'{r.capacity} 人  ·  NT${r.hourly_rate}/hr'
+        if r.capacity_min and r.capacity_min > 0:
+            cap = f'{r.capacity_min}–{r.capacity} 人  ·  NT${r.hourly_rate}/hr'
+        else:
+            cap = f'{r.capacity} 人  ·  NT${r.hourly_rate}/hr'
         floor_txt = f'{r.floor}  ' if r.floor else ''
         room_btns.append({
             'type': 'box', 'layout': 'vertical',
@@ -2362,7 +2376,8 @@ def admin_add_room():
     if err: return err
     d = request.get_json()
     r = Room(name=d['name'], room_type=d['room_type'],
-             capacity=d.get('capacity', 10), hourly_rate=d.get('hourly_rate', 500),
+             capacity=d.get('capacity', 10), capacity_min=d.get('capacity_min', 0),
+             hourly_rate=d.get('hourly_rate', 500),
              description=d.get('description',''),
              amenities=json.dumps(d.get('amenities',[]), ensure_ascii=False),
              floor=d.get('floor',''), photo_url=d.get('photo_url',''),
@@ -2377,7 +2392,7 @@ def admin_update_room(rid):
     if err: return err
     room = Room.query.get_or_404(rid)
     d = request.get_json()
-    for f in ['name','room_type','capacity','hourly_rate','description',
+    for f in ['name','room_type','capacity','capacity_min','hourly_rate','description',
               'floor','photo_url','is_active']:
         if f in d:
             setattr(room, f, d[f])
@@ -2639,7 +2654,10 @@ def admin_broadcast():
 def admin_get_site_content():
     err = check_admin()
     if err: return err
-    return jsonify({i.key: i.value for i in SiteContent.query.all()})
+    data = {i.key: i.value for i in SiteContent.query.all()}
+    if 'form_fields' not in data or not data['form_fields']:
+        data['form_fields'] = '[{"id": "name", "label": "聯絡人姓名", "type": "text", "placeholder": "請輸入姓名", "required": true, "system": true, "full": false}, {"id": "phone", "label": "手機號碼", "type": "tel", "placeholder": "0912345678", "required": true, "system": true, "full": false}, {"id": "email", "label": "Email", "type": "email", "placeholder": "your@email.com", "required": true, "system": true, "full": false, "hint": "必填，接收確認信"}, {"id": "department", "label": "部門／公司", "type": "text", "placeholder": "例：行銷部", "required": false, "system": true, "full": false}, {"id": "attendees", "label": "預計出席人數", "type": "select", "options": "1,2,3,4,5,6,8,10,15,20,30,50", "required": false, "system": true, "full": false}, {"id": "purpose", "label": "會議類型", "type": "select", "options": "部門會議,客戶洽談,員工培訓,產品發表,視訊會議,腦力激盪,其他", "required": false, "system": true, "full": false}, {"id": "note", "label": "備註", "type": "textarea", "placeholder": "特殊需求或注意事項...", "required": false, "system": true, "full": true}]'
+    return jsonify(data)
 
 @app.route('/admin/api/site-content', methods=['POST'])
 def admin_update_site_content():
@@ -2776,6 +2794,10 @@ with app.app_context():
                 conn.execute(db.text('ALTER TABLE rooms ADD COLUMN cover_index INTEGER DEFAULT 0'))
                 conn.commit()
                 print('[migrate] 新增 rooms.cover_index 欄位')
+            if 'capacity_min' not in rm_cols:
+                conn.execute(db.text('ALTER TABLE rooms ADD COLUMN capacity_min INTEGER DEFAULT 0'))
+                conn.commit()
+                print('[migrate] 新增 rooms.capacity_min 欄位')
     except Exception as e:
         print(f'[migrate] 欄位檢查略過：{e}')
     seed()

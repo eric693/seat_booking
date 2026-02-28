@@ -989,7 +989,7 @@ footer {
 <header>
   <div class="header-inner">
     <div class="brand">
-      <div class="brand-icon">MR</div>
+      <div class="brand-icon" id="header-logo-wrap">MR</div>
       <div class="brand-name" id="hdr-title">會議室預約系統</div>
     </div>
     <div class="header-actions">
@@ -1313,8 +1313,8 @@ async function loadContent() {
     }
     // logo
     if (c.logo_url) {
-      const logoEl = document.getElementById('header-logo-img');
-      if (logoEl) logoEl.src = c.logo_url;
+      const wrap = document.getElementById('header-logo-wrap');
+      if (wrap) wrap.innerHTML = `<img src="${c.logo_url}" style="width:44px;height:44px;object-fit:contain;border-radius:6px;display:block;">`;
     }
     // 動態表單欄位
     try {

@@ -1344,7 +1344,7 @@ tr:hover td { background: #fafafa; }
     <!-- Crop Area -->
     <div style="padding:16px;overflow:auto;flex:1;">
       <p style="font-size:13px;color:var(--ink-60);margin-bottom:12px;">拖曳藍色裁切框或拉動四角調整顯示範圍，完成後點擊「確認套用」。</p>
-      <div id="cropContainer" style="position:relative;background:#111;display:inline-flex;align-items:flex-start;justify-content:flex-start;border-radius:8px;overflow:hidden;max-width:100%;cursor:crosshair;">
+      <div id="cropContainer" style="position:relative;background:#111;display:inline-block;border-radius:8px;overflow:hidden;max-width:100%;line-height:0;">
         <img id="cropImage" src="" alt="" draggable="false" style="display:block;max-width:100%;max-height:360px;user-select:none;pointer-events:none;">
         <div id="cropBox" style="position:absolute;top:0;left:0;width:100%;height:100%;border:2px solid #3b9eff;box-shadow:0 0 0 9999px rgba(0,0,0,.45);cursor:move;box-sizing:border-box;">
           <div data-dir="nw" style="position:absolute;width:16px;height:16px;background:#fff;border:2px solid #3b9eff;border-radius:3px;top:-8px;left:-8px;cursor:nw-resize;box-sizing:border-box;"></div>
@@ -2216,8 +2216,8 @@ const ALL_PAGES = [
   {id:'dashboard',label:'儀表板'},{id:'bookings',label:'預約管理'},
   {id:'rooms',label:'會議室管理'},{id:'content',label:'文字內容'},
   {id:'photos',label:'照片管理'},{id:'formfields',label:'表單欄位'},
-  {id:'blocked',label:'封鎖時段'},{id:'accounts',label:'帳號管理'},
-  {id:'logs',label:'登入紀錄'}
+  {id:'blocked',label:'封鎖時段'},{id:'payment',label:'付款設定'},
+  {id:'accounts',label:'帳號管理'},{id:'logs',label:'登入紀錄'}
 ];
 
 function roleLabel(r) {
@@ -2596,7 +2596,7 @@ async function confirmCrop() {
   document.getElementById('cropConfirmBtn').disabled = true;
 
   canvas.toBlob(async function(blob) {
-    if (!blob) { showToast('裁切失敗', 'error'); return; }
+    if (!blob) { toast('裁切失敗', 'error'); return; }
     const state = _cropState;
     closeCropModal();
 
@@ -2613,9 +2613,9 @@ async function confirmCrop() {
         await fetch('/admin/api/rooms/' + state.roomId + '/photos/' + state.photoIdx, {
           method: 'DELETE', headers: H
         });
-        showToast('裁切完成', 'success');
+        toast('裁切完成', 'success');
         loadPhotos();
-      } catch(e) { showToast('裁切上傳失敗：' + e.message, 'error'); }
+      } catch(e) { toast('裁切上傳失敗：' + e.message, 'error'); }
     }
     document.getElementById('cropConfirmBtn').disabled = false;
     document.getElementById('cropConfirmBtn').textContent = '確認上傳';
@@ -2745,11 +2745,11 @@ async function savePaymentSettings() {
       body: JSON.stringify({ payment_config: JSON.stringify(cfg) })
     });
     if (res.ok) {
-      showToast('付款設定已儲存', 'success');
+      toast('付款設定已儲存', 'success');
     } else {
-      showToast('儲存失敗', 'error');
+      toast('儲存失敗', 'error');
     }
-  } catch(e) { showToast('儲存失敗：' + e.message, 'error'); }
+  } catch(e) { toast('儲存失敗：' + e.message, 'error'); }
 }
 
 // ── CURRENT USER & PERMISSION CONTROL ──

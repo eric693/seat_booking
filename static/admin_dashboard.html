@@ -296,6 +296,29 @@ tr:hover td { background: #fafafa; }
 .badge-manager { background: #f0f0f0; color: #555; }
 .badge-staff { background: #f8f9fa; color: #888; }
 
+/* ── Payment ── */
+.pay-method-card { border: 1.5px solid var(--border); border-radius: 10px; overflow: hidden; transition: border-color .15s; }
+.pay-method-card:has(.pay-toggle:checked) { border-color: var(--teal); }
+.pay-method-head { display: flex; align-items: center; justify-content: space-between; padding: 14px 18px; background: var(--bg); }
+.pay-method-body { padding: 16px 18px 18px; border-top: 1px solid var(--border); background: #fff; }
+.pay-badge { font-size: 11px; padding: 3px 10px; border-radius: 20px; font-weight: 600; white-space: nowrap; }
+.pay-badge-online { background: #d1fae5; color: #065f46; }
+.pay-badge-manual { background: #e5e7eb; color: #374151; }
+.pay-method-icon { font-size: 22px; min-width: 28px; text-align: center; }
+.refund-rule-row { display: grid; grid-template-columns: 140px 1fr 1fr auto; gap: 10px; align-items: center; }
+
+/* ── Photo Crop Modal ── */
+#cropModal { display:none;position:fixed;inset:0;background:rgba(0,0,0,.75);z-index:9999;align-items:center;justify-content:center; }
+#cropModal.show { display:flex; }
+#cropContainer { position:relative;overflow:hidden;background:#000;user-select:none;touch-action:none; }
+#cropImage { display:block;max-width:100%;max-height:100%; }
+#cropBox { position:absolute;border:2px solid #fff;box-shadow:0 0 0 9999px rgba(0,0,0,.5);cursor:move;box-sizing:border-box; }
+.crop-handle { position:absolute;width:12px;height:12px;background:#fff;border-radius:2px; }
+.crop-handle.nw { top:-6px;left:-6px;cursor:nw-resize; }
+.crop-handle.ne { top:-6px;right:-6px;cursor:ne-resize; }
+.crop-handle.sw { bottom:-6px;left:-6px;cursor:sw-resize; }
+.crop-handle.se { bottom:-6px;right:-6px;cursor:se-resize; }
+
 /* ── FILTERS ── */
 .filters {
   display: flex;
@@ -671,6 +694,10 @@ tr:hover td { background: #fafafa; }
     </div>
     <div class="nav-item" onclick="showPage('blocked',this)">
       <span class="nav-icon"><svg width="16" height="16" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><circle cx="8" cy="8" r="6.5"/><path d="M3.4 3.4l9.2 9.2"/></svg></span> 封鎖時段
+    </div>
+    <div class="nav-section">金流</div>
+    <div class="nav-item" onclick="showPage('payment',this)">
+      <span class="nav-icon"><svg width="16" height="16" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><rect x="1" y="3" width="14" height="10" rx="1.5"/><path d="M1 7h14"/><circle cx="4.5" cy="11" r="1" fill="currentColor" stroke="none"/></svg></span> 付款設定
     </div>
     <div class="nav-section">系統</div>
     <div class="nav-item" onclick="showPage('accounts',this)">
@@ -1051,6 +1078,211 @@ tr:hover td { background: #fafafa; }
       </div>
     </div>
 
+    <!-- ── PAYMENT ── -->
+    <div class="page" id="page-payment">
+      <div style="display:grid;gap:20px;">
+
+        <!-- 付款方式選擇 -->
+        <div class="card">
+          <div class="card-head">
+            <div class="card-title">付款方式設定</div>
+            <button class="btn btn-primary btn-sm" onclick="savePaymentSettings()">儲存設定</button>
+          </div>
+          <div class="card-body" style="padding:24px;">
+            <p style="color:var(--ink-60);font-size:13px;margin-bottom:20px;">選擇要啟用的付款方式，並填入對應的 API 金鑰。未填寫 API 金鑰的方式將自動停用。</p>
+
+            <!-- 付款方式卡片列 -->
+            <div style="display:grid;gap:16px;">
+
+              <!-- 現場付款 -->
+              <div class="pay-method-card" id="pmc-cash">
+                <div class="pay-method-head">
+                  <label style="display:flex;align-items:center;gap:10px;cursor:pointer;">
+                    <input type="checkbox" id="pay-cash-enabled" class="pay-toggle" onchange="onPayToggle('cash')" style="width:18px;height:18px;accent-color:var(--teal);">
+                    <span class="pay-method-icon">💵</span>
+                    <div>
+                      <div style="font-weight:600;font-size:15px;">現場付款</div>
+                      <div style="font-size:12px;color:var(--ink-60);">預約成立後現場以現金或轉帳付款</div>
+                    </div>
+                  </label>
+                  <span class="pay-badge pay-badge-manual">人工確認</span>
+                </div>
+                <div class="pay-method-body" id="pay-cash-body">
+                  <div class="fg">
+                    <label>付款說明 <span>（顯示在預約確認頁）</span></label>
+                    <textarea class="finput" id="pay-cash-desc" rows="2" placeholder="例：請於使用當日至櫃台繳費，逾時未繳視同取消。"></textarea>
+                  </div>
+                </div>
+              </div>
+
+              <!-- LINE Pay -->
+              <div class="pay-method-card" id="pmc-linepay">
+                <div class="pay-method-head">
+                  <label style="display:flex;align-items:center;gap:10px;cursor:pointer;">
+                    <input type="checkbox" id="pay-linepay-enabled" class="pay-toggle" onchange="onPayToggle('linepay')" style="width:18px;height:18px;accent-color:var(--teal);">
+                    <span class="pay-method-icon" style="background:#00B900;color:#fff;border-radius:8px;padding:2px 6px;font-size:12px;font-weight:700;">LINE</span>
+                    <div>
+                      <div style="font-weight:600;font-size:15px;">LINE Pay</div>
+                      <div style="font-size:12px;color:var(--ink-60);">透過 LINE Pay 線上付款，即時確認</div>
+                    </div>
+                  </label>
+                  <span class="pay-badge pay-badge-online">線上即時</span>
+                </div>
+                <div class="pay-method-body" id="pay-linepay-body" style="display:none;">
+                  <div style="background:#fff3cd;border:1px solid #ffc107;border-radius:8px;padding:12px 16px;margin-bottom:16px;font-size:13px;">
+                    ⚠ 尚未設定 API 金鑰，LINE Pay 功能目前停用。請至
+                    <a href="https://pay.line.me/tw/developers/techsupport/sandbox/testflow" target="_blank" style="color:var(--teal);">LINE Pay 開發者後台</a>
+                    申請金鑰後填入。
+                  </div>
+                  <div style="display:grid;grid-template-columns:1fr 1fr;gap:12px;">
+                    <div class="fg">
+                      <label>Channel ID <span>（必填）</span></label>
+                      <input class="finput" type="text" id="pay-linepay-channel-id" placeholder="1234567890">
+                    </div>
+                    <div class="fg">
+                      <label>Channel Secret Key <span>（必填）</span></label>
+                      <input class="finput" type="password" id="pay-linepay-secret" placeholder="••••••••••••••••••••••••••••••••">
+                    </div>
+                    <div class="fg">
+                      <label>環境</label>
+                      <select class="fselect" id="pay-linepay-env">
+                        <option value="sandbox">Sandbox（測試）</option>
+                        <option value="production">Production（正式）</option>
+                      </select>
+                    </div>
+                    <div class="fg">
+                      <label>付款逾時（分鐘）</label>
+                      <input class="finput" type="number" id="pay-linepay-timeout" placeholder="10" min="1" max="60">
+                    </div>
+                  </div>
+                  <div class="fg" style="margin-top:4px;">
+                    <label>Confirm URL <span>（付款成功後跳轉）</span></label>
+                    <input class="finput" type="text" id="pay-linepay-confirm-url" placeholder="https://yourdomain.com/payment/linepay/confirm">
+                  </div>
+                </div>
+              </div>
+
+              <!-- 綠界 ECPay 信用卡 -->
+              <div class="pay-method-card" id="pmc-ecpay">
+                <div class="pay-method-head">
+                  <label style="display:flex;align-items:center;gap:10px;cursor:pointer;">
+                    <input type="checkbox" id="pay-ecpay-enabled" class="pay-toggle" onchange="onPayToggle('ecpay')" style="width:18px;height:18px;accent-color:var(--teal);">
+                    <span class="pay-method-icon" style="background:#0070c0;color:#fff;border-radius:8px;padding:2px 6px;font-size:12px;font-weight:700;">綠界</span>
+                    <div>
+                      <div style="font-weight:600;font-size:15px;">綠界 ECPay 信用卡</div>
+                      <div style="font-size:12px;color:var(--ink-60);">透過綠界金流刷卡付款，支援 VISA / Master / JCB</div>
+                    </div>
+                  </label>
+                  <span class="pay-badge pay-badge-online">線上即時</span>
+                </div>
+                <div class="pay-method-body" id="pay-ecpay-body" style="display:none;">
+                  <div style="background:#fff3cd;border:1px solid #ffc107;border-radius:8px;padding:12px 16px;margin-bottom:16px;font-size:13px;">
+                    ⚠ 尚未設定 API 金鑰，綠界 ECPay 功能目前停用。請至
+                    <a href="https://www.ecpay.com.tw/Service/Login_Pay" target="_blank" style="color:var(--teal);">綠界科技後台</a>
+                    申請特店編號與 HashKey/HashIV 後填入。
+                  </div>
+                  <div style="display:grid;grid-template-columns:1fr 1fr;gap:12px;">
+                    <div class="fg">
+                      <label>特店編號 MerchantID <span>（必填）</span></label>
+                      <input class="finput" type="text" id="pay-ecpay-merchant-id" placeholder="2000132">
+                    </div>
+                    <div class="fg">
+                      <label>環境</label>
+                      <select class="fselect" id="pay-ecpay-env">
+                        <option value="sandbox">Sandbox（測試）</option>
+                        <option value="production">Production（正式）</option>
+                      </select>
+                    </div>
+                    <div class="fg">
+                      <label>HashKey <span>（必填）</span></label>
+                      <input class="finput" type="password" id="pay-ecpay-hash-key" placeholder="••••••••••••••••">
+                    </div>
+                    <div class="fg">
+                      <label>HashIV <span>（必填）</span></label>
+                      <input class="finput" type="password" id="pay-ecpay-hash-iv" placeholder="••••••••••••••••">
+                    </div>
+                  </div>
+                  <div style="display:grid;grid-template-columns:1fr 1fr;gap:12px;margin-top:4px;">
+                    <div class="fg">
+                      <label>付款完成 ReturnURL</label>
+                      <input class="finput" type="text" id="pay-ecpay-return-url" placeholder="https://yourdomain.com/payment/ecpay/return">
+                    </div>
+                    <div class="fg">
+                      <label>前台跳轉 OrderResultURL</label>
+                      <input class="finput" type="text" id="pay-ecpay-result-url" placeholder="https://yourdomain.com/payment/ecpay/result">
+                    </div>
+                  </div>
+                  <div class="fg" style="margin-top:4px;">
+                    <label>付款期限（天）</label>
+                    <input class="finput" type="number" id="pay-ecpay-expire-days" placeholder="3" min="1" max="30" style="max-width:120px;">
+                  </div>
+                </div>
+              </div>
+
+            </div><!-- end grid -->
+          </div>
+        </div>
+
+        <!-- 付款規則 -->
+        <div class="card">
+          <div class="card-head"><div class="card-title">付款規則</div></div>
+          <div class="card-body" style="padding:24px;">
+            <div style="display:grid;grid-template-columns:1fr 1fr;gap:16px;">
+              <div class="fg">
+                <label>付款時機</label>
+                <select class="fselect" id="pay-timing">
+                  <option value="on_confirm">預約確認後付款</option>
+                  <option value="on_booking">預約同時付款</option>
+                  <option value="manual">人工收款（不走線上金流）</option>
+                </select>
+              </div>
+              <div class="fg">
+                <label>付款逾時後</label>
+                <select class="fselect" id="pay-timeout-action">
+                  <option value="cancel">自動取消預約</option>
+                  <option value="keep">保留預約（人工處理）</option>
+                  <option value="notify">發送提醒後保留</option>
+                </select>
+              </div>
+              <div class="fg">
+                <label>付款逾時時限（小時）</label>
+                <input class="finput" type="number" id="pay-timeout-hours" placeholder="24" min="1" max="168">
+              </div>
+              <div class="fg">
+                <label>收據/發票</label>
+                <select class="fselect" id="pay-invoice-type">
+                  <option value="none">不開立</option>
+                  <option value="ecpay_invoice">綠界電子發票</option>
+                  <option value="manual">人工開立</option>
+                </select>
+              </div>
+            </div>
+            <div class="fg" style="margin-top:4px;">
+              <label>付款頁面說明 <span>（顯示在結帳頁面頂部）</span></label>
+              <textarea class="finput" id="pay-checkout-note" rows="2" placeholder="例：完成付款後將自動確認您的預約，並寄送確認信至您的信箱。"></textarea>
+            </div>
+          </div>
+        </div>
+
+        <!-- 退款政策 -->
+        <div class="card">
+          <div class="card-head"><div class="card-title">退款政策</div></div>
+          <div class="card-body" style="padding:24px;">
+            <div style="display:grid;gap:12px;">
+              <div style="display:grid;grid-template-columns:auto 1fr 1fr;gap:12px;align-items:center;font-size:13px;font-weight:600;color:var(--ink-60);padding:0 4px;">
+                <span style="width:120px;">取消時間</span><span>退款比例</span><span>說明</span>
+              </div>
+              <div id="refund-rules" style="display:grid;gap:8px;">
+                <!-- JS 渲染 -->
+              </div>
+              <button class="btn btn-outline btn-sm" style="align-self:flex-start;" onclick="addRefundRule()">＋ 新增規則</button>
+            </div>
+          </div>
+        </div>
+
+      </div>
+    </div>
+
     <!-- ── ACCOUNTS ── -->
     <div class="page" id="page-accounts">
       <div class="card">
@@ -1264,7 +1496,7 @@ function showPage(id, navEl) {
   const titles = {
     dashboard: '儀表板', bookings: '預約管理', rooms: '會議室管理',
     content: '文字內容編輯', photos: '照片管理', formfields: '表單欄位管理',
-    blocked: '封鎖時段管理', accounts: '帳號管理', logs: '登入紀錄'
+    blocked: '封鎖時段管理', payment: '付款設定', accounts: '帳號管理', logs: '登入紀錄'
   };
   document.getElementById('topbarTitle').textContent = titles[id] || '';
   switch(id) {
@@ -1276,6 +1508,7 @@ function showPage(id, navEl) {
     case 'formfields': loadFormFields(); break;
     case 'blocked': loadBlockedSlots(); break;
     case 'accounts': loadAccounts(); break;
+      case 'payment': loadPaymentSettings(); break;
     case 'logs': loadLoginLogs(); break;
   }
 }
@@ -1686,6 +1919,7 @@ async function loadPhotos() {
                 <div style="display:flex;gap:4px;margin-top:4px;">
                   ${i!==coverIdx ? `<button class="btn btn-outline btn-sm" style="flex:1;font-size:11px;padding:3px;" onclick="setCover(${r.id},${i})">設為封面</button>` : '<div style="flex:1;text-align:center;font-size:11px;color:var(--gold);">✓ 封面</div>'}
                   <button class="btn btn-sm" style="background:#c44b3a;color:#fff;border:none;font-size:11px;padding:3px 8px;border-radius:4px;cursor:pointer;" onclick="deletePhoto(${r.id},${i})">✕</button>
+                  <button class="btn btn-sm" style="background:var(--teal);color:#fff;border:none;font-size:11px;padding:3px 7px;border-radius:4px;cursor:pointer;width:100%;margin-top:2px;" onclick="openCropForExisting(${r.id},${i})">✂ 調整範圍</button>
                 </div>
               </div>`).join('')}
           </div>`
@@ -2152,6 +2386,319 @@ async function loadLoginLogs() {
     </div>`;
 }
 
+// ── CROP TOOL ──
+let _cropState = { roomId: null, photoIdx: null, mode: null, file: null };
+let _cropDrag = null;
+let _imgNaturalW = 1, _imgNaturalH = 1, _dispW = 1, _dispH = 1;
+
+function openCropModal(imgSrc, roomId, photoIdx, mode, file) {
+  _cropState = { roomId, photoIdx, mode, file };
+  const modal = document.getElementById('cropModal');
+  const img   = document.getElementById('cropImage');
+  modal.style.display = 'flex';
+  img.onload = function() {
+    _imgNaturalW = img.naturalWidth;
+    _imgNaturalH = img.naturalHeight;
+    const cont = document.getElementById('cropContainer');
+    _dispW = img.offsetWidth;
+    _dispH = img.offsetHeight;
+    // 初始裁切框：全圖
+    setCropBox(0, 0, _dispW, _dispH);
+    updateCropInfo();
+    bindCropEvents();
+  };
+  img.src = imgSrc;
+}
+
+function openCropForExisting(roomId, photoIdx) {
+  // 從頁面上取得現有照片 URL
+  const grid = document.getElementById('photo-grid-' + roomId);
+  if (!grid) return;
+  const imgs = grid.querySelectorAll('img');
+  if (!imgs[photoIdx]) return;
+  openCropModal(imgs[photoIdx].src, roomId, photoIdx, 'existing', null);
+  document.getElementById('cropConfirmBtn').textContent = '確認套用';
+}
+
+function closeCropModal() {
+  document.getElementById('cropModal').style.display = 'none';
+  _cropDrag = null;
+  document.getElementById('cropConfirmBtn').textContent = '確認上傳';
+}
+
+function getCropBox() {
+  const box = document.getElementById('cropBox');
+  return {
+    x: parseInt(box.style.left)  || 0,
+    y: parseInt(box.style.top)   || 0,
+    w: parseInt(box.style.width) || 100,
+    h: parseInt(box.style.height)|| 100,
+  };
+}
+
+function setCropBox(x, y, w, h) {
+  const box = document.getElementById('cropBox');
+  const minSz = 40;
+  w = Math.max(w, minSz); h = Math.max(h, minSz);
+  x = Math.max(0, Math.min(x, _dispW - w));
+  y = Math.max(0, Math.min(y, _dispH - h));
+  box.style.left   = x + 'px';
+  box.style.top    = y + 'px';
+  box.style.width  = w + 'px';
+  box.style.height = h + 'px';
+}
+
+function updateCropInfo() {
+  const b = getCropBox();
+  const scaleX = _imgNaturalW / _dispW;
+  const scaleY = _imgNaturalH / _dispH;
+  const cw = Math.round(b.w * scaleX);
+  const ch = Math.round(b.h * scaleY);
+  document.getElementById('cropSizeInfo').textContent = cw + ' × ' + ch + ' px';
+}
+
+function bindCropEvents() {
+  const box  = document.getElementById('cropBox');
+  const cont = document.getElementById('cropContainer');
+
+  function onDown(e) {
+    e.preventDefault();
+    const pt = e.touches ? e.touches[0] : e;
+    const dir = e.target.dataset && e.target.dataset.dir;
+    const b = getCropBox();
+    _cropDrag = {
+      dir: dir || 'move',
+      startX: pt.clientX, startY: pt.clientY,
+      origX: b.x, origY: b.y, origW: b.w, origH: b.h,
+    };
+  }
+
+  function onMove(e) {
+    if (!_cropDrag) return;
+    e.preventDefault();
+    const pt = e.touches ? e.touches[0] : e;
+    const dx = pt.clientX - _cropDrag.startX;
+    const dy = pt.clientY - _cropDrag.startY;
+    const d  = _cropDrag;
+    const lock = document.getElementById('cropAspectLock').checked;
+    const aspect = 16 / 9;
+    let { x, y, w, h } = { x: d.origX, y: d.origY, w: d.origW, h: d.origH };
+
+    if (d.dir === 'move') {
+      x = d.origX + dx; y = d.origY + dy;
+    } else if (d.dir === 'se') {
+      w = d.origW + dx; h = lock ? w / aspect : d.origH + dy;
+    } else if (d.dir === 'sw') {
+      w = d.origW - dx; h = lock ? w / aspect : d.origH + dy;
+      x = d.origX + d.origW - w;
+    } else if (d.dir === 'ne') {
+      w = d.origW + dx; h = lock ? w / aspect : d.origH - dy;
+      y = d.origY + d.origH - h;
+    } else if (d.dir === 'nw') {
+      w = d.origW - dx; h = lock ? w / aspect : d.origH - dy;
+      x = d.origX + d.origW - w; y = d.origY + d.origH - h;
+    }
+    setCropBox(x, y, w, h);
+    updateCropInfo();
+  }
+
+  function onUp() { _cropDrag = null; }
+
+  box.onmousedown  = onDown;
+  box.ontouchstart = onDown;
+  box.querySelectorAll('[data-dir]').forEach(function(h) {
+    h.onmousedown  = onDown;
+    h.ontouchstart = onDown;
+  });
+  document.onmousemove  = onMove;
+  document.ontouchmove  = onMove;
+  document.onmouseup    = onUp;
+  document.ontouchend   = onUp;
+}
+
+async function confirmCrop() {
+  const img  = document.getElementById('cropImage');
+  const b    = getCropBox();
+  const scaleX = _imgNaturalW / img.offsetWidth;
+  const scaleY = _imgNaturalH / img.offsetHeight;
+  const sx = Math.round(b.x * scaleX);
+  const sy = Math.round(b.y * scaleY);
+  const sw = Math.round(b.w * scaleX);
+  const sh = Math.round(b.h * scaleY);
+
+  // 用 Canvas 裁切
+  const canvas = document.createElement('canvas');
+  canvas.width  = sw;
+  canvas.height = sh;
+  const ctx = canvas.getContext('2d');
+
+  // 先畫原始圖
+  const origImg = new Image();
+  origImg.crossOrigin = 'anonymous';
+  origImg.src = img.src;
+  await new Promise(function(res) { origImg.onload = res; origImg.onerror = res; });
+  ctx.drawImage(origImg, sx, sy, sw, sh, 0, 0, sw, sh);
+
+  document.getElementById('cropConfirmBtn').textContent = '處理中...';
+  document.getElementById('cropConfirmBtn').disabled = true;
+
+  canvas.toBlob(async function(blob) {
+    if (!blob) { showToast('裁切失敗', 'error'); return; }
+    const state = _cropState;
+    closeCropModal();
+
+    if (state.mode === 'existing') {
+      // 刪除舊圖並上傳新的裁切版本
+      try {
+        const formData = new FormData();
+        formData.append('photo', blob, 'cropped.jpg');
+        const upRes = await fetch('/admin/api/rooms/' + state.roomId + '/photos', {
+          method: 'POST', headers: H, body: formData
+        });
+        if (!upRes.ok) throw new Error('上傳失敗');
+        // 刪除原圖
+        await fetch('/admin/api/rooms/' + state.roomId + '/photos/' + state.photoIdx, {
+          method: 'DELETE', headers: H
+        });
+        showToast('裁切完成', 'success');
+        loadPhotos();
+      } catch(e) { showToast('裁切上傳失敗：' + e.message, 'error'); }
+    }
+    document.getElementById('cropConfirmBtn').disabled = false;
+    document.getElementById('cropConfirmBtn').textContent = '確認上傳';
+  }, 'image/jpeg', 0.92);
+}
+
+// ── PAYMENT SETTINGS ──
+const PAY_FIELDS = {
+  cash:    { desc: 'pay-cash-desc' },
+  linepay: { 'channel-id': 'pay-linepay-channel-id', secret: 'pay-linepay-secret',
+              env: 'pay-linepay-env', timeout: 'pay-linepay-timeout', 'confirm-url': 'pay-linepay-confirm-url' },
+  ecpay:   { 'merchant-id': 'pay-ecpay-merchant-id', env: 'pay-ecpay-env',
+              'hash-key': 'pay-ecpay-hash-key', 'hash-iv': 'pay-ecpay-hash-iv',
+              'return-url': 'pay-ecpay-return-url', 'result-url': 'pay-ecpay-result-url',
+              'expire-days': 'pay-ecpay-expire-days' },
+};
+
+const DEFAULT_REFUND_RULES = [
+  { hours: 48, percent: 100, note: '使用前 48 小時以上全額退款' },
+  { hours: 24, percent: 50,  note: '使用前 24–48 小時退款 50%' },
+  { hours: 0,  percent: 0,   note: '使用前 24 小時內不退款' },
+];
+let _refundRules = JSON.parse(JSON.stringify(DEFAULT_REFUND_RULES));
+
+function onPayToggle(method) {
+  const checked = document.getElementById('pay-' + method + '-enabled').checked;
+  const body = document.getElementById('pay-' + method + '-body');
+  if (body) body.style.display = checked ? '' : 'none';
+}
+
+function renderRefundRules() {
+  const container = document.getElementById('refund-rules');
+  if (!container) return;
+  container.innerHTML = _refundRules.map((r, i) => {
+    return '<div class="refund-rule-row">' +
+      '<div><select class="fselect" style="font-size:12px;padding:6px;" onchange="_refundRules[' + i + '].hours=parseInt(this.value)">' +
+        ['<option value="0">24 小時內</option>',
+         '<option value="24">24–48 小時前</option>',
+         '<option value="48">48–72 小時前</option>',
+         '<option value="72">72 小時以上</option>'].join('') +
+      '</select></div>' +
+      '<div><div style="display:flex;align-items:center;gap:6px;">' +
+        '<input type="number" class="finput" value="' + r.percent + '" min="0" max="100" style="width:70px;text-align:center;" onchange="_refundRules[' + i + '].percent=parseInt(this.value)||0"> %' +
+      '</div></div>' +
+      '<div><input type="text" class="finput" value="' + (r.note||'') + '" placeholder="說明..." onchange="_refundRules[' + i + '].note=this.value"></div>' +
+      '<div><button class="btn btn-sm" onclick="_refundRules.splice(' + i + ',1);renderRefundRules();" style="background:#fee2e2;color:#b91c1c;border:none;padding:6px 10px;">✕</button></div>' +
+    '</div>';
+  }).join('');
+  // 設定 select 選中值
+  container.querySelectorAll('.refund-rule-row').forEach((row, i) => {
+    const sel = row.querySelector('select');
+    if (sel) sel.value = String(_refundRules[i].hours);
+  });
+}
+
+function addRefundRule() {
+  _refundRules.push({ hours: 48, percent: 100, note: '' });
+  renderRefundRules();
+}
+
+async function loadPaymentSettings() {
+  try {
+    const res = await fetch('/admin/api/site-content', { headers: H });
+    const data = await res.json();
+    const cfg = data.payment_config ? JSON.parse(data.payment_config) : {};
+
+    // 啟用狀態
+    ['cash','linepay','ecpay'].forEach(m => {
+      const el = document.getElementById('pay-' + m + '-enabled');
+      if (el) {
+        el.checked = !!(cfg[m] && cfg[m].enabled);
+        onPayToggle(m);
+      }
+    });
+
+    // 各欄位填值
+    Object.entries(PAY_FIELDS).forEach(([method, fields]) => {
+      Object.entries(fields).forEach(([key, elId]) => {
+        const el = document.getElementById(elId);
+        if (el && cfg[method] && cfg[method][key] !== undefined) {
+          el.value = cfg[method][key];
+        }
+      });
+    });
+
+    // 付款規則
+    ['timing','timeout-action','timeout-hours','invoice-type','checkout-note'].forEach(k => {
+      const el = document.getElementById('pay-' + k);
+      if (el && cfg.rules && cfg.rules[k] !== undefined) el.value = cfg.rules[k];
+    });
+
+    // 退款規則
+    if (cfg.refund_rules && cfg.refund_rules.length) {
+      _refundRules = cfg.refund_rules;
+    } else {
+      _refundRules = JSON.parse(JSON.stringify(DEFAULT_REFUND_RULES));
+    }
+    renderRefundRules();
+
+  } catch(e) { console.error('loadPaymentSettings:', e); }
+}
+
+async function savePaymentSettings() {
+  const cfg = { rules: {}, refund_rules: _refundRules };
+
+  // 各付款方式
+  ['cash','linepay','ecpay'].forEach(m => {
+    const enabled = document.getElementById('pay-' + m + '-enabled')?.checked || false;
+    cfg[m] = { enabled };
+    if (PAY_FIELDS[m]) {
+      Object.entries(PAY_FIELDS[m]).forEach(([key, elId]) => {
+        const el = document.getElementById(elId);
+        if (el) cfg[m][key] = el.value;
+      });
+    }
+  });
+
+  // 付款規則
+  ['timing','timeout-action','timeout-hours','invoice-type','checkout-note'].forEach(k => {
+    const el = document.getElementById('pay-' + k);
+    if (el) cfg.rules[k] = el.value;
+  });
+
+  try {
+    const res = await fetch('/admin/api/site-content', {
+      method: 'POST', headers: { ...H, 'Content-Type': 'application/json' },
+      body: JSON.stringify({ payment_config: JSON.stringify(cfg) })
+    });
+    if (res.ok) {
+      showToast('付款設定已儲存', 'success');
+    } else {
+      showToast('儲存失敗', 'error');
+    }
+  } catch(e) { showToast('儲存失敗：' + e.message, 'error'); }
+}
+
 // ── CURRENT USER & PERMISSION CONTROL ──
 let _myPerms = [];  // 全域儲存當前用戶權限
 
@@ -2191,6 +2738,7 @@ function applyPermissions(perms) {
     'formfields': "showPage('formfields'",
     'blocked':    "showPage('blocked'",
     'accounts':   "showPage('accounts'",
+    'payment':    "showPage('payment'",
     'logs':       "showPage('logs'",
   };
   document.querySelectorAll('.nav-item').forEach(item => {

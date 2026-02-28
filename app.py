@@ -1314,6 +1314,78 @@ class BlockedSlot(db.Model):
         }
 
 
+
+class AdminUser(db.Model):
+    __tablename__ = 'admin_users'
+    id            = db.Column(db.Integer, primary_key=True)
+    username      = db.Column(db.String(50), unique=True, nullable=False)
+    password_hash = db.Column(db.String(128), nullable=False)
+    display_name  = db.Column(db.String(50), default='')
+    role          = db.Column(db.String(20), default='staff')
+    permissions   = db.Column(db.Text, default='')
+    is_active     = db.Column(db.Boolean, default=True)
+    created_at    = db.Column(db.DateTime, default=datetime.now)
+    created_by    = db.Column(db.String(50), default='')
+
+    def set_password(self, pw):
+        import hashlib
+        self.password_hash = hashlib.sha256(pw.encode()).hexdigest()
+
+    def check_password(self, pw):
+        import hashlib
+        return self.password_hash == hashlib.sha256(pw.encode()).hexdigest()
+
+    def get_permissions(self):
+        import json as _j
+        ALL = ['dashboard','bookings','rooms','content','photos','formfields','blocked','accounts','logs']
+        if self.role == 'superadmin':
+            return ALL
+        if self.permissions:
+            try:
+                return _j.loads(self.permissions)
+            except Exception:
+                pass
+        defaults = {
+            'admin':   ['dashboard','bookings','rooms','content','photos','formfields','blocked'],
+            'manager': ['dashboard','bookings','rooms'],
+            'staff':   ['dashboard','bookings'],
+        }
+        return defaults.get(self.role, ['dashboard'])
+
+    def to_dict(self):
+        return {
+            'id': self.id, 'username': self.username,
+            'display_name': self.display_name, 'role': self.role,
+            'permissions': self.get_permissions(),
+            'is_active': self.is_active,
+            'created_at': self.created_at.strftime('%Y-%m-%d %H:%M') if self.created_at else '',
+            'created_by': self.created_by,
+        }
+
+
+class AdminLoginLog(db.Model):
+    __tablename__ = 'admin_login_logs'
+    id          = db.Column(db.Integer, primary_key=True)
+    username    = db.Column(db.String(50), nullable=False)
+    success     = db.Column(db.Boolean, default=True)
+    ip_address  = db.Column(db.String(50), default='')
+    country     = db.Column(db.String(100), default='')
+    city        = db.Column(db.String(100), default='')
+    user_agent  = db.Column(db.String(300), default='')
+    login_at    = db.Column(db.DateTime, default=datetime.now)
+    note        = db.Column(db.String(200), default='')
+
+    def to_dict(self):
+        return {
+            'id': self.id, 'username': self.username,
+            'success': self.success, 'ip_address': self.ip_address,
+            'country': self.country, 'city': self.city,
+            'user_agent': self.user_agent[:80] if self.user_agent else '',
+            'login_at': self.login_at.strftime('%Y-%m-%d %H:%M:%S') if self.login_at else '',
+            'note': self.note,
+        }
+
+
 class LineUser(db.Model):
     """LINE Bot 使用者記錄"""
     __tablename__ = 'line_users'
@@ -1338,10 +1410,58 @@ class LineUser(db.Model):
 # ─────────────────────────────────────────────
 
 def check_admin():
+    if session.get('admin_user_id'):
+        uid = session['admin_user_id']
+        if uid == 0:
+            return None
+        u = AdminUser.query.get(uid)
+        if u and u.is_active:
+            return None
+        session.clear()
     pw = request.headers.get('X-Admin-Password')
-    if not pw or pw != ADMIN_PASSWORD:
-        return jsonify({'error': 'Unauthorized'}), 401
+    if pw:
+        if pw == ADMIN_PASSWORD:
+            return None
+        u = AdminUser.query.filter_by(username='admin').first()
+        if u and u.check_password(pw):
+            return None
+    return jsonify({'error': 'Unauthorized'}), 401
+
+
+def get_current_admin():
+    if session.get('admin_user_id'):
+        uid = session['admin_user_id']
+        if uid == 0:
+            return AdminUser.query.filter_by(username='admin').first()
+        return AdminUser.query.get(uid)
+    pw = request.headers.get('X-Admin-Password')
+    if pw:
+        return AdminUser.query.filter_by(username='admin').first()
     return None
+
+
+def get_client_ip():
+    for h in ['X-Forwarded-For', 'X-Real-IP', 'CF-Connecting-IP']:
+        v = request.headers.get(h)
+        if v:
+            return v.split(',')[0].strip()
+    return request.remote_addr or ''
+
+
+def get_ip_location(ip):
+    if not ip or ip in ('127.0.0.1', '::1', 'localhost'):
+        return '本機', ''
+    try:
+        r = http_requests.get(
+            f'http://ip-api.com/json/{ip}?lang=zh-TW&fields=status,country,city',
+            timeout=3)
+        d = r.json()
+        if d.get('status') == 'success':
+            return d.get('country', ''), d.get('city', '')
+    except Exception:
+        pass
+    return '', ''
+
 
 
 def generate_booking_number():
@@ -2346,11 +2466,60 @@ def _handle_line_text(uid, rtok, text):
 
 @app.route('/admin/api/login', methods=['POST'])
 def admin_login():
-    data = request.get_json()
-    if data.get('password') == ADMIN_PASSWORD:
-        session['admin'] = True
+    data  = request.get_json()
+    uname = data.get('username', 'admin').strip()
+    pw    = data.get('password', '').strip()
+    ip    = get_client_ip()
+    ua    = request.headers.get('User-Agent', '')[:300]
+
+    def _log(success, note=''):
+        try:
+            country, city = ('', '')
+            if success:
+                country, city = get_ip_location(ip)
+            log = AdminLoginLog(username=uname, success=success,
+                                ip_address=ip, country=country, city=city,
+                                user_agent=ua, note=note)
+            db.session.add(log)
+            db.session.commit()
+        except Exception as e:
+            print(f'[login log error] {e}')
+
+    user = AdminUser.query.filter_by(username=uname).first()
+    if user and user.is_active and user.check_password(pw):
+        session['admin_user_id'] = user.id
+        session['admin_username'] = user.username
+        session['admin_role'] = user.role
+        _log(True)
+        return jsonify({'success': True, 'user': user.to_dict()})
+
+    if uname == 'admin' and pw == ADMIN_PASSWORD:
+        session['admin_user_id'] = 0
+        session['admin_username'] = 'admin'
+        session['admin_role'] = 'superadmin'
+        _log(True, '舊式密碼')
         return jsonify({'success': True})
-    return jsonify({'error': '密碼錯誤'}), 401
+
+    _log(False, '密碼錯誤')
+    return jsonify({'error': '帳號或密碼錯誤'}), 401
+
+
+@app.route('/admin/api/logout', methods=['POST'])
+def admin_api_logout():
+    session.clear()
+    return jsonify({'success': True})
+
+
+@app.route('/admin/api/me', methods=['GET'])
+def admin_me():
+    err = check_admin()
+    if err: return err
+    u = get_current_admin()
+    if u:
+        return jsonify(u.to_dict())
+    return jsonify({'username': 'admin', 'role': 'superadmin',
+                    'permissions': ['dashboard','bookings','rooms','content',
+                                    'photos','formfields','blocked','accounts','logs']})
 
 
 # ─────────────────────────────────────────────
@@ -2842,7 +3011,104 @@ with app.app_context():
                 print('[migrate] 新增 rooms.capacity_min 欄位')
     except Exception as e:
         print(f'[migrate] 欄位檢查略過：{e}')
+    try:
+        db.create_all()
+        print('[migrate] db.create_all() done')
+    except Exception as e:
+        print(f'[migrate] create_all error: {e}')
+    try:
+        if not AdminUser.query.filter_by(username='admin').first():
+            su = AdminUser(username='admin', display_name='超級管理員',
+                           role='superadmin', is_active=True, created_by='system')
+            su.set_password(ADMIN_PASSWORD)
+            db.session.add(su)
+            db.session.commit()
+            print(f'[migrate] superadmin created, pw={ADMIN_PASSWORD}')
+    except Exception as e:
+        print(f'[migrate] superadmin error: {e}')
     seed()
+
+# ─────────────────────────────────────────────
+# Admin -- Accounts & Login Logs
+# ─────────────────────────────────────────────
+
+@app.route('/admin/api/accounts', methods=['GET'])
+def admin_get_accounts():
+    err = check_admin()
+    if err: return err
+    users = AdminUser.query.order_by(AdminUser.created_at).all()
+    return jsonify([u.to_dict() for u in users])
+
+@app.route('/admin/api/accounts', methods=['POST'])
+def admin_create_account():
+    err = check_admin()
+    if err: return err
+    d = request.get_json()
+    if AdminUser.query.filter_by(username=d['username']).first():
+        return jsonify({'error': '帳號已存在'}), 400
+    creator = get_current_admin()
+    u = AdminUser(
+        username     = d['username'].strip(),
+        display_name = d.get('display_name', '').strip(),
+        role         = d.get('role', 'staff'),
+        is_active    = d.get('is_active', True),
+        created_by   = creator.username if creator else 'admin',
+    )
+    u.set_password(d.get('password', 'changeme'))
+    if d.get('permissions') is not None:
+        import json as _j
+        u.permissions = _j.dumps(d['permissions'], ensure_ascii=False)
+    db.session.add(u)
+    db.session.commit()
+    return jsonify({'success': True, 'user': u.to_dict()}), 201
+
+@app.route('/admin/api/accounts/<int:uid>', methods=['PUT'])
+def admin_update_account(uid):
+    err = check_admin()
+    if err: return err
+    u = AdminUser.query.get_or_404(uid)
+    d = request.get_json()
+    import json as _j
+    if 'display_name' in d: u.display_name = d['display_name']
+    if 'role' in d: u.role = d['role']
+    if 'is_active' in d: u.is_active = d['is_active']
+    if 'password' in d and d['password']: u.set_password(d['password'])
+    if 'permissions' in d: u.permissions = _j.dumps(d['permissions'], ensure_ascii=False)
+    db.session.commit()
+    return jsonify({'success': True, 'user': u.to_dict()})
+
+@app.route('/admin/api/accounts/<int:uid>', methods=['DELETE'])
+def admin_delete_account(uid):
+    err = check_admin()
+    if err: return err
+    u = AdminUser.query.get_or_404(uid)
+    if u.role == 'superadmin' and AdminUser.query.filter_by(role='superadmin').count() <= 1:
+        return jsonify({'error': '至少保留一個超級管理員'}), 400
+    db.session.delete(u)
+    db.session.commit()
+    return jsonify({'success': True})
+
+@app.route('/admin/api/bookings/<int:bid>', methods=['DELETE'])
+def admin_delete_booking(bid):
+    err = check_admin()
+    if err: return err
+    b = Booking.query.get_or_404(bid)
+    db.session.delete(b)
+    db.session.commit()
+    return jsonify({'success': True})
+
+
+@app.route('/admin/api/login-logs', methods=['GET'])
+def admin_get_login_logs():
+    err = check_admin()
+    if err: return err
+    page = int(request.args.get('page', 1))
+    per  = int(request.args.get('per', 50))
+    q    = AdminLoginLog.query.order_by(AdminLoginLog.login_at.desc())
+    total = q.count()
+    logs  = q.offset((page-1)*per).limit(per).all()
+    return jsonify({'total': total, 'logs': [l.to_dict() for l in logs]})
+
 
 # ─────────────────────────────────────────────
 # Admin — Blocked Slots

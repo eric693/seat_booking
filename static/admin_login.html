@@ -296,19 +296,25 @@ body {
 <script>
 async function login(e) {
   e.preventDefault();
-  const pw = document.getElementById('password').value;
+  const uname = document.getElementById('username').value.trim();
+  const pw    = document.getElementById('password').value;
   const errEl = document.getElementById('errorMsg');
+  errEl.classList.remove('show');
   try {
     const res = await fetch('/admin/api/login', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ password: pw })
+      body: JSON.stringify({ username: uname, password: pw })
     });
-    if (res.ok) {
+    const data = await res.json();
+    if (res.ok && data.success) {
+      // 存舊式 pw 相容
       sessionStorage.setItem('adminPw', pw);
+      sessionStorage.setItem('adminUsername', uname);
+      if (data.user) sessionStorage.setItem('adminUser', JSON.stringify(data.user));
       window.location.href = '/dashboard';
     } else {
-      errEl.textContent = '密碼錯誤，請重試';
+      errEl.textContent = data.error || '帳號或密碼錯誤';
       errEl.classList.add('show');
     }
   } catch {

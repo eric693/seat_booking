@@ -6,7 +6,11 @@ import hashlib
 import hmac
 import base64
 import requests as http_requests
-from datetime import datetime
+from datetime import datetime, timezone, timedelta
+
+def tw_now():
+    """回傳台灣時間（UTC+8）的 naive datetime，用於所有 default 時間欄位"""""
+    return datetime.now(timezone.utc).replace(tzinfo=None) + timedelta(hours=8)
 from flask import Flask, request, jsonify, send_from_directory, session
 from flask_sqlalchemy import SQLAlchemy
 from flask_cors import CORS
@@ -1189,7 +1193,7 @@ class Room(db.Model):
     is_active   = db.Column(db.Boolean, default=True)
     floor       = db.Column(db.String(20))
     min_hours   = db.Column(db.Float, default=1.0)   # 最低預約時數（0=不限）
-    created_at  = db.Column(db.DateTime, default=datetime.now)
+    created_at  = db.Column(db.DateTime, default=tw_now)
 
     def get_photos(self):
         """回傳照片陣列（含舊 photo_url 相容）"""
@@ -1251,7 +1255,7 @@ class Booking(db.Model):
     status         = db.Column(db.String(20), default='confirmed')
     note           = db.Column(db.Text)
     line_user_id   = db.Column(db.String(100))   # 綁定 LINE userId
-    created_at     = db.Column(db.DateTime, default=datetime.now)
+    created_at     = db.Column(db.DateTime, default=tw_now)
     room           = db.relationship('Room', backref='bookings')
 
     def to_dict(self):
@@ -1276,7 +1280,7 @@ class SiteContent(db.Model):
     id         = db.Column(db.Integer, primary_key=True)
     key        = db.Column(db.String(100), unique=True, nullable=False)
     value      = db.Column(db.Text)
-    updated_at = db.Column(db.DateTime, default=datetime.now, onupdate=datetime.now)
+    updated_at = db.Column(db.DateTime, default=tw_now, onupdate=tw_now)
 
     @staticmethod
     def get(key, default=''):
@@ -1304,7 +1308,7 @@ class BlockedSlot(db.Model):
     start_time = db.Column(db.String(5), nullable=False)    # HH:MM
     end_time   = db.Column(db.String(5), nullable=False)    # HH:MM
     reason     = db.Column(db.String(200), default='')
-    created_at = db.Column(db.DateTime, default=datetime.now)
+    created_at = db.Column(db.DateTime, default=tw_now)
     room       = db.relationship('Room', backref='blocked_slots')
 
     def to_dict(self):
@@ -1326,7 +1330,7 @@ class AdminUser(db.Model):
     role          = db.Column(db.String(20), default='staff')
     permissions   = db.Column(db.Text, default='')
     is_active     = db.Column(db.Boolean, default=True)
-    created_at    = db.Column(db.DateTime, default=datetime.now)
+    created_at    = db.Column(db.DateTime, default=tw_now)
     created_by    = db.Column(db.String(50), default='')
 
     def set_password(self, pw):
@@ -1374,7 +1378,7 @@ class AdminLoginLog(db.Model):
     country     = db.Column(db.String(100), default='')
     city        = db.Column(db.String(100), default='')
     user_agent  = db.Column(db.String(300), default='')
-    login_at    = db.Column(db.DateTime, default=datetime.now)
+    login_at    = db.Column(db.DateTime, default=tw_now)
     note        = db.Column(db.String(200), default='')
 
     def to_dict(self):
@@ -1396,7 +1400,7 @@ class LineUser(db.Model):
     phone           = db.Column(db.String(20))
     display_name    = db.Column(db.String(100))
     is_admin        = db.Column(db.Boolean, default=False)
-    created_at      = db.Column(db.DateTime, default=datetime.now)
+    created_at      = db.Column(db.DateTime, default=tw_now)
     booking_session = db.Column(db.Text)  # JSON：儲存預約對話進度
 
     def to_dict(self):

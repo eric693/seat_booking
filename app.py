@@ -2517,9 +2517,13 @@ def admin_login():
             country, city = ('', '')
             if success:
                 country, city = get_ip_location(ip)
+            from datetime import timezone, timedelta
+            tw_now = datetime.now(timezone.utc) + timedelta(hours=8)
+            tw_now = tw_now.replace(tzinfo=None)  # 存 naive datetime
             log = AdminLoginLog(username=uname, success=success,
                                 ip_address=ip, country=country, city=city,
-                                user_agent=ua, note=note)
+                                user_agent=ua, note=note,
+                                login_at=tw_now)
             db.session.add(log)
             db.session.commit()
         except Exception as e:

@@ -1068,12 +1068,28 @@ tr:hover td { background: #fafafa; }
       <div class="card">
         <div class="card-head">
           <div class="card-title">登入紀錄</div>
-          <div style="display:flex;align-items:center;gap:12px;">
+          <div style="display:flex;align-items:center;gap:12px;flex-wrap:wrap;">
             <div id="lastLoginInfo" style="font-size:12px;color:var(--ink-60);"></div>
             <button class="btn btn-outline btn-sm" onclick="loadLoginLogs()">重新載入</button>
           </div>
         </div>
         <div class="card-body">
+          <!-- 篩選列 -->
+          <div style="display:flex;gap:10px;flex-wrap:wrap;margin-bottom:16px;align-items:center;">
+            <div class="filter-group">
+              <span class="filter-lbl">帳號</span>
+              <input type="text" class="filter-input" id="log-fil-user" placeholder="搜尋帳號..." style="width:140px;" oninput="loadLoginLogs()">
+            </div>
+            <div class="filter-group">
+              <span class="filter-lbl">結果</span>
+              <select class="filter-select" id="log-fil-result" onchange="loadLoginLogs()">
+                <option value="">全部</option>
+                <option value="1">✓ 成功</option>
+                <option value="0">✗ 失敗</option>
+              </select>
+            </div>
+            <button class="btn btn-outline btn-sm" onclick="clearLogFilters()">清除篩選</button>
+          </div>
           <div id="loginLogList"><div style="text-align:center;padding:40px;color:var(--ink-60);">載入中...</div></div>
         </div>
       </div>
@@ -1179,8 +1195,12 @@ tr:hover td { background: #fafafa; }
         <input class="finput" id="acc-display" placeholder="例：王小明">
       </div>
       <div class="fg">
-        <label>密碼 <span>（編輯時留空表示不變更）</span></label>
-        <input class="finput" type="password" id="acc-pw" autocomplete="new-password">
+        <label>密碼 <span id="acc-pw-hint">（新增時必填）</span></label>
+        <div style="position:relative;">
+          <input class="finput" type="password" id="acc-pw" autocomplete="new-password" style="padding-right:44px;">
+          <button type="button" onclick="togglePwVis()" title="顯示/隱藏密碼"
+            style="position:absolute;right:10px;top:50%;transform:translateY(-50%);background:none;border:none;cursor:pointer;font-size:18px;color:var(--ink-60);line-height:1;" id="acc-pw-eye">👁</button>
+        </div>
       </div>
       <div class="fg">
         <label>角色</label>
@@ -1966,10 +1986,19 @@ function openAddAccount() {
   document.getElementById('acc-username').disabled = false;
   document.getElementById('acc-display').value = '';
   document.getElementById('acc-pw').value = '';
+  document.getElementById('acc-pw').required = true;
+  document.getElementById('acc-pw-hint').textContent = '（新增時必填）';
   document.getElementById('acc-role').value = 'staff';
   document.getElementById('acc-active').value = 'true';
   renderPermGrid([]);
   document.getElementById('accountModal').classList.add('show');
+}
+
+function togglePwVis() {
+  const inp = document.getElementById('acc-pw');
+  const eye = document.getElementById('acc-pw-eye');
+  inp.type = inp.type === 'password' ? 'text' : 'password';
+  eye.textContent = inp.type === 'password' ? '👁' : '🙈';
 }
 
 function editAccount(id) {
@@ -1981,6 +2010,8 @@ function editAccount(id) {
     document.getElementById('acc-username').disabled = true;
     document.getElementById('acc-display').value = u.display_name||'';
     document.getElementById('acc-pw').value = '';
+    document.getElementById('acc-pw').required = false;
+    document.getElementById('acc-pw-hint').textContent = '（留空表示不變更）';
     document.getElementById('acc-role').value = u.role;
     document.getElementById('acc-active').value = u.is_active ? 'true' : 'false';
     renderPermGrid(u.permissions||[]);
@@ -2032,52 +2063,91 @@ async function deleteAccount(id) {
 }
 
 // ── LOGIN LOGS ──
+function clearLogFilters() {
+  const u = document.getElementById('log-fil-user');
+  const r = document.getElementById('log-fil-result');
+  if (u) u.value = '';
+  if (r) r.value = '';
+  loadLoginLogs();
+}
+
+function parseUA(ua) {
+  if (!ua) return '—';
+  // 解析瀏覽器名稱
+  let browser = ua;
+  if (/Edg\//i.test(ua))       browser = 'Edge ' + (ua.match(/Edg\/([\d.]+)/)?.[1]||'');
+  else if (/OPR\//i.test(ua))  browser = 'Opera ' + (ua.match(/OPR\/([\d.]+)/)?.[1]||'');
+  else if (/Chrome\//i.test(ua)) browser = 'Chrome ' + (ua.match(/Chrome\/([\d.]+)/)?.[1]||'');
+  else if (/Firefox\//i.test(ua)) browser = 'Firefox ' + (ua.match(/Firefox\/([\d.]+)/)?.[1]||'');
+  else if (/Safari\//i.test(ua)) browser = 'Safari ' + (ua.match(/Version\/([\d.]+)/)?.[1]||'');
+  // OS
+  let os = '';
+  if (/Windows NT 10/i.test(ua))   os = 'Windows 10/11';
+  else if (/Windows NT 6.1/i.test(ua)) os = 'Windows 7';
+  else if (/Mac OS X/i.test(ua))   os = 'macOS ' + (ua.match(/Mac OS X ([\d_]+)/)?.[1]?.replace(/_/g,'.')||'');
+  else if (/iPhone/i.test(ua))     os = 'iPhone';
+  else if (/iPad/i.test(ua))       os = 'iPad';
+  else if (/Android/i.test(ua))    os = 'Android ' + (ua.match(/Android ([\d.]+)/)?.[1]||'');
+  else if (/Linux/i.test(ua))      os = 'Linux';
+  return os ? `${browser} / ${os}` : browser;
+}
+
 async function loadLoginLogs() {
-  const res = await fetch('/admin/api/login-logs?per=100', {headers:H});
+  const uname   = document.getElementById('log-fil-user')?.value?.trim() || '';
+  const success = document.getElementById('log-fil-result')?.value || '';
+  let url = `/admin/api/login-logs?per=200`;
+  if (uname)   url += `&username=${encodeURIComponent(uname)}`;
+  if (success) url += `&success=${success}`;
+  const res = await fetch(url, {headers:H});
   const data = await res.json();
   const logs = data.logs || [];
   const list = document.getElementById('loginLogList');
-  // 上次登入資訊
-  const successLogs = logs.filter(l => l.success);
+  // 上次登入資訊（不受篩選影響，取全部最近兩筆成功）
   const lastInfo = document.getElementById('lastLoginInfo');
-  if (lastInfo) {
-    if (successLogs.length >= 2) {
-      const prev = successLogs[1];
+  if (lastInfo && !uname && !success) {
+    const succ = logs.filter(l => l.success);
+    if (succ.length >= 2) {
+      const prev = succ[1];
       lastInfo.innerHTML = `上次登入：${prev.login_at}　IP：${prev.ip_address||'—'}`;
-    } else if (successLogs.length === 1) {
+    } else if (succ.length === 1) {
       lastInfo.textContent = '這是首次登入';
     }
   }
-  if (!logs.length) { list.innerHTML = '<div style="text-align:center;padding:40px;color:var(--ink-60);">尚無登入紀錄</div>'; return; }
+  if (!logs.length) { list.innerHTML = '<div style="text-align:center;padding:40px;color:var(--ink-60);">找不到符合的紀錄</div>'; return; }
   list.innerHTML = `
-    <div style="font-size:13px;color:var(--ink-60);margin-bottom:12px;">共 ${data.total||logs.length} 筆</div>
+    <div style="font-size:13px;color:var(--ink-60);margin-bottom:12px;">共 ${data.total} 筆（顯示 ${logs.length} 筆）</div>
     <div class="tbl-wrap">
       <table>
         <thead><tr>
-          <th>登入時間</th><th>帳號</th><th>結果</th><th>IP 位址</th><th>地區</th><th>瀏覽器</th>
+          <th>登入時間</th><th>帳號</th><th>結果</th><th>IP 位址</th><th>地區</th><th>瀏覽器 / 裝置</th>
         </tr></thead>
         <tbody>
-          ${logs.map((l, i) => `<tr style="${i===0&&l.success?'background:#f0faf5;':''}">
-            <td style="white-space:nowrap;font-weight:${i===0?'600':'400'};">${l.login_at}${i===0?` <span style="background:var(--gold);color:#fff;font-size:10px;padding:1px 6px;border-radius:10px;vertical-align:middle;">本次</span>`:''}</td>
+          ${logs.map((l, i) => `<tr style="${i===0&&l.success&&!uname&&!success?'background:#f0faf5;':''}">
+            <td style="white-space:nowrap;font-weight:${i===0&&!uname&&!success?'600':'400'};">${l.login_at}${i===0&&l.success&&!uname&&!success?` <span style="background:var(--gold);color:#fff;font-size:10px;padding:1px 6px;border-radius:10px;vertical-align:middle;margin-left:4px;">本次</span>`:''}</td>
             <td><strong>${l.username}</strong></td>
-            <td>${l.success ? '<span style="color:var(--green);">✓ 成功</span>' : '<span style="color:var(--red);">✗ 失敗</span>'}</td>
-            <td style="font-family:monospace;font-size:12px;">${l.ip_address||'—'}</td>
-            <td style="font-size:13px;">${[l.country,l.city].filter(Boolean).join(' ')||'—'}</td>
-            <td style="color:var(--ink-60);max-width:200px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;font-size:12px;" title="${l.user_agent||''}">${l.user_agent||'—'}</td>
+            <td>${l.success ? '<span style="color:var(--green);font-weight:600;">✓ 成功</span>' : '<span style="color:var(--red);font-weight:600;">✗ 失敗</span>'}</td>
+            <td style="font-family:monospace;font-size:12px;white-space:nowrap;">${l.ip_address||'—'}</td>
+            <td style="font-size:13px;white-space:nowrap;">${[l.country,l.city].filter(Boolean).join(' ')||'—'}</td>
+            <td style="font-size:12px;color:var(--ink-60);white-space:normal;word-break:break-word;min-width:220px;">${parseUA(l.user_agent)}<br><span style="font-size:11px;opacity:.6;" title="${(l.user_agent||'').replace(/"/g,'&quot;')}">${l.user_agent||''}</span></td>
           </tr>`).join('')}
         </tbody>
       </table>
     </div>`;
 }
 
-// ── CURRENT USER ──
+// ── CURRENT USER & PERMISSION CONTROL ──
+let _myPerms = [];  // 全域儲存當前用戶權限
+
 async function loadCurrentUser() {
   try {
     const res = await fetch('/admin/api/me', {headers:H});
     if (res.ok) {
       const u = await res.json();
+      _myPerms = u.permissions || [];
       const el = document.getElementById('currentUserInfo');
       if (el) el.innerHTML = `<span style="color:rgba(255,255,255,0.8);">&#128100; ${u.display_name||u.username}</span> <span style="color:var(--gold);font-size:11px;">${roleLabel(u.role)}</span>`;
+      // 根據權限控制側邊欄顯示
+      applyPermissions(_myPerms);
     }
     // 本次 & 上次登入時間
     const lr = await fetch('/admin/api/login-logs?per=2', {headers:H});
@@ -2091,6 +2161,39 @@ async function loadCurrentUser() {
       }
     }
   } catch(e) {}
+}
+
+function applyPermissions(perms) {
+  // page id → 導航 onclick 字串對應
+  const PAGE_NAV_MAP = {
+    'dashboard':  "showPage('dashboard'",
+    'bookings':   "showPage('bookings'",
+    'rooms':      "showPage('rooms'",
+    'content':    "showPage('content'",
+    'photos':     "showPage('photos'",
+    'formfields': "showPage('formfields'",
+    'blocked':    "showPage('blocked'",
+    'accounts':   "showPage('accounts'",
+    'logs':       "showPage('logs'",
+  };
+  document.querySelectorAll('.nav-item').forEach(item => {
+    const oc = item.getAttribute('onclick') || '';
+    for (const [pageId, pattern] of Object.entries(PAGE_NAV_MAP)) {
+      if (oc.includes(pattern)) {
+        item.style.display = perms.includes(pageId) ? '' : 'none';
+        break;
+      }
+    }
+  });
+  // 如果當前頁面沒有權限，跳轉到第一個有權限的頁面
+  const currentPage = document.querySelector('.page.active')?.id?.replace('page-','');
+  if (currentPage && !perms.includes(currentPage)) {
+    const firstAllowed = perms[0];
+    if (firstAllowed) {
+      const navEl = document.querySelector(`.nav-item[onclick*="'${firstAllowed}'"]`);
+      showPage(firstAllowed, navEl);
+    }
+  }
 }
 
 // ── HELPERS ──

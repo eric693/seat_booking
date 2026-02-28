@@ -1449,15 +1449,41 @@ def get_client_ip():
 
 
 def get_ip_location(ip):
+    CC_MAP = {
+        'TW':'台灣','CN':'中國','US':'美國','JP':'日本','KR':'韓國',
+        'HK':'香港','SG':'新加坡','GB':'英國','DE':'德國','FR':'法國',
+        'AU':'澳洲','CA':'加拿大','IN':'印度','BR':'巴西','TH':'泰國',
+        'VN':'越南','ID':'印尼','MY':'馬來西亞','PH':'菲律賓','RU':'俄羅斯',
+        'NL':'荷蘭','IT':'義大利','ES':'西班牙',
+    }
+    CITY_MAP = {
+        'Taipei':'台北市','Taipei City':'台北市',
+        'New Taipei City':'新北市','New Taipei':'新北市',
+        'Taichung':'台中市','Taichung City':'台中市',
+        'Kaohsiung':'高雄市','Kaohsiung City':'高雄市',
+        'Tainan':'台南市','Tainan City':'台南市',
+        'Hsinchu':'新竹市','Hsinchu City':'新竹市',
+        'Keelung':'基隆市','Taoyuan':'桃園市','Taoyuan City':'桃園市',
+        'Zhongli':'中壢區','Banqiao':'板橋區','Xinzhuang':'新莊區',
+        'Sanchong':'三重區','Xindian':'新店區','Bade':'八德區',
+        'Bade District':'八德區','Zhubei':'竹北市',
+        'Hualien':'花蓮市','Yilan':'宜蘭市','Pingtung':'屏東市',
+        'Chiayi':'嘉義市','Changhua':'彰化市','Yunlin':'雲林縣',
+        'Nantou':'南投市','Miaoli':'苗栗市','Taitung':'台東市',
+    }
     if not ip or ip in ('127.0.0.1', '::1', 'localhost'):
         return '本機', ''
     try:
         r = http_requests.get(
-            f'http://ip-api.com/json/{ip}?lang=zh-TW&fields=status,country,city',
+            f'http://ip-api.com/json/{ip}?fields=status,country,countryCode,city',
             timeout=3)
         d = r.json()
         if d.get('status') == 'success':
-            return d.get('country', ''), d.get('city', '')
+            cc = d.get('countryCode', '')
+            country = CC_MAP.get(cc, d.get('country', ''))
+            city_en = d.get('city', '')
+            city = CITY_MAP.get(city_en, city_en)
+            return country, city
     except Exception:
         pass
     return '', ''
@@ -3102,9 +3128,17 @@ def admin_delete_booking(bid):
 def admin_get_login_logs():
     err = check_admin()
     if err: return err
-    page = int(request.args.get('page', 1))
-    per  = int(request.args.get('per', 50))
-    q    = AdminLoginLog.query.order_by(AdminLoginLog.login_at.desc())
+    page    = int(request.args.get('page', 1))
+    per     = int(request.args.get('per', 50))
+    uname   = request.args.get('username', '').strip()
+    success = request.args.get('success', '')   # '1' / '0' / ''
+    q = AdminLoginLog.query.order_by(AdminLoginLog.login_at.desc())
+    if uname:
+        q = q.filter(AdminLoginLog.username.ilike(f'%{uname}%'))
+    if success == '1':
+        q = q.filter(AdminLoginLog.success == True)
+    elif success == '0':
+        q = q.filter(AdminLoginLog.success == False)
     total = q.count()
     logs  = q.offset((page-1)*per).limit(per).all()
     return jsonify({'total': total, 'logs': [l.to_dict() for l in logs]})

@@ -240,8 +240,12 @@ body {
 
     <form onsubmit="login(event)">
       <div class="form-group">
-        <label class="form-label">管理員密碼</label>
-        <input type="password" class="form-input" id="password" placeholder="請輸入管理員密碼" required autofocus>
+        <label class="form-label">帳號</label>
+        <input type="text" class="form-input" id="username" placeholder="請輸入帳號" required autofocus autocomplete="username">
+      </div>
+      <div class="form-group">
+        <label class="form-label">密碼</label>
+        <input type="password" class="form-input" id="password" placeholder="請輸入密碼" required autocomplete="current-password">
       </div>
       <button type="submit" class="login-btn">登入後台</button>
     </form>

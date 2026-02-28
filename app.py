@@ -1188,6 +1188,7 @@ class Room(db.Model):
     cover_index = db.Column(db.Integer, default=0)  # 主封面為第幾張
     is_active   = db.Column(db.Boolean, default=True)
     floor       = db.Column(db.String(20))
+    min_hours   = db.Column(db.Float, default=1.0)   # 最低預約時數（0=不限）
     created_at  = db.Column(db.DateTime, default=datetime.now)
 
     def get_photos(self):
@@ -1226,6 +1227,7 @@ class Room(db.Model):
             'photos': photos,
             'cover_index': self.cover_index or 0,
             'is_active': self.is_active, 'floor': self.floor,
+            'min_hours': float(self.min_hours or 1.0),
         }
 
 
@@ -1666,6 +1668,14 @@ def create_booking():
             def _m(t):
                 h, mn = map(int, t.split(':'))
                 return h * 60 + mn
+            # 驗證每段都符合最低預約時數
+            min_h = float(room.min_hours or 1.0)
+            if min_h > 0:
+                for seg in segments:
+                    seg_dur_h = (_m(seg['end']) - _m(seg['start'])) / 60.0
+                    if seg_dur_h < min_h:
+                        min_disp = int(min_h) if min_h == int(min_h) else min_h
+                        return jsonify({'error': f'此會議室每次最少預約 {min_disp} 小時，時段 {seg["start"]}–{seg["end"]} 只有 {round(seg_dur_h*60)} 分鐘'}), 400
             dur = sum((_m(s['end']) - _m(s['start'])) for s in segments) / 60
             start_time = segments[0]['start']
             end_time   = segments[-1]['end']
@@ -1679,6 +1689,10 @@ def create_booking():
                 h, mn = map(int, t.split(':'))
                 return h * 60 + mn
             dur = (_m(data['end_time']) - _m(data['start_time'])) / 60
+            min_h = float(room.min_hours or 1.0)
+            if min_h > 0 and dur < min_h:
+                min_disp = int(min_h) if min_h == int(min_h) else min_h
+                return jsonify({'error': f'此會議室每次最少預約 {min_disp} 小時'}), 400
             start_time = data['start_time']
             end_time   = data['end_time']
             segments_json = None
@@ -2609,6 +2623,7 @@ def admin_add_room():
     r = Room(name=d['name'], room_type=d['room_type'],
              capacity=d.get('capacity', 10), capacity_min=d.get('capacity_min', 0),
              hourly_rate=d.get('hourly_rate', 500),
+             min_hours=float(d.get('min_hours', 1.0)),
              description=d.get('description',''),
              amenities=json.dumps(d.get('amenities',[]), ensure_ascii=False),
              floor=d.get('floor',''), photo_url=d.get('photo_url',''),
@@ -2623,7 +2638,7 @@ def admin_update_room(rid):
     if err: return err
     room = Room.query.get_or_404(rid)
     d = request.get_json()
-    for f in ['name','room_type','capacity','capacity_min','hourly_rate','description',
+    for f in ['name','room_type','capacity','capacity_min','hourly_rate','min_hours','description',
               'floor','photo_url','is_active']:
         if f in d:
             setattr(room, f, d[f])

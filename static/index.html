@@ -274,21 +274,22 @@ header {
 
 .room-photo {
   width: 100%;
-  height: 160px;
-  object-fit: cover;
-  background: linear-gradient(135deg, #1a1a2e, #16213e);
+  background: #111;
   display: flex;
   align-items: center;
   justify-content: center;
   font-size: 40px;
   color: rgba(255,255,255,0.3);
+  overflow: hidden;
 }
 
 .room-photo img {
   width: 100%;
-  height: 100%;
-  object-fit: cover;
+  height: auto;
+  max-height: 320px;
+  object-fit: contain;
   display: block;
+  background: #111;
 }
 
 .room-photo-placeholder {
@@ -1741,9 +1742,11 @@ function showSelectionBar() {
   if (selectedSlots.size === 0) return;
   const bar = document.getElementById('tsbBar');
   bar.style.display = 'flex';
-  if (state.segments && state.segments.length > 1) {
-    document.getElementById('tsbTime').textContent =
-      state.segments.map(s => `${s.start}–${s.end}`).join('  +  ');
+  const hasMultiSeg = state.segments && state.segments.length > 1;
+  if (hasMultiSeg) {
+    document.getElementById('tsbTime').innerHTML =
+      state.segments.map(s => `<span>${s.start}–${s.end}</span>`).join('<span style="color:var(--gold);padding:0 4px;">+</span>') +
+      `<span style="font-size:11px;color:var(--gold);margin-left:8px;font-weight:600;">⚠ 將分開為 ${state.segments.length} 筆訂單</span>`;
   } else {
     const slots  = [...selectedSlots].sort((a,b) => a-b);
     const startT = slotToTime(slots[0]);
@@ -1887,39 +1890,85 @@ async function submitBooking() {
     alert('最短預約時間為 60 分鐘（2 個時段）'); return;
   }
   if (!validateFormFields()) return;
+
+  const segs = state.segments || [];
+  const hasMultiSeg = segs.length > 1;
+
+  // 不連續時段：確認拆單
+  if (hasMultiSeg) {
+    const segLines = segs.map(s => "• " + s.start + "–" + s.end).join("\n");
+    const confirmMsg = "您選擇了 " + segs.length + " 個不連續時段，系統將自動建立 " + segs.length + " 筆獨立訂單：\n\n" + segLines + "\n\n確定送出嗎？";
+    if (!confirm(confirmMsg)) return;
+  }
+
   const name  = getFieldVal('name');
   const phone = getFieldVal('phone');
   const email = getFieldVal('email');
+  const commonPayload = {
+    room_id: state.roomId,
+    date: state.date,
+    name, phone,
+    email: getFieldVal('email'),
+    department: getFieldVal('department'),
+    attendees: parseInt(getFieldVal('attendees')) || 1,
+    purpose: getFieldVal('purpose'),
+    note: getFieldVal('note'),
+    extra_fields: Object.fromEntries(_formFields.filter(f=>!f.system).map(f=>[f.id, getFieldVal(f.id)])),
+    line_user_id: window._liffUserId || '',
+  };
 
   const btn = document.getElementById('bookBtn');
   btn.disabled = true;
-  btn.textContent = '預約中...';
+  btn.textContent = hasMultiSeg ? ("預約中 (0/" + segs.length + ")...") : "預約中...";
 
   try {
-    const res = await fetch(`${API}/api/book`, {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({
-        room_id: state.roomId,
-        date: state.date,
-        start_time: state.startTime,
-        end_time: state.endTime,
-        segments: state.segments || [],
-        name, phone,
-        email: getFieldVal('email'),
-        department: getFieldVal('department'),
-        attendees: parseInt(getFieldVal('attendees')) || 1,
-        purpose: getFieldVal('purpose'),
-        note: getFieldVal('note'),
-        extra_fields: Object.fromEntries(_formFields.filter(f=>!f.system).map(f=>[f.id, getFieldVal(f.id)])),
-        line_user_id: window._liffUserId || '',
-      })
-    });
-    const data = await res.json();
-    if (res.ok && data.success) {
-      showSuccess(data.booking);
+    if (!hasMultiSeg) {
+      // 單段 or 連續段：一筆訂單
+      const res = await fetch(API + "/api/book", {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          ...commonPayload,
+          start_time: state.startTime,
+          end_time: state.endTime,
+          segments: segs,
+        })
+      });
+      const data = await res.json();
+      if (res.ok && data.success) {
+        showSuccess(data.booking);
+      } else {
+        alert(data.error || '預約失敗，請重試');
+      }
     } else {
-      alert(data.error || '預約失敗，請重試');
+      // 不連續時段：每段各自送一筆訂單
+      const results = [];
+      const errors  = [];
+      for (let i = 0; i < segs.length; i++) {
+        btn.textContent = "預約中 (" + (i+1) + "/" + segs.length + ")...";
+        const seg = segs[i];
+        const res = await fetch(API + "/api/book", {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            ...commonPayload,
+            start_time: seg.start,
+            end_time: seg.end,
+            segments: [seg],
+          })
+        });
+        const data = await res.json();
+        if (res.ok && data.success) {
+          results.push(data.booking);
+        } else {
+          errors.push(seg.start + "–" + seg.end + "：" + (data.error || "失敗"));
+        }
+      }
+      if (results.length > 0) {
+        showMultiSuccess(results, errors);
+      } else {
+        alert("所有時段預約失敗：\n" + errors.join("\n"));
+      }
     }
   } catch (e) {
     alert('預約失敗：' + e.message);
@@ -1929,9 +1978,20 @@ async function submitBooking() {
   }
 }
 
-function showSuccess(booking) {
+function showMultiSuccess(bookings, errors) {
+  const segList = bookings.map(function(b) {
+    var seg = b.segments ? (typeof b.segments === "string" ? JSON.parse(b.segments) : b.segments) : null;
+    var time = seg && seg.length ? (seg[0].start + "–" + seg[0].end) : (b.start_time + "–" + b.end_time);
+    return "• " + b.booking_number + "  " + time;
+  }).join("\n");
+  var errMsg = errors.length ? ("\n\n⚠ 以下時段失敗：\n" + errors.join("\n")) : "";
+  var first = bookings[0];
+  first._multi_info = "共 " + bookings.length + " 筆訂單：\n" + segList + errMsg;
+  showSuccess(first, true);
+}
+function showSuccess(booking, isMulti) {
   const rows = [
-    ['預約編號', booking.booking_number],
+    ['預約編號', booking.booking_number + (booking._multi_info ? '' : '')],
     ['會議室', booking.room_name],
     ['日期', booking.date],
     ['時段', (function() {

@@ -1393,6 +1393,12 @@ input[list]::-webkit-calendar-picker-indicator { display: none !important; }
           </div>
         </div>
 
+        <!-- 底部儲存按鈕 -->
+        <div style="display:flex;justify-content:flex-end;padding:16px 24px;background:var(--white);border-top:1px solid var(--border);border-radius:0 0 12px 12px;gap:12px;">
+          <button class="btn btn-outline btn-sm" onclick="loadPaymentSettings()">重設</button>
+          <button class="btn btn-primary" onclick="savePaymentSettings()" style="padding:10px 32px;font-size:15px;">儲存付款設定</button>
+        </div>
+
       </div>
     </div>
 

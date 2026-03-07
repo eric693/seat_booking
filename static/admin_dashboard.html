@@ -1257,6 +1257,81 @@ input[list]::-webkit-calendar-picker-indicator { display: none !important; }
                 </div>
               </div>
 
+
+              <!-- 直接刷卡（Stripe / 藍新 / 自有金流） -->
+              <div class="pay-method-card" id="pmc-creditcard">
+                <div class="pay-method-head">
+                  <label style="display:flex;align-items:center;gap:10px;cursor:pointer;">
+                    <input type="checkbox" id="pay-creditcard-enabled" class="pay-toggle" onchange="onPayToggle('creditcard')" style="width:18px;height:18px;accent-color:var(--teal);">
+                    <span class="pay-method-icon" style="display:flex;gap:4px;align-items:center;">
+                      <span style="background:#1a1f71;color:#fff;border-radius:4px;padding:2px 6px;font-size:11px;font-weight:700;letter-spacing:1px;">VISA</span>
+                      <span style="background:#eb001b;color:#fff;border-radius:4px;padding:2px 6px;font-size:11px;font-weight:700;">Master</span>
+                      <span style="background:#003087;color:#fff;border-radius:4px;padding:2px 6px;font-size:11px;font-weight:700;">JCB</span>
+                    </span>
+                    <div>
+                      <div style="font-weight:600;font-size:15px;">信用卡付款</div>
+                      <div style="font-size:12px;color:var(--ink-60);">支援 VISA / MasterCard / JCB，透過第三方金流串接</div>
+                    </div>
+                  </label>
+                  <span class="pay-badge pay-badge-online">線上即時</span>
+                </div>
+                <div class="pay-method-body" id="pay-creditcard-body" style="display:none;">
+                  <div style="background:#fff3cd;border:1px solid #ffc107;border-radius:8px;padding:12px 16px;margin-bottom:16px;font-size:13px;">
+                    ⚠ 尚未取得 API 金鑰，信用卡功能目前停用。取得金鑰後填入以下欄位即可啟用。
+                  </div>
+                  <div style="margin-bottom:14px;">
+                    <label style="font-size:13px;font-weight:600;color:var(--ink-60);display:block;margin-bottom:8px;">金流服務商</label>
+                    <div style="display:flex;gap:10px;flex-wrap:wrap;">
+                      <label style="display:flex;align-items:center;gap:6px;font-size:13px;cursor:pointer;">
+                        <input type="radio" name="creditcard-provider" id="pay-cc-provider-stripe" value="stripe" style="accent-color:var(--teal);"> Stripe
+                      </label>
+                      <label style="display:flex;align-items:center;gap:6px;font-size:13px;cursor:pointer;">
+                        <input type="radio" name="creditcard-provider" id="pay-cc-provider-newebpay" value="newebpay" style="accent-color:var(--teal);"> 藍新金流（NewebPay）
+                      </label>
+                      <label style="display:flex;align-items:center;gap:6px;font-size:13px;cursor:pointer;">
+                        <input type="radio" name="creditcard-provider" id="pay-cc-provider-other" value="other" style="accent-color:var(--teal);"> 其他
+                      </label>
+                    </div>
+                  </div>
+                  <div style="display:grid;grid-template-columns:1fr 1fr;gap:12px;">
+                    <div class="fg">
+                      <label>API 金鑰 / Publishable Key <span>（必填）</span></label>
+                      <input class="finput" type="password" id="pay-cc-api-key" placeholder="pk_live_•••• 或服務商提供的金鑰">
+                    </div>
+                    <div class="fg">
+                      <label>Secret Key <span>（必填）</span></label>
+                      <input class="finput" type="password" id="pay-cc-secret-key" placeholder="sk_live_•••• 或服務商私鑰">
+                    </div>
+                    <div class="fg">
+                      <label>環境</label>
+                      <select class="fselect" id="pay-cc-env">
+                        <option value="sandbox">Sandbox（測試）</option>
+                        <option value="production">Production（正式）</option>
+                      </select>
+                    </div>
+                    <div class="fg">
+                      <label>Webhook / Notify URL</label>
+                      <input class="finput" type="text" id="pay-cc-webhook-url" placeholder="https://yourdomain.com/payment/creditcard/notify">
+                    </div>
+                    <div class="fg">
+                      <label>付款完成跳轉 URL</label>
+                      <input class="finput" type="text" id="pay-cc-return-url" placeholder="https://yourdomain.com/payment/creditcard/return">
+                    </div>
+                    <div class="fg">
+                      <label>付款期限（分鐘）</label>
+                      <input class="finput" type="number" id="pay-cc-timeout" placeholder="15" min="5" max="60" style="max-width:120px;">
+                    </div>
+                  </div>
+                  <div class="fg" style="margin-top:4px;">
+                    <label>付款說明 <span>（顯示在結帳頁）</span></label>
+                    <textarea class="finput" id="pay-cc-desc" rows="2" placeholder="例：支援 VISA、MasterCard、JCB，請於 15 分鐘內完成付款。"></textarea>
+                  </div>
+                  <div style="background:#e8f5e9;border:1px solid #a5d6a7;border-radius:8px;padding:10px 14px;margin-top:12px;font-size:12px;color:#2e7d32;">
+                    ℹ 功能已串接完成，取得 API 金鑰後填入上方欄位並儲存，即可正式啟用信用卡付款。
+                  </div>
+                </div>
+              </div>
+
             </div><!-- end grid -->
           </div>
         </div>
@@ -2790,6 +2865,10 @@ const PAY_FIELDS = {
               'hash-key': 'pay-ecpay-hash-key', 'hash-iv': 'pay-ecpay-hash-iv',
               'return-url': 'pay-ecpay-return-url', 'result-url': 'pay-ecpay-result-url',
               'expire-days': 'pay-ecpay-expire-days' },
+  creditcard: { 'api-key': 'pay-cc-api-key', 'secret-key': 'pay-cc-secret-key',
+                env: 'pay-cc-env', 'webhook-url': 'pay-cc-webhook-url',
+                'return-url': 'pay-cc-return-url', timeout: 'pay-cc-timeout',
+                desc: 'pay-cc-desc' },
 };
 
 const DEFAULT_REFUND_RULES = [
@@ -2842,7 +2921,7 @@ async function loadPaymentSettings() {
     const cfg = data.payment_config ? JSON.parse(data.payment_config) : {};
 
     // 啟用狀態
-    ['cash','linepay','ecpay'].forEach(m => {
+    ['cash','linepay','ecpay','creditcard'].forEach(m => {
       const el = document.getElementById('pay-' + m + '-enabled');
       if (el) {
         el.checked = !!(cfg[m] && cfg[m].enabled);
@@ -2859,6 +2938,11 @@ async function loadPaymentSettings() {
         }
       });
     });
+
+    // 信用卡 provider radio
+    const ccProvider = cfg.creditcard?.provider || 'stripe';
+    const ccRadio = document.querySelector(`input[name="creditcard-provider"][value="${ccProvider}"]`);
+    if (ccRadio) ccRadio.checked = true;
 
     // 付款規則
     ['timing','timeout-action','timeout-hours','invoice-type','checkout-note'].forEach(k => {
@@ -2881,7 +2965,7 @@ async function savePaymentSettings() {
   const cfg = { rules: {}, refund_rules: _refundRules };
 
   // 各付款方式
-  ['cash','linepay','ecpay'].forEach(m => {
+  ['cash','linepay','ecpay','creditcard'].forEach(m => {
     const enabled = document.getElementById('pay-' + m + '-enabled')?.checked || false;
     cfg[m] = { enabled };
     if (PAY_FIELDS[m]) {
@@ -2891,6 +2975,10 @@ async function savePaymentSettings() {
       });
     }
   });
+
+  // 信用卡 provider
+  const ccProviderEl = document.querySelector('input[name="creditcard-provider"]:checked');
+  if (ccProviderEl) cfg.creditcard.provider = ccProviderEl.value;
 
   // 付款規則
   ['timing','timeout-action','timeout-hours','invoice-type','checkout-note'].forEach(k => {

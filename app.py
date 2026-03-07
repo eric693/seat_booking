@@ -235,7 +235,7 @@ def _send_via_sendgrid(to_addr: str, subject: str, body_html: str):
 
 def _send_via_resend(to_addr: str, subject: str, body_html: str):
     """透過 Resend API 寄信（備援，API Key 不會過期）"""
-    from_addr = MAIL_FROM or GMAIL_USER or 'noreply@resend.dev'
+    from_addr = 'onboarding@resend.dev'  # Resend 免費版預設寄件人（無自訂網域時使用）
     try:
         resp = http_requests.post(
             'https://api.resend.com/emails',

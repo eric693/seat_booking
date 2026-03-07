@@ -1889,10 +1889,10 @@ def flex_input_date(room_name: str) -> dict:
     from datetime import datetime as _dt, timedelta
     today = _dt.now()
     # 快捷日期：明天 / 後天 / 大後天
+    weekdays = ['一','二','三','四','五','六','日']
     shortcuts = []
-    for delta in [1, 2, 3]:
+    for delta in range(1, 8):
         d = today + timedelta(days=delta)
-        weekdays = ['一','二','三','四','五','六','日']
         label = f'{d.month}/{d.day} 週{weekdays[d.weekday()]}'
         shortcuts.append({
             'type': 'box', 'layout': 'vertical',
@@ -1924,7 +1924,9 @@ def flex_input_date(room_name: str) -> dict:
                     {'type': 'text', 'text': '或點選下方快捷日期',
                      'size': 'xs', 'color': _C['ink60'], 'margin': 'md'},
                     {'type': 'box', 'layout': 'horizontal',
-                     'spacing': 'sm', 'contents': shortcuts},
+                     'spacing': 'sm', 'contents': shortcuts[:4]},
+                    {'type': 'box', 'layout': 'horizontal',
+                     'spacing': 'sm', 'margin': 'sm', 'contents': shortcuts[4:]},
                 ]
             },
             'footer': {

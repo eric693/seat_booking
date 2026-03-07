@@ -52,6 +52,7 @@ LIFF_ID        = os.environ.get('LIFF_ID', '')
 
 # ── Email 通知（Gmail API OAuth2 優先，SendGrid 次之）──────
 SENDGRID_API_KEY     = os.environ.get('SENDGRID_API_KEY', '')
+RESEND_API_KEY       = os.environ.get('RESEND_API_KEY', '')
 GMAIL_USER           = os.environ.get('GMAIL_USER', '')
 GMAIL_APP_PASS       = os.environ.get('GMAIL_APP_PASS', '')
 MAIL_FROM            = os.environ.get('MAIL_FROM', GMAIL_USER)
@@ -62,7 +63,8 @@ GOOGLE_REFRESH_TOKEN = os.environ.get('GOOGLE_REFRESH_TOKEN', '')
 USE_GMAIL_API  = bool(GOOGLE_CLIENT_ID and GOOGLE_CLIENT_SECRET and GOOGLE_REFRESH_TOKEN)
 USE_SENDGRID   = bool(SENDGRID_API_KEY) and not USE_GMAIL_API
 USE_GMAIL      = bool(GMAIL_USER and GMAIL_APP_PASS) and not USE_GMAIL_API and not USE_SENDGRID
-USE_EMAIL      = USE_GMAIL_API or USE_SENDGRID or USE_GMAIL
+USE_RESEND     = bool(RESEND_API_KEY)
+USE_EMAIL      = USE_GMAIL_API or USE_SENDGRID or USE_RESEND or USE_GMAIL
 
 # ── Twilio SMS（選用）───────────────────────────
 TWILIO_SID    = os.environ.get('TWILIO_SID', '')
@@ -123,11 +125,24 @@ def reply_line(reply_token: str, messages: list):
 # ─────────────────────────────────────────────
 
 def send_email(to_addr: str, subject: str, body_html: str):
-    """寄送 HTML 信件：Gmail API > SendGrid > Gmail SMTP"""
+    """寄送 HTML 信件：Gmail API > Resend > SendGrid > Gmail SMTP"""
     if not to_addr:
         return
     if USE_GMAIL_API:
-        _send_via_gmail_api(to_addr, subject, body_html)
+        try:
+            _send_via_gmail_api(to_addr, subject, body_html)
+            return
+        except Exception as e:
+            print(f'[Gmail API] 失敗，自動切換備援：{e}')
+            if USE_RESEND:
+                print('[Email] 切換至 Resend 備援')
+                _send_via_resend(to_addr, subject, body_html)
+                return
+            elif USE_SENDGRID:
+                _send_via_sendgrid(to_addr, subject, body_html)
+                return
+    if USE_RESEND:
+        _send_via_resend(to_addr, subject, body_html)
     elif USE_SENDGRID:
         _send_via_sendgrid(to_addr, subject, body_html)
     elif USE_GMAIL:
@@ -216,6 +231,33 @@ def _send_via_sendgrid(to_addr: str, subject: str, body_html: str):
                 print('[SendGrid] ★ API Key 錯誤，請確認 SENDGRID_API_KEY 環境變數')
     except Exception as e:
         print(f'[SendGrid error] {e}')
+
+
+def _send_via_resend(to_addr: str, subject: str, body_html: str):
+    """透過 Resend API 寄信（備援，API Key 不會過期）"""
+    from_addr = MAIL_FROM or GMAIL_USER or 'noreply@resend.dev'
+    try:
+        resp = http_requests.post(
+            'https://api.resend.com/emails',
+            headers={
+                'Authorization': f'Bearer {RESEND_API_KEY}',
+                'Content-Type': 'application/json',
+            },
+            json={
+                'from': from_addr,
+                'to': [to_addr],
+                'subject': subject,
+                'html': body_html,
+            },
+            timeout=15
+        )
+        data = resp.json()
+        if resp.status_code == 200 or resp.status_code == 201:
+            print(f'[Resend] 寄信成功 → {to_addr}')
+        else:
+            print(f'[Resend] 寄信失敗：{data}')
+    except Exception as e:
+        print(f'[Resend] 例外錯誤：{e}')
 
 
 def _send_via_gmail(to_addr: str, subject: str, body_html: str):

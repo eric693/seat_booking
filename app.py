@@ -1220,7 +1220,7 @@ class Room(db.Model):
             'capacity': self.capacity,
             'capacity_min': self.capacity_min or 0,
             'capacity_label': (
-                f'{self.capacity_min}–{self.capacity} 人'
+                f'{self.capacity_min}~{self.capacity} 人'
                 if self.capacity_min and self.capacity_min > 0
                 else f'{self.capacity} 人'
             ),
@@ -1829,7 +1829,7 @@ def flex_select_room(rooms) -> dict:
     room_btns = []
     for r in rooms:
         if r.capacity_min and r.capacity_min > 0:
-            cap = f'{r.capacity_min}–{r.capacity} 人  ·  NT${r.hourly_rate}/hr'
+            cap = f'{r.capacity_min}~{r.capacity} 人  ·  NT${r.hourly_rate}/hr'
         else:
             cap = f'{r.capacity} 人  ·  NT${r.hourly_rate}/hr'
         floor_txt = f'{r.floor}  ' if r.floor else ''

@@ -2095,7 +2095,7 @@ function renderFFList() {
           <div>
             <div style="font-size:11px;color:var(--ink-60);margin-bottom:3px;">${f.type==='select'?'選項（逗號分隔）':'提示文字'}</div>
             <input class="finput" style="padding:6px 8px;font-size:13px;" value="${esc(f.type==='select'?(f.options||''):(f.placeholder||''))}"
-              onchange="_ffUpdate(${i},f.type==='select'?'options':'placeholder',this.value)">
+              onchange="_ffUpdate(${i},'${f.type==='select'?'options':'placeholder'}',this.value)">
           </div>
           <div style="text-align:center;">
             <div style="font-size:11px;color:var(--ink-60);margin-bottom:6px;">必填</div>

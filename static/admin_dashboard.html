@@ -726,6 +726,20 @@ tr:hover td { background: #fafafa; }
 
     <!-- ── DASHBOARD ── -->
     <div class="page active" id="page-dashboard">
+
+      <!-- 即時時鐘列 -->
+      <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:14px;padding:10px 16px;background:var(--white);border:1px solid var(--border);border-radius:10px;flex-wrap:wrap;gap:8px;">
+        <div style="display:flex;align-items:center;gap:10px;">
+          <div style="font-size:11px;color:var(--ink-60);">台灣時間</div>
+          <div id="dash-clock" style="font-size:20px;font-weight:700;letter-spacing:2px;color:var(--ink);font-variant-numeric:tabular-nums;">--:--:--</div>
+          <div id="dash-date-display" style="font-size:13px;color:var(--ink-60);"></div>
+        </div>
+        <div style="display:flex;align-items:center;gap:10px;">
+          <span style="font-size:12px;color:var(--ink-60);">資料更新：<span id="dash-last-update">—</span></span>
+          <button class="btn btn-outline btn-sm" onclick="loadStats()" style="font-size:12px;">&#8635; 立即更新</button>
+        </div>
+      </div>
+
       <div class="stats-grid">
         <div class="stat-card">
           <div class="stat-lbl">有效預約</div>
@@ -735,7 +749,7 @@ tr:hover td { background: #fafafa; }
         <div class="stat-card">
           <div class="stat-lbl">今日預約</div>
           <div class="stat-val" id="st-today">—</div>
-          <div class="stat-sub">今天</div>
+          <div class="stat-sub" id="st-today-date">今天</div>
         </div>
         <div class="stat-card">
           <div class="stat-lbl">可用會議室</div>
@@ -1380,10 +1394,11 @@ tr:hover td { background: #fafafa; }
       </div>
       <div class="fg">
         <label>類型</label>
-        <select class="fselect" id="rm-type">
+        <input class="finput" type="text" id="rm-type" list="rm-type-list" placeholder="輸入或選擇類型" autocomplete="off">
+        <datalist id="rm-type-list">
           <option>腦力激盪</option><option>洽談室</option><option>簡報廳</option>
           <option>視訊會議</option><option>行政套房</option><option>培訓教室</option>
-        </select>
+        </datalist>
       </div>
       <div class="fg">
         <label>容納人數</label>
@@ -1628,6 +1643,15 @@ async function loadDashboard() {
     document.getElementById('st-rooms').textContent = stats.total_rooms;
     document.getElementById('st-revenue').textContent = 'NT$' + (stats.total_revenue || 0).toLocaleString();
     document.getElementById('st-cancelled').textContent = stats.cancelled;
+    // 顯示台灣今日日期在「今日預約」卡片
+    if (stats.tw_today) {
+      const el = document.getElementById('st-today-date');
+      if (el) el.textContent = stats.tw_today;
+    }
+    // 更新時間戳記
+    const nowStr = stats.tw_time || new Date().toLocaleTimeString('zh-TW');
+    const upd = document.getElementById('dash-last-update');
+    if (upd) upd.textContent = nowStr;
     document.getElementById('st-completed').textContent = stats.completed;
     const rr = await fetch('/admin/api/rooms', { headers: H });
     const rooms = await rr.json();
@@ -2832,10 +2856,43 @@ function badgeHtml(status) {
   return `<span class="badge ${cls}">${txt}</span>`;
 }
 
+// ── REAL-TIME CLOCK ──
+function startDashClock() {
+  const weekDays = ['日','一','二','三','四','五','六'];
+  function tick() {
+    const tw = new Date(Date.now() + 8 * 3600 * 1000); // UTC+8
+    const hh = String(tw.getUTCHours()).padStart(2,'0');
+    const mm = String(tw.getUTCMinutes()).padStart(2,'0');
+    const ss = String(tw.getUTCSeconds()).padStart(2,'0');
+    const dateStr = tw.getUTCFullYear() + '/' +
+      String(tw.getUTCMonth()+1).padStart(2,'0') + '/' +
+      String(tw.getUTCDate()).padStart(2,'0') +
+      ' 週' + weekDays[tw.getUTCDay()];
+    const c = document.getElementById('dash-clock');
+    const d = document.getElementById('dash-date-display');
+    if (c) c.textContent = hh + ':' + mm + ':' + ss;
+    if (d) d.textContent = dateStr;
+  }
+  tick();
+  setInterval(tick, 1000);
+}
+
+// 每 60 秒自動刷新統計（只在儀表板頁時）
+function startStatsAutoRefresh() {
+  setInterval(function() {
+    if (document.getElementById('page-dashboard') &&
+        document.getElementById('page-dashboard').classList.contains('active')) {
+      loadStats();
+    }
+  }, 60000);
+}
+
 // ── INIT ──
 initFloorDate();
 loadDashboard();
 loadFloorStatus();
+startDashClock();
+startStatsAutoRefresh();
 </script>
 </body>
 </html>

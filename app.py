@@ -2930,16 +2930,21 @@ def admin_update_site_content():
 def admin_get_stats():
     err = check_admin()
     if err: return err
-    today = datetime.now().strftime('%Y-%m-%d')
+    from datetime import timezone, timedelta as _td
+    tw_now   = datetime.now(timezone.utc) + _td(hours=8)
+    tw_today = tw_now.strftime('%Y-%m-%d')
+    tw_time  = tw_now.strftime('%H:%M:%S')
     return jsonify({
         'total_bookings': Booking.query.filter_by(status='confirmed').count(),
-        'today_bookings': Booking.query.filter_by(date=today, status='confirmed').count(),
+        'today_bookings': Booking.query.filter_by(date=tw_today, status='confirmed').count(),
         'total_rooms':    Room.query.filter_by(is_active=True).count(),
         'total_revenue':  db.session.query(func.sum(Booking.total_price))
                             .filter_by(status='confirmed').scalar() or 0,
         'cancelled':   Booking.query.filter_by(status='cancelled').count(),
         'completed':   Booking.query.filter_by(status='completed').count(),
         'line_users':  LineUser.query.count(),
+        'tw_today':    tw_today,
+        'tw_time':     tw_time,
     })
 
 

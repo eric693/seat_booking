@@ -1916,9 +1916,13 @@ def flex_input_date(room_name: str) -> dict:
                 'backgroundColor': _C['bg'],
                 'paddingAll': '16px', 'spacing': 'md',
                 'contents': [
-                    {'type': 'text',
-                     'text': '請輸入日期，例：2026-03-15',
-                     'size': 'sm', 'color': _C['ink60'], 'wrap': True},
+                    {'type': 'text', 'text': '請直接在下方輸入框輸入日期',
+                     'size': 'md', 'color': _C['ink'], 'weight': 'bold', 'wrap': True},
+                    {'type': 'text', 'text': '格式：YYYY-MM-DD，例 2026-03-15',
+                     'size': 'xs', 'color': _C['ink60'], 'margin': 'xs'},
+                    {'type': 'separator', 'margin': 'md'},
+                    {'type': 'text', 'text': '或點選下方快捷日期',
+                     'size': 'xs', 'color': _C['ink60'], 'margin': 'md'},
                     {'type': 'box', 'layout': 'horizontal',
                      'spacing': 'sm', 'contents': shortcuts},
                 ]
@@ -2000,12 +2004,17 @@ def flex_select_slot(room_name: str, date_str: str,
         'contents': {
             'type': 'bubble', 'size': 'mega',
             'header': _header_box(f'{date_fmt}  ·  {room_name}',
-                                  'Step 3 / 5  ·  選擇時段（點選可預約時段）'),
+                                  'Step 3 / 5  ·  選擇時段'),
             'body': {
                 'type': 'box', 'layout': 'vertical',
                 'backgroundColor': _C['bg'],
                 'paddingAll': '12px', 'spacing': 'none',
-                'contents': slot_rows,
+                'contents': [
+                    {'type': 'text', 'text': '請點選下方綠色「可預約」時段',
+                     'size': 'sm', 'color': _C['teal'], 'weight': 'bold', 'wrap': True},
+                    {'type': 'separator', 'margin': 'sm'},
+                    *slot_rows,
+                ],
             },
             'footer': {
                 'type': 'box', 'layout': 'vertical',
@@ -2028,10 +2037,12 @@ def flex_input_name() -> dict:
                 'backgroundColor': _C['bg'], 'paddingAll': '16px',
                 'spacing': 'sm',
                 'contents': [
-                    {'type': 'text', 'text': '請輸入您的姓名',
-                     'size': 'sm', 'color': _C['ink'], 'weight': 'bold'},
+                    {'type': 'text', 'text': '請在下方輸入框輸入您的姓名',
+                     'size': 'md', 'color': _C['ink'], 'weight': 'bold', 'wrap': True},
                     {'type': 'text', 'text': '例：王小明',
-                     'size': 'xs', 'color': _C['ink60']},
+                     'size': 'xs', 'color': _C['ink60'], 'margin': 'xs'},
+                    {'type': 'text', 'text': '輸入後直接送出即可，不需要點任何按鈕',
+                     'size': 'xs', 'color': _C['ink60'], 'wrap': True, 'margin': 'sm'},
                 ]
             },
             'footer': {
@@ -2055,10 +2066,12 @@ def flex_input_phone() -> dict:
                 'backgroundColor': _C['bg'], 'paddingAll': '16px',
                 'spacing': 'sm',
                 'contents': [
-                    {'type': 'text', 'text': '請輸入手機號碼',
-                     'size': 'sm', 'color': _C['ink'], 'weight': 'bold'},
-                    {'type': 'text', 'text': '例：0912345678',
-                     'size': 'xs', 'color': _C['ink60']},
+                    {'type': 'text', 'text': '請在下方輸入框輸入手機號碼',
+                     'size': 'md', 'color': _C['ink'], 'weight': 'bold', 'wrap': True},
+                    {'type': 'text', 'text': '格式：10碼，例 0912345678',
+                     'size': 'xs', 'color': _C['ink60'], 'margin': 'xs'},
+                    {'type': 'text', 'text': '輸入後直接送出即可',
+                     'size': 'xs', 'color': _C['ink60'], 'wrap': True, 'margin': 'sm'},
                 ]
             },
             'footer': {
@@ -2082,18 +2095,24 @@ def flex_input_email() -> dict:
                 'backgroundColor': _C['bg'], 'paddingAll': '16px',
                 'spacing': 'sm',
                 'contents': [
-                    {'type': 'text', 'text': '請輸入 Email',
-                     'size': 'sm', 'color': _C['ink'], 'weight': 'bold'},
-                    {'type': 'text', 'text': '預約確認信將發送至此信箱',
-                     'size': 'xs', 'color': _C['ink60']},
+                    {'type': 'text', 'text': '請在下方輸入框輸入 Email',
+                     'size': 'md', 'color': _C['ink'], 'weight': 'bold', 'wrap': True},
                     {'type': 'text', 'text': '例：name@example.com',
+                     'size': 'xs', 'color': _C['ink60'], 'margin': 'xs'},
+                    {'type': 'text', 'text': '預約確認信將寄送至此信箱',
                      'size': 'xs', 'color': _C['ink60']},
+                    {'type': 'text', 'text': '輸入後直接送出即可，或點「跳過」不填 Email',
+                     'size': 'xs', 'color': _C['ink60'], 'wrap': True, 'margin': 'sm'},
                 ]
             },
             'footer': {
                 'type': 'box', 'layout': 'vertical',
                 'backgroundColor': _C['bg'], 'paddingAll': '12px',
-                'contents': [_btn('取消預約', 'message', '取消預約', bg='#888888')]
+                'spacing': 'sm',
+                'contents': [
+                    _btn('跳過（不填 Email）', 'message', '跳過email', bg=_C['teal']),
+                    _btn('取消預約', 'message', '取消預約', bg='#888888'),
+                ]
             }
         }
     }
@@ -2130,7 +2149,7 @@ def flex_confirm_booking(sess: dict) -> dict:
         'type': 'flex', 'altText': '請確認預約資料',
         'contents': {
             'type': 'bubble', 'size': 'mega',
-            'header': _header_box('確認預約資料', 'Step 5 / 5  ·  請確認以下資訊'),
+            'header': _header_box('確認預約資料', 'Step 5 / 5  ·  請確認後點「確認送出」'),
             'body': {
                 'type': 'box', 'layout': 'vertical',
                 'backgroundColor': _C['bg'],
@@ -2310,8 +2329,16 @@ def _handle_booking_flow(uid: str, rtok: str, text: str, lu):
     # ── Step 4c：輸入 Email ──
     if step == 'input_email':
         import re as _re2
+        # 跳過 Email
+        if text.strip() in ('跳過email', '跳過', 'skip', '略過'):
+            sess['step']  = 'confirm'
+            sess['email'] = ''
+            _save_sess(lu, sess)
+            reply_line(rtok, [flex_confirm_booking(sess)])
+            return True
         if not _re2.match(r'^[^\s@]+@[^\s@]+\.[^\s@]+$', text.strip()):
-            reply_line(rtok, [flex_not_found('Email 格式不正確', '請重新輸入，例：name@example.com')])
+            reply_line(rtok, [flex_not_found('Email 格式不正確',
+                '請重新輸入，例：name@example.com，或點「跳過」不填')])
             return True
         sess['step']  = 'confirm'
         sess['email'] = text.strip()

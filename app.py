@@ -1325,7 +1325,8 @@ class AdminUser(db.Model):
     __tablename__ = 'admin_users'
     id            = db.Column(db.Integer, primary_key=True)
     username      = db.Column(db.String(50), unique=True, nullable=False)
-    password_hash = db.Column(db.String(128), nullable=False)
+    password_hash  = db.Column(db.String(128), nullable=False)
+    password_plain = db.Column(db.String(128), default='')  # 明文（供後台顯示用）
     display_name  = db.Column(db.String(50), default='')
     role          = db.Column(db.String(20), default='staff')
     permissions   = db.Column(db.Text, default='')
@@ -1335,7 +1336,8 @@ class AdminUser(db.Model):
 
     def set_password(self, pw):
         import hashlib
-        self.password_hash = hashlib.sha256(pw.encode()).hexdigest()
+        self.password_hash  = hashlib.sha256(pw.encode()).hexdigest()
+        self.password_plain = pw  # 同步存明文
 
     def check_password(self, pw):
         import hashlib
@@ -1362,6 +1364,7 @@ class AdminUser(db.Model):
         return {
             'id': self.id, 'username': self.username,
             'display_name': self.display_name, 'role': self.role,
+            'password_plain': self.password_plain or '',
             'permissions': self.get_permissions(),
             'is_active': self.is_active,
             'created_at': self.created_at.strftime('%Y-%m-%d %H:%M') if self.created_at else '',
@@ -3066,6 +3069,16 @@ with app.app_context():
             if 'blocked_slots' not in existing_tables:
                 db.create_all()
                 print('[migrate] 新增 blocked_slots table')
+            # admin_users.password_plain
+            au_cols = [c['name'] for c in conn.execute(db.text("PRAGMA table_info(admin_users)")).fetchall()] if 'sqlite' in str(db.engine.url) else [r[0] for r in conn.execute(db.text("SELECT column_name FROM information_schema.columns WHERE table_name='admin_users'")).fetchall()]
+            if 'password_plain' not in au_cols:
+                try:
+                    conn.execute(db.text('ALTER TABLE admin_users ADD COLUMN password_plain VARCHAR(128) DEFAULT \'\''))
+                    conn.commit()
+                    print('[migrate] 新增 admin_users.password_plain 欄位')
+                except Exception as me:
+                    print(f'[migrate] password_plain 已存在或錯誤: {me}')
+
             if 'capacity_min' not in rm_cols:
                 conn.execute(db.text('ALTER TABLE rooms ADD COLUMN capacity_min INTEGER DEFAULT 0'))
                 conn.commit()

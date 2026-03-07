@@ -879,14 +879,20 @@ def flex_booking_confirm(booking) -> dict:
     room_type= (booking.room.room_type or '') if booking.room else ''
     site_url = SiteContent.get('site_url', 'https://seat-booking-rlf2.onrender.com')
 
-    # 日期格式化
+    # 日期格式化 + 過期判斷
     try:
-        from datetime import datetime as dt
+        from datetime import datetime as dt, timezone, timedelta
         d = dt.strptime(booking.date, '%Y-%m-%d')
         weekdays = ['一', '二', '三', '四', '五', '六', '日']
         date_fmt = f'{d.month}/{d.day}（週{weekdays[d.weekday()]}）'
+        tw_today = (dt.now(timezone.utc) + timedelta(hours=8)).date()
+        is_expired = (booking.status in ('cancelled',) or
+                      (d.date() < tw_today and booking.status != 'completed'))
+        is_completed = booking.status == 'completed'
     except Exception:
         date_fmt = booking.date
+        is_expired = False
+        is_completed = False
 
     return {
         'type': 'flex',
@@ -896,12 +902,12 @@ def flex_booking_confirm(booking) -> dict:
             'size': 'kilo',
             'header': {
                 'type': 'box', 'layout': 'vertical',
-                'backgroundColor': '#1a3333',
+                'backgroundColor': '#3a3a3a' if is_expired else ('#1a3333'),
                 'paddingAll': '0px',
                 'contents': [
                     # 頂部色條
                     {'type': 'box', 'layout': 'vertical',
-                     'backgroundColor': '#2A6B6B', 'height': '4px',
+                     'backgroundColor': '#888888' if is_expired else '#2A6B6B', 'height': '4px',
                      'contents': []},
                     # 主 header 內容
                     {'type': 'box', 'layout': 'vertical',
@@ -911,10 +917,10 @@ def flex_booking_confirm(booking) -> dict:
                          {'type': 'box', 'layout': 'horizontal',
                           'contents': [
                              {'type': 'box', 'layout': 'vertical',
-                              'backgroundColor': '#2A6B6B', 'cornerRadius': '20px',
+                              'backgroundColor': '#888888' if is_expired else '#2A6B6B', 'cornerRadius': '20px',
                               'paddingAll': '4px', 'paddingStart': '12px', 'paddingEnd': '12px',
                               'flex': 0,
-                              'contents': [{'type': 'text', 'text': '預約已確認',
+                              'contents': [{'type': 'text', 'text': '已過期' if is_expired else ('已完成' if is_completed else '預約已確認'),
                                             'size': 'xs', 'color': '#ffffff', 'weight': 'bold'}]},
                          ]},
                          # 預約編號（獨立一行，完整顯示）
@@ -968,13 +974,13 @@ def flex_booking_confirm(booking) -> dict:
                     {'type': 'button',
                      'action': {'type': 'message', 'label': '查詢此預約',
                                 'text': f'查詢 {booking.booking_number}'},
-                     'style': 'primary', 'color': '#2A6B6B',
+                     'style': 'primary', 'color': '#888888' if is_expired else '#2A6B6B',
                      'height': 'sm'},
-                    {'type': 'button',
+                    *([{'type': 'button',
                      'action': {'type': 'message', 'label': '取消此預約',
                                 'text': f'取消預約 {booking.booking_number}'},
                      'style': 'secondary', 'height': 'sm',
-                     'color': '#C44B3A'},
+                     'color': '#C44B3A'}] if not is_expired else []),
                 ]
             }
         }

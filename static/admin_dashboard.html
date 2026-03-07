@@ -1936,11 +1936,14 @@ function triggerModalFileInput() {}
 let pendingPhotoUrl = '';
 
 async function handleModalPhotoSelect(event) {
-  const file = event.target.files[0];
-  if (!file) return;
+  const rawFile = event.target.files[0];
+  if (!rawFile) return;
   const progress = document.getElementById('modalUploadProgress');
   const bar = document.getElementById('modalUploadBar');
-  progress.style.display = 'block'; bar.style.width = '30%';
+  progress.style.display = 'block'; bar.style.width = '15%';
+  let file;
+  try { file = await autoCropImage(rawFile, 16/9, 1600); bar.style.width = '30%'; }
+  catch { file = rawFile; bar.style.width = '30%'; }
   const formData = new FormData();
   formData.append('photo', file);
   try {
@@ -2074,10 +2077,13 @@ function handleDrop(e, id) { e.preventDefault(); document.getElementById(`drop-$
 
 async function uploadRoomPhoto(event, roomId) { uploadRoomPhotoFile(event.target.files[0], roomId); }
 
-async function uploadRoomPhotoFile(file, roomId) {
-  if (!file) return;
+async function uploadRoomPhotoFile(rawFile, roomId) {
+  if (!rawFile) return;
   const prog = document.getElementById(`prog-${roomId}`), bar = document.getElementById(`progbar-${roomId}`);
-  if (prog) { prog.style.display = 'block'; bar.style.width = '30%'; }
+  if (prog) { prog.style.display = 'block'; bar.style.width = '10%'; }
+  let file;
+  try { file = await autoCropImage(rawFile, 16/9, 1600); } catch { file = rawFile; }
+  if (bar) bar.style.width = '30%';
   const fd = new FormData(); fd.append('photo', file);
   try {
     if (bar) bar.style.width = '70%';
@@ -2105,10 +2111,54 @@ async function setCover(roomId, idx) {
   else toast('設定失敗', 'error');
 }
 
+
+// ── 圖片自動裁切（Canvas cover crop）──
+// ratio: 目標寬高比，例 16/9 或 1（正方形）
+// maxSize: 輸出最大邊長（px），預設 1200
+function autoCropImage(file, ratio, maxSize = 1200) {
+  return new Promise((resolve, reject) => {
+    const img = new Image();
+    const url = URL.createObjectURL(file);
+    img.onload = () => {
+      URL.revokeObjectURL(url);
+      // 計算 cover crop 的來源區域
+      let sw = img.width, sh = img.height;
+      const srcRatio = sw / sh;
+      let sx = 0, sy = 0;
+      if (srcRatio > ratio) {
+        // 圖片太寬，裁左右
+        sw = Math.round(sh * ratio);
+        sx = Math.round((img.width - sw) / 2);
+      } else {
+        // 圖片太高，裁上下
+        sh = Math.round(img.width / ratio);
+        sy = Math.round((img.height - sh) / 2);
+      }
+      // 輸出尺寸
+      let dw = sw, dh = sh;
+      if (dw > maxSize) { dh = Math.round(dh * maxSize / dw); dw = maxSize; }
+      if (dh > maxSize) { dw = Math.round(dw * maxSize / dh); dh = maxSize; }
+      const canvas = document.createElement('canvas');
+      canvas.width = dw; canvas.height = dh;
+      const ctx = canvas.getContext('2d');
+      ctx.drawImage(img, sx, sy, sw, sh, 0, 0, dw, dh);
+      canvas.toBlob(blob => {
+        if (!blob) { reject(new Error('裁切失敗')); return; }
+        resolve(new File([blob], file.name.replace(/\.[^.]+$/, '.jpg'), { type: 'image/jpeg' }));
+      }, 'image/jpeg', 0.88);
+    };
+    img.onerror = () => reject(new Error('圖片載入失敗'));
+    img.src = url;
+  });
+}
+
 async function uploadLogo(event) {
-  const file = event.target.files[0]; if (!file) return;
+  const rawFile = event.target.files[0]; if (!rawFile) return;
   const status = document.getElementById('logoUploadStatus');
-  status.style.display = 'block'; status.textContent = '上傳中...';
+  status.style.display = 'block'; status.textContent = '最佳化中...';
+  let file;
+  try { file = await autoCropImage(rawFile, 1, 800); } catch { file = rawFile; }
+  status.textContent = '上傳中...';
   const fd = new FormData(); fd.append('photo', file);
   try {
     const res = await fetch('/admin/api/site-logo', { method: 'POST', headers: { 'X-Admin-Password': PW }, body: fd });

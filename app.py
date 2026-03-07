@@ -171,8 +171,7 @@ def _send_via_gmail_api(to_addr: str, subject: str, body_html: str):
         token_data = token_resp.json()
         access_token = token_data.get('access_token')
         if not access_token:
-            print(f'[Gmail API] 取得 access token 失敗：{token_data}')
-            return
+            raise Exception(f'[Gmail API] 取得 access token 失敗：{token_data}')
 
         # Step 2: 組裝 MIME 郵件
         from_addr = MAIL_FROM or GMAIL_USER
@@ -196,9 +195,10 @@ def _send_via_gmail_api(to_addr: str, subject: str, body_html: str):
         if resp.status_code == 200:
             print(f'[Gmail API] sent to {to_addr}')
         else:
-            print(f'[Gmail API error] {resp.status_code}: {resp.text[:300]}')
+            raise Exception(f'[Gmail API error] {resp.status_code}: {resp.text[:300]}')
     except Exception as e:
         print(f'[Gmail API error] {e}')
+        raise  # 讓 send_email fallback 接手
 
 
 def _send_via_sendgrid(to_addr: str, subject: str, body_html: str):

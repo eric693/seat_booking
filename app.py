@@ -2826,9 +2826,16 @@ def admin_get_bookings():
     err = check_admin()
     if err: return err
     q = Booking.query
-    if v := request.args.get('date'):    q = q.filter_by(date=v)
-    if v := request.args.get('status'):  q = q.filter_by(status=v)
-    if v := request.args.get('room_id'): q = q.filter_by(room_id=int(v))
+    # 單日篩選（舊）
+    if v := request.args.get('date'):      q = q.filter_by(date=v)
+    # 日期範圍篩選
+    if v := request.args.get('date_from'): q = q.filter(Booking.date >= v)
+    if v := request.args.get('date_to'):   q = q.filter(Booking.date <= v)
+    # 時間範圍篩選（依 start_time 欄位）
+    if v := request.args.get('time_from'): q = q.filter(Booking.start_time >= v)
+    if v := request.args.get('time_to'):   q = q.filter(Booking.start_time <= v)
+    if v := request.args.get('status'):    q = q.filter_by(status=v)
+    if v := request.args.get('room_id'):   q = q.filter_by(room_id=int(v))
     return jsonify([b.to_dict() for b in q.order_by(Booking.created_at.desc()).all()])
 
 @app.route('/admin/api/bookings/<int:bid>/cancel', methods=['POST'])

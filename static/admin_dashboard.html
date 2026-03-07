@@ -728,19 +728,6 @@ input::-webkit-calendar-picker-indicator { display: none !important; }
     <!-- ── DASHBOARD ── -->
     <div class="page active" id="page-dashboard">
 
-      <!-- 即時時鐘列 -->
-      <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:14px;padding:10px 16px;background:var(--white);border:1px solid var(--border);border-radius:10px;flex-wrap:wrap;gap:8px;">
-        <div style="display:flex;align-items:center;gap:10px;">
-          <div style="font-size:11px;color:var(--ink-60);">台灣時間</div>
-          <div id="dash-clock" style="font-size:20px;font-weight:700;letter-spacing:2px;color:var(--ink);font-variant-numeric:tabular-nums;">--:--:--</div>
-          <div id="dash-date-display" style="font-size:13px;color:var(--ink-60);"></div>
-        </div>
-        <div style="display:flex;align-items:center;gap:10px;">
-          <span style="font-size:12px;color:var(--ink-60);">資料更新：<span id="dash-last-update">—</span></span>
-          <button class="btn btn-outline btn-sm" onclick="loadStats()" style="font-size:12px;">&#8635; 立即更新</button>
-        </div>
-      </div>
-
       <div class="stats-grid">
         <div class="stat-card">
           <div class="stat-lbl">有效預約</div>
@@ -812,10 +799,22 @@ input::-webkit-calendar-picker-indicator { display: none !important; }
           <button class="btn btn-outline btn-sm" onclick="showPage('bookings', document.querySelector('[onclick*=bookings]'))">查看全部</button>
         </div>
         <div class="card-body">
-          <div class="filters" style="margin-bottom:16px;">
+          <div class="filters" style="margin-bottom:16px;flex-wrap:wrap;gap:8px;">
             <div class="filter-group">
-              <span class="filter-lbl">日期</span>
-              <input type="date" class="filter-input" id="dash-fil-date" onchange="loadDashboardBookings()" style="font-size:13px;padding:6px 10px;">
+              <span class="filter-lbl">開始日期</span>
+              <input type="date" class="filter-input" id="dash-fil-date-from" onchange="loadDashboardBookings()" style="font-size:13px;padding:6px 10px;">
+            </div>
+            <div class="filter-group">
+              <span class="filter-lbl">開始時間</span>
+              <input type="time" class="filter-input" id="dash-fil-time-from" onchange="loadDashboardBookings()" style="font-size:13px;padding:6px 10px;" step="3600">
+            </div>
+            <div class="filter-group">
+              <span class="filter-lbl">結束日期</span>
+              <input type="date" class="filter-input" id="dash-fil-date-to" onchange="loadDashboardBookings()" style="font-size:13px;padding:6px 10px;">
+            </div>
+            <div class="filter-group">
+              <span class="filter-lbl">結束時間</span>
+              <input type="time" class="filter-input" id="dash-fil-time-to" onchange="loadDashboardBookings()" style="font-size:13px;padding:6px 10px;" step="3600">
             </div>
             <div class="filter-group">
               <span class="filter-lbl">狀態</span>
@@ -1672,13 +1671,19 @@ async function loadDashboard() {
 
 async function loadDashboardBookings() {
   try {
-    const date   = document.getElementById('dash-fil-date')?.value || '';
-    const status = document.getElementById('dash-fil-status')?.value || '';
-    const room   = document.getElementById('dash-fil-room')?.value || '';
+    const dateFrom = document.getElementById('dash-fil-date-from')?.value || '';
+    const dateTo   = document.getElementById('dash-fil-date-to')?.value   || '';
+    const timeFrom = document.getElementById('dash-fil-time-from')?.value || '';
+    const timeTo   = document.getElementById('dash-fil-time-to')?.value   || '';
+    const status   = document.getElementById('dash-fil-status')?.value    || '';
+    const room     = document.getElementById('dash-fil-room')?.value      || '';
     let url = '/admin/api/bookings?';
-    if (date)   url += `date=${date}&`;
-    if (status) url += `status=${status}&`;
-    if (room)   url += `room_id=${room}&`;
+    if (dateFrom) url += `date_from=${dateFrom}&`;
+    if (dateTo)   url += `date_to=${dateTo}&`;
+    if (timeFrom) url += `time_from=${timeFrom}&`;
+    if (timeTo)   url += `time_to=${timeTo}&`;
+    if (status)   url += `status=${status}&`;
+    if (room)     url += `room_id=${room}&`;
     const res = await fetch(url, { headers: H });
     const bookings = await res.json();
     const tbody = document.getElementById('dash-bookings');
@@ -1705,7 +1710,7 @@ async function loadDashboardBookings() {
 }
 
 function clearDashFilters() {
-  ['dash-fil-date','dash-fil-status','dash-fil-room'].forEach(id => { const el = document.getElementById(id); if (el) el.value = ''; });
+  ['dash-fil-date-from','dash-fil-date-to','dash-fil-time-from','dash-fil-time-to','dash-fil-status','dash-fil-room'].forEach(id => { const el = document.getElementById(id); if (el) el.value = ''; });
   loadDashboardBookings();
 }
 

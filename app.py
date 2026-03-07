@@ -1870,10 +1870,16 @@ def flex_select_room(rooms) -> dict:
                 'type': 'box', 'layout': 'vertical',
                 'backgroundColor': _C['bg'],
                 'paddingAll': '12px', 'spacing': 'none',
-                'contents': room_btns or [
+                'contents': [
+                    {'type': 'text', 'text': '請點選下方會議室以繼續預約',
+                     'size': 'sm', 'color': _C['teal'], 'weight': 'bold',
+                     'margin': 'none', 'wrap': True},
+                    {'type': 'separator', 'margin': 'sm'},
+                    *(room_btns or [
                     {'type': 'text', 'text': '目前沒有可用的會議室',
                      'color': _C['ink60'], 'size': 'sm'}
-                ]
+                ])
+                ],
             },
             'footer': {
                 'type': 'box', 'layout': 'vertical',

@@ -959,7 +959,6 @@ def flex_booking_confirm(booking) -> dict:
                     {'type': 'box', 'layout': 'vertical', 'spacing': 'sm',
                      'margin': 'md', 'contents': [
                          _info_row('聯絡人', booking.customer_name, bold=True),
-                         _info_row('部門',   booking.department or '—'),
                          _info_row('目的',   booking.purpose or '—'),
                      ]},
                     # 費用區塊
@@ -1143,8 +1142,7 @@ def flex_admin_notify(booking) -> dict:
                          {'type': 'box', 'layout': 'horizontal', 'margin': 'sm', 'contents': [
                              {'type': 'text', 'text': booking.customer_phone,
                               'size': 'xs', 'color': '#99C8C8'},
-                             {'type': 'text', 'text': booking.department or '',
-                              'size': 'xs', 'color': '#66AAAA'},
+    
                          ]},
                      ]},
                 ]

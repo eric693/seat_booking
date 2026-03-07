@@ -556,7 +556,7 @@ header {
   color: transparent; /* hide label by default */
 }
 
-.ts:hover:not(.ts-booked):not(.ts-selected) {
+.ts:hover:not(.ts-booked):not(.ts-admin-blocked):not(.ts-selected) {
   background: var(--teal-light);
   border-color: var(--teal);
   z-index: 1;
@@ -591,6 +591,20 @@ header {
   border-color: #e8a49d;
   cursor: not-allowed;
   color: var(--red);
+  font-size: 10px;
+  font-weight: 600;
+  letter-spacing: 0.02em;
+}
+
+.ts.ts-admin-blocked {
+  background: repeating-linear-gradient(
+    -45deg,
+    #e8e8e8 0px, #e8e8e8 5px,
+    #d0d0d0 5px, #d0d0d0 10px
+  );
+  border-color: #aaa;
+  cursor: not-allowed;
+  color: #777;
   font-size: 10px;
   font-weight: 600;
   letter-spacing: 0.02em;
@@ -1069,6 +1083,7 @@ footer {
           <div class="tl-item"><div class="tl-dot tl-avail"></div>可預約</div>
           <div class="tl-item"><div class="tl-dot tl-sel"></div>已選取</div>
           <div class="tl-item"><div class="tl-dot tl-booked"></div>已預約（不可選）</div>
+          <div class="tl-item"><div class="tl-dot tl-booked" style="background:repeating-linear-gradient(45deg,#b0b0b0,#b0b0b0 3px,#d8d8d8 3px,#d8d8d8 6px);"></div>無開放（封鎖）</div>
         </div>
 
         <!-- Time grid rendered by JS -->
@@ -1467,12 +1482,16 @@ async function selectDate(ds, el) {
     const res = await fetch(`${API}/api/rooms/${state.roomId}/availability?date=${ds}`);
     const data = await res.json();
     bookedSlots = data.booked_slots || [];
-    // Mark blocked half-hour slots
-    blockedSlots = new Set();
+    // 分開標記：封鎖時段 vs 已預約時段
+    blockedSlots      = new Set();
+    adminBlockedSlots = new Set();
     bookedSlots.forEach(b => {
       const s = timeToSlot(b.start);
-      const e = timeToSlot(b.end); // end slot is exclusive
-      for (let i = s; i < e; i++) blockedSlots.add(i);
+      const e = timeToSlot(b.end);
+      for (let i = s; i < e; i++) {
+        blockedSlots.add(i);
+        if (b.blocked) adminBlockedSlots.add(i); // 管理員封鎖
+      }
     });
   } catch(e2) { bookedSlots = []; blockedSlots = new Set(); }
   // 切換日期時清除舊選取
@@ -1515,7 +1534,8 @@ function timeToSlot(t) {
 
 // ── 多選模式：用 Set 紀錄哪些格子被選取 ──
 let selectedSlots = new Set(); // 使用者選取的時段
-let blockedSlots  = new Set(); // 已被預約（來自資料庫）
+let blockedSlots     = new Set(); // 不可選（已預約 + 封鎖合併）
+let adminBlockedSlots = new Set(); // 管理員封鎖時段（顯示「無開放」）
 
 // 拖曳狀態
 let dragStart  = -1;
@@ -1545,7 +1565,7 @@ function buildTimeGrid() {
       html += `
         <div class="time-row">
           <div class="time-axis">${axisLabel}</div>
-          <div class="ts ${isBlocked ? 'ts-booked' : ''}"
+          <div class="ts ${adminBlockedSlots.has(i) ? 'ts-admin-blocked' : (isBlocked ? 'ts-booked' : '')}"
                data-slot="${i}"
                ${isBlocked ? '' : `
                  onmousedown="tsMouseDown(event,${i})"
@@ -1553,7 +1573,7 @@ function buildTimeGrid() {
                  ontouchstart="tsTouchStart(event,${i})"
                  ontouchmove="tsTouchMove(event)"
                `}
-          >${isBlocked ? '已預約' : ''}</div>
+          >${adminBlockedSlots.has(i) ? '無開放' : (isBlocked ? '已預約' : '')}</div>
           <div class="time-axis" style="text-align:left;padding-left:8px;padding-right:0;">${endT}</div>
         </div>`;
     }
@@ -1650,7 +1670,7 @@ function tsTouchMove(e) {
   e.preventDefault();
   const touch = e.touches[0];
   const el = document.elementFromPoint(touch.clientX, touch.clientY);
-  if (el && el.classList.contains('ts') && !el.classList.contains('ts-booked')) {
+  if (el && el.classList.contains('ts') && !el.classList.contains('ts-booked') && !el.classList.contains('ts-admin-blocked')) {
     const idx = parseInt(el.dataset.slot);
     if (!isNaN(idx)) { dragEnd = idx; renderDrag(); }
   }

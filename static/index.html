@@ -1340,7 +1340,7 @@ async function loadRooms() {
     const grid = document.getElementById('roomsGrid');
     grid.innerHTML = rooms.map(r => {
       const icon = ROOM_ICONS[r.room_type] || 'MR';
-      const amenHTML = (r.amenities || []).slice(0, 4).map(a => `<span class="amenity-tag">${a}</span>`).join('');
+      const amenHTML = (r.amenities || []).map(a => `<span class="amenity-tag">${a}</span>`).join('');
       const photoHTML = r.photo_url
         ? `<div class="room-photo"><img src="${r.photo_url}" alt="${r.name}" onerror="this.parentElement.innerHTML='${icon}'"></div>`
         : `<div class="room-photo-placeholder">${icon}</div>`;

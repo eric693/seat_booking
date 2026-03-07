@@ -1899,16 +1899,19 @@ def flex_input_date(room_name: str) -> dict:
     shortcuts = []
     for delta in range(1, 8):
         d = today + timedelta(days=delta)
-        label = f'{d.month}/{d.day} 週{weekdays[d.weekday()]}'
+        label = f'{d.month}/{d.day}\n週{weekdays[d.weekday()]}'
         shortcuts.append({
             'type': 'box', 'layout': 'vertical',
             'backgroundColor': '#FFFFFF', 'cornerRadius': '8px',
-            'paddingAll': '10px', 'flex': 1,
-            'action': {'type': 'message', 'label': label,
+            'paddingTop': '8px', 'paddingBottom': '8px',
+            'paddingStart': '4px', 'paddingEnd': '4px', 'flex': 1,
+            'action': {'type': 'message', 'label': f'{d.month}/{d.day} 週{weekdays[d.weekday()]}',
                        'text': d.strftime('%Y-%m-%d')},
             'contents': [
-                {'type': 'text', 'text': label, 'size': 'sm',
-                 'align': 'center', 'color': _C['teal'], 'weight': 'bold'},
+                {'type': 'text', 'text': f'{d.month}/{d.day}',
+                 'size': 'sm', 'align': 'center', 'color': _C['teal'], 'weight': 'bold'},
+                {'type': 'text', 'text': f'週{weekdays[d.weekday()]}',
+                 'size': 'xs', 'align': 'center', 'color': _C['ink60']},
             ]
         })
 

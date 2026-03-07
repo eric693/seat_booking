@@ -2350,13 +2350,13 @@ function editAccount(id) {
     document.getElementById('acc-username').disabled = true;
     document.getElementById('acc-display').value = u.display_name||'';
     const pwEl = document.getElementById('acc-pw');
-    pwEl.value = r.password_plain || '';  // 顯示實際密碼
+    pwEl.value = u.password_plain || '';  // 顯示實際密碼
     pwEl.dataset.isFake = '0';
     pwEl.required = false;
     pwEl.placeholder = '留空表示不變更';
     document.getElementById('acc-pw-hint').textContent = '（留空表示不變更）';
     const s2 = document.getElementById('acc-pw-status');
-    if (s2) { s2.textContent = r.password_plain ? '' : '目前未設定密碼'; s2.style.color = 'var(--ink-60)'; }
+    if (s2) { s2.textContent = u.password_plain ? '' : '目前未設定密碼'; s2.style.color = 'var(--ink-60)'; }
     document.getElementById('acc-role').value = u.role;
     document.getElementById('acc-active').value = u.is_active ? 'true' : 'false';
     renderPermGrid(u.permissions||[]);

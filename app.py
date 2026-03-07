@@ -2189,24 +2189,21 @@ def _handle_booking_flow(uid: str, rtok: str, text: str, lu):
             return True
         return False  # 不在流程中，交給一般指令處理
 
-    # ── Step 0：開始預約 → 顯示會議室列表 ──
+    # ── Step 0：開始預約 → 顯示會議室列表（任何時候輸入「預約」都重置流程）──
     if text in ('預約', '開始預約', '我要預約'):
         rooms = Room.query.filter_by(is_active=True).all()
         if not rooms:
             reply_line(rtok, [flex_not_found('目前沒有可用的會議室', '請稍後再試')])
             return True
+        _clear_sess(lu)                          # 清除舊流程（不管在哪步）
         _save_sess(lu, {'step': 'select_room'})
         reply_line(rtok, [flex_select_room(rooms)])
         return True
 
-    # ── Step 1：已選會議室 ──
-    if step == 'select_room':
-        m = _re.match(r'^選房間 (\d+)$', text)
-        if not m:
-            rooms = Room.query.filter_by(is_active=True).all()
-            reply_line(rtok, [flex_select_room(rooms)])
-            return True
-        room_id = int(m.group(1))
+    # ── Step 1：選房間（任何 step 都可直接選，會重置後續流程）──
+    m_room = _re.match(r'^選房間 (\d+)$', text)
+    if m_room:
+        room_id = int(m_room.group(1))
         room = Room.query.get(room_id)
         if not room or not room.is_active:
             reply_line(rtok, [flex_not_found('找不到此會議室', '請重新選擇')])
@@ -2215,6 +2212,12 @@ def _handle_booking_flow(uid: str, rtok: str, text: str, lu):
                 'room_name': room.name, 'hourly_rate': room.hourly_rate}
         _save_sess(lu, sess)
         reply_line(rtok, [flex_input_date(room.name)])
+        return True
+
+    if step == 'select_room':
+        # 在選房間步驟但沒點按鈕，重新顯示列表
+        rooms = Room.query.filter_by(is_active=True).all()
+        reply_line(rtok, [flex_select_room(rooms)])
         return True
 
     # ── Step 2：輸入日期 ──

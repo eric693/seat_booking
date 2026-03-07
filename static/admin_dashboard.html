@@ -1394,7 +1394,7 @@ tr:hover td { background: #fafafa; }
       </div>
       <div class="fg">
         <label>類型</label>
-        <input class="finput" type="text" id="rm-type" list="rm-type-list" placeholder="輸入或選擇類型" autocomplete="off">
+        <input class="finput" type="text" id="rm-type" list="rm-type-list" placeholder="輸入或選擇類型" autocomplete="off" style="-webkit-appearance:none;appearance:none;">
         <datalist id="rm-type-list">
           <option>腦力激盪</option><option>洽談室</option><option>簡報廳</option>
           <option>視訊會議</option><option>行政套房</option><option>培訓教室</option>
@@ -1489,9 +1489,10 @@ tr:hover td { background: #fafafa; }
       <div class="fg">
         <label>密碼 <span id="acc-pw-hint">（新增時必填）</span></label>
         <div style="position:relative;">
-          <input class="finput" type="password" id="acc-pw" autocomplete="new-password" style="padding-right:44px;">
+          <input class="finput" type="password" id="acc-pw" autocomplete="new-password" style="padding-right:44px;" oninput="onPwInput()">
           <button type="button" onclick="togglePwVis()" title="顯示/隱藏密碼"
             style="position:absolute;right:10px;top:50%;transform:translateY(-50%);background:none;border:none;cursor:pointer;font-size:18px;color:var(--ink-60);line-height:1;" id="acc-pw-eye">👁</button>
+          <div id="acc-pw-status" style="font-size:12px;margin-top:5px;height:16px;"></div>
         </div>
       </div>
       <div class="fg">
@@ -2298,8 +2299,11 @@ function openAddAccount() {
   document.getElementById('acc-username').disabled = false;
   document.getElementById('acc-display').value = '';
   document.getElementById('acc-pw').value = '';
+  document.getElementById('acc-pw').placeholder = '';
   document.getElementById('acc-pw').required = true;
   document.getElementById('acc-pw-hint').textContent = '（新增時必填）';
+  const s = document.getElementById('acc-pw-status');
+  if (s) { s.textContent = ''; s.style.color = ''; }
   document.getElementById('acc-role').value = 'staff';
   document.getElementById('acc-active').value = 'true';
   renderPermGrid([]);
@@ -2313,6 +2317,23 @@ function togglePwVis() {
   eye.textContent = inp.type === 'password' ? '👁' : '🙈';
 }
 
+function onPwInput() {
+  const val = document.getElementById('acc-pw').value;
+  const s = document.getElementById('acc-pw-status');
+  const isEdit = !!document.getElementById('acc-id').value;
+  if (!s) return;
+  if (val.length === 0) {
+    s.textContent = isEdit ? '目前密碼已設定，留空儲存將保留原密碼' : '';
+    s.style.color = 'var(--ink-60)';
+  } else if (val.length < 6) {
+    s.textContent = '⚠ 密碼太短（建議 6 碼以上）';
+    s.style.color = '#c44b3a';
+  } else {
+    s.textContent = '✓ 儲存後將變更密碼（' + val.length + ' 碼）';
+    s.style.color = '#3A7C55';
+  }
+}
+
 function editAccount(id) {
   fetch('/admin/api/accounts', {headers:H}).then(r=>r.json()).then(users => {
     const u = users.find(x => x.id === id); if (!u) return;
@@ -2323,7 +2344,10 @@ function editAccount(id) {
     document.getElementById('acc-display').value = u.display_name||'';
     document.getElementById('acc-pw').value = '';
     document.getElementById('acc-pw').required = false;
+    document.getElementById('acc-pw').placeholder = '留空表示不變更';
     document.getElementById('acc-pw-hint').textContent = '（留空表示不變更）';
+    const s2 = document.getElementById('acc-pw-status');
+    if (s2) { s2.textContent = '目前密碼已設定，留空儲存將保留原密碼'; s2.style.color = 'var(--ink-60)'; }
     document.getElementById('acc-role').value = u.role;
     document.getElementById('acc-active').value = u.is_active ? 'true' : 'false';
     renderPermGrid(u.permissions||[]);

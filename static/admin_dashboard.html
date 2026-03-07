@@ -728,6 +728,30 @@ input[list]::-webkit-calendar-picker-indicator { display: none !important; }
     <!-- ── DASHBOARD ── -->
     <div class="page active" id="page-dashboard">
 
+      <!-- 統計篩選列 -->
+      <div style="display:flex;align-items:center;gap:8px;flex-wrap:wrap;margin-bottom:14px;padding:12px 16px;background:var(--white);border:1px solid var(--border);border-radius:10px;">
+        <span style="font-size:13px;color:var(--ink-60);font-weight:500;white-space:nowrap;">統計區間</span>
+        <div class="filter-group" style="margin:0;">
+          <span class="filter-lbl">開始日期</span>
+          <input type="date" id="stat-date-from" class="filter-input" style="font-size:13px;padding:5px 8px;" onchange="loadStats()">
+        </div>
+        <div class="filter-group" style="margin:0;">
+          <span class="filter-lbl">開始時間</span>
+          <input type="time" id="stat-time-from" class="filter-input" style="font-size:13px;padding:5px 8px;" step="3600" onchange="loadStats()">
+        </div>
+        <div class="filter-group" style="margin:0;">
+          <span class="filter-lbl">結束日期</span>
+          <input type="date" id="stat-date-to" class="filter-input" style="font-size:13px;padding:5px 8px;" onchange="loadStats()">
+        </div>
+        <div class="filter-group" style="margin:0;">
+          <span class="filter-lbl">結束時間</span>
+          <input type="time" id="stat-time-to" class="filter-input" style="font-size:13px;padding:5px 8px;" step="3600" onchange="loadStats()">
+        </div>
+        <button class="btn btn-outline btn-sm" onclick="clearStatFilters()" style="font-size:12px;">清除</button>
+        <span style="flex:1;"></span>
+        <span style="font-size:12px;color:var(--ink-60);" id="stat-range-label"></span>
+      </div>
+
       <div class="stats-grid">
         <div class="stat-card">
           <div class="stat-lbl">有效預約</div>
@@ -1635,25 +1659,53 @@ async function loadFloorStatus() {
   }
 }
 
-async function loadDashboard() {
+async function loadStats() {
   try {
-    const statsRes = await fetch('/admin/api/stats', { headers: H });
+    const dateFrom = document.getElementById('stat-date-from')?.value || '';
+    const dateTo   = document.getElementById('stat-date-to')?.value   || '';
+    const timeFrom = document.getElementById('stat-time-from')?.value || '';
+    const timeTo   = document.getElementById('stat-time-to')?.value   || '';
+    let url = '/admin/api/stats?';
+    if (dateFrom) url += `date_from=${dateFrom}&`;
+    if (dateTo)   url += `date_to=${dateTo}&`;
+    if (timeFrom) url += `time_from=${timeFrom}&`;
+    if (timeTo)   url += `time_to=${timeTo}&`;
+    const statsRes = await fetch(url, { headers: H });
     const stats = await statsRes.json();
+    const hasRange = dateFrom || dateTo || timeFrom || timeTo;
     document.getElementById('st-total').textContent = stats.total_bookings;
     document.getElementById('st-today').textContent = stats.today_bookings;
     document.getElementById('st-rooms').textContent = stats.total_rooms;
     document.getElementById('st-revenue').textContent = 'NT$' + (stats.total_revenue || 0).toLocaleString();
     document.getElementById('st-cancelled').textContent = stats.cancelled;
-    // 顯示台灣今日日期在「今日預約」卡片
-    if (stats.tw_today) {
-      const el = document.getElementById('st-today-date');
-      if (el) el.textContent = stats.tw_today;
-    }
-    // 更新時間戳記
-    const nowStr = stats.tw_time || new Date().toLocaleTimeString('zh-TW');
-    const upd = document.getElementById('dash-last-update');
-    if (upd) upd.textContent = nowStr;
     document.getElementById('st-completed').textContent = stats.completed;
+    // 今日日期 sub label
+    const todayEl = document.getElementById('st-today-date');
+    if (todayEl) todayEl.textContent = stats.tw_today || '今天';
+    // 範圍標示
+    const lbl = document.getElementById('stat-range-label');
+    if (lbl) {
+      if (hasRange) {
+        const f = (dateFrom || '') + (timeFrom ? ' ' + timeFrom : '');
+        const t = (dateTo   || '') + (timeTo   ? ' ' + timeTo   : '');
+        lbl.textContent = `${f || '最早'} ～ ${t || '最新'}`;
+      } else {
+        lbl.textContent = '顯示全部資料';
+      }
+    }
+  } catch(e) { console.error('loadStats:', e); }
+}
+
+function clearStatFilters() {
+  ['stat-date-from','stat-date-to','stat-time-from','stat-time-to'].forEach(id => {
+    const el = document.getElementById(id); if (el) el.value = '';
+  });
+  loadStats();
+}
+
+async function loadDashboard() {
+  try {
+    await loadStats();
     const rr = await fetch('/admin/api/rooms', { headers: H });
     const rooms = await rr.json();
     const sel = document.getElementById('dash-fil-room');

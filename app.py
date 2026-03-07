@@ -2949,15 +2949,32 @@ def admin_get_stats():
     from datetime import timezone, timedelta as _td
     tw_now   = datetime.now(timezone.utc) + _td(hours=8)
     tw_today = tw_now.strftime('%Y-%m-%d')
-    tw_time  = tw_now.strftime('%H:%M:%S')
+    tw_time   = tw_now.strftime('%H:%M:%S')
+    date_from = request.args.get('date_from', '')
+    date_to   = request.args.get('date_to',   '')
+    time_from = request.args.get('time_from', '')
+    time_to   = request.args.get('time_to',   '')
+
+    def apply_range(q):
+        if date_from: q = q.filter(Booking.date >= date_from)
+        if date_to:   q = q.filter(Booking.date <= date_to)
+        if time_from: q = q.filter(Booking.start_time >= time_from)
+        if time_to:   q = q.filter(Booking.start_time <= time_to)
+        return q
+
+    confirmed_base = apply_range(Booking.query.filter_by(status='confirmed'))
+    cancelled_base = apply_range(Booking.query.filter_by(status='cancelled'))
+    completed_base = apply_range(Booking.query.filter_by(status='completed'))
+    revenue_base   = apply_range(db.session.query(func.sum(Booking.total_price))
+                        .filter(Booking.status == 'confirmed'))
+
     return jsonify({
-        'total_bookings': Booking.query.filter_by(status='confirmed').count(),
+        'total_bookings': confirmed_base.count(),
         'today_bookings': Booking.query.filter_by(date=tw_today, status='confirmed').count(),
         'total_rooms':    Room.query.filter_by(is_active=True).count(),
-        'total_revenue':  db.session.query(func.sum(Booking.total_price))
-                            .filter_by(status='confirmed').scalar() or 0,
-        'cancelled':   Booking.query.filter_by(status='cancelled').count(),
-        'completed':   Booking.query.filter_by(status='completed').count(),
+        'total_revenue':  revenue_base.scalar() or 0,
+        'cancelled':   cancelled_base.count(),
+        'completed':   completed_base.count(),
         'line_users':  LineUser.query.count(),
         'tw_today':    tw_today,
         'tw_time':     tw_time,

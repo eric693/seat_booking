@@ -23,6 +23,8 @@
   --shadow: 0 2px 20px rgba(0,0,0,0.06);
   --shadow-lg: 0 8px 40px rgba(0,0,0,0.12);
   --r: 2px;
+  --hero-bg: #F5F2ED;
+  --dark-bg: #1a1a1a;
 }
 
 *, *::before, *::after { margin:0; padding:0; box-sizing:border-box; }
@@ -36,8 +38,8 @@ body {
 
 /* ── HEADER ── */
 header {
-  background: var(--ink);
-  color: var(--white);
+  background: var(--hero-bg);
+  color: var(--ink);
   padding: 0;
   position: sticky;
   top: 0;
@@ -80,21 +82,21 @@ header {
   align-items: center;
   gap: 20px;
   font-size: 13px;
-  color: rgba(255,255,255,0.7);
+  color: var(--ink-60);
 }
 
 .header-link {
-  color: rgba(255,255,255,0.7);
+  color: var(--ink-60);
   text-decoration: none;
   transition: color 0.2s;
   cursor: pointer;
 }
-.header-link:hover { color: var(--gold); }
+.header-link:hover { color: var(--teal); }
 
 /* ── HERO ── */
 .hero {
-  background: var(--ink);
-  color: var(--white);
+  background: var(--hero-bg);
+  color: var(--ink);
   padding: 80px 40px 100px;
   position: relative;
   overflow: hidden;
@@ -104,7 +106,7 @@ header {
   content: '';
   position: absolute;
   inset: 0;
-  background: radial-gradient(ellipse at 80% 50%, rgba(184,150,90,0.15) 0%, transparent 60%);
+  background: none;
 }
 
 .hero-inner {
@@ -122,9 +124,9 @@ header {
   display: inline-flex;
   align-items: center;
   gap: 8px;
-  background: rgba(184,150,90,0.15);
-  border: 1px solid rgba(184,150,90,0.4);
-  color: var(--gold);
+  background: rgba(42,107,107,0.12);
+  border: 1px solid rgba(42,107,107,0.3);
+  color: var(--teal);
   padding: 6px 14px;
   border-radius: 100px;
   font-size: 12px;
@@ -149,7 +151,7 @@ header {
 
 .hero-desc {
   font-size: 16px;
-  color: rgba(255,255,255,0.65);
+  color: var(--ink-60);
   line-height: 1.8;
   max-width: 500px;
   margin-bottom: 36px;
@@ -166,7 +168,7 @@ header {
   align-items: center;
   gap: 10px;
   font-size: 13px;
-  color: rgba(255,255,255,0.6);
+  color: var(--ink-60);
 }
 
 .meta-dot {
@@ -377,7 +379,7 @@ header {
   transition: all 0.2s;
   color: var(--ink);
 }
-.cal-nav:hover { background: var(--ink); color: white; border-color: var(--ink); }
+.cal-nav:hover { background: var(--teal); color: white; border-color: var(--teal); }
 
 .cal-month {
   font-family: 'DM Serif Display', serif;
@@ -704,7 +706,7 @@ header {
 .sidebar { position: sticky; top: 84px; }
 
 .summary-box {
-  background: var(--ink);
+  background: var(--teal);
   color: white;
   border-radius: 8px;
   overflow: hidden;
@@ -902,7 +904,7 @@ header {
 
 .modal-close-btn {
   padding: 14px 40px;
-  background: var(--ink);
+  background: var(--teal);
   color: white;
   border: none;
   border-radius: var(--r);
@@ -912,7 +914,7 @@ header {
   font-family: inherit;
   transition: all 0.2s;
 }
-.modal-close-btn:hover { background: var(--teal); }
+.modal-close-btn:hover { background: #1e5050; }
 
 .query-section {
   padding: 24px;
@@ -935,8 +937,8 @@ header {
 }
 
 footer {
-  background: var(--ink);
-  color: rgba(255,255,255,0.45);
+  background: var(--hero-bg);
+  color: var(--ink-60);
   text-align: center;
   padding: 28px;
   font-size: 13px;

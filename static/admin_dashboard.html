@@ -308,6 +308,17 @@ input[list]::-webkit-calendar-picker-indicator { display: none !important; }
 .pay-method-icon { font-size: 22px; min-width: 28px; text-align: center; }
 .refund-rule-row { display: grid; grid-template-columns: 140px 1fr 1fr auto; gap: 10px; align-items: center; }
 
+/* ── Photo Sort ── */
+.photo-sort-item {
+  position: relative;
+  width: 120px;
+  flex-shrink: 0;
+  cursor: grab;
+  transition: opacity .2s, transform .2s;
+}
+.photo-sort-item:active { cursor: grabbing; }
+.photo-sort-item.drag-over { outline: 2px dashed var(--teal); border-radius: 8px; }
+
 /* ── Photo Crop Modal ── */
 #cropModal { display:none;position:fixed;inset:0;background:rgba(0,0,0,.75);z-index:9999;align-items:center;justify-content:center; }
 #cropModal.show { display:flex; }
@@ -635,17 +646,6 @@ input[list]::-webkit-calendar-picker-indicator { display: none !important; }
   transition: width 0.3s;
 }
 
-/* ── Photo Sort ── */
-.photo-sort-item {
-  position: relative;
-  width: 120px;
-  flex-shrink: 0;
-  cursor: grab;
-  transition: opacity .2s, transform .2s;
-}
-.photo-sort-item:active { cursor: grabbing; }
-.photo-sort-item.drag-over { outline: 2px dashed var(--teal); border-radius: 8px; }
-
 /* ── TOAST ── */
 .toast {
   position: fixed;
@@ -707,6 +707,9 @@ input[list]::-webkit-calendar-picker-indicator { display: none !important; }
     <div class="nav-item" onclick="showPage('blocked',this)">
       <span class="nav-icon"><svg width="16" height="16" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><circle cx="8" cy="8" r="6.5"/><path d="M3.4 3.4l9.2 9.2"/></svg></span> 封鎖時段
     </div>
+    <div class="nav-item" onclick="showPage('lineusers',this)">
+      <span class="nav-icon"><svg width="16" height="16" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M8 2C5.2 2 3 4 3 6.5c0 1.5.7 2.8 1.8 3.7L4 13l3-1.5c.3.1.7.1 1 .1 2.8 0 5-2 5-4.5S10.8 2 8 2z"/></svg></span> LINE 用戶
+    </div>
     <div class="nav-section">金流</div>
     <div class="nav-item" onclick="showPage('payment',this)">
       <span class="nav-icon"><svg width="16" height="16" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><rect x="1" y="3" width="14" height="10" rx="1.5"/><path d="M1 7h14"/><circle cx="4.5" cy="11" r="1" fill="currentColor" stroke="none"/></svg></span> 付款設定
@@ -738,8 +741,6 @@ input[list]::-webkit-calendar-picker-indicator { display: none !important; }
 
     <!-- ── DASHBOARD ── -->
     <div class="page active" id="page-dashboard">
-
-      <!-- 統計篩選列 -->
       <div style="display:flex;align-items:center;gap:8px;flex-wrap:wrap;margin-bottom:14px;padding:12px 16px;background:var(--white);border:1px solid var(--border);border-radius:10px;">
         <span style="font-size:13px;color:var(--ink-60);font-weight:500;white-space:nowrap;">統計區間</span>
         <div class="filter-group" style="margin:0;">
@@ -764,67 +765,30 @@ input[list]::-webkit-calendar-picker-indicator { display: none !important; }
       </div>
 
       <div class="stats-grid">
-        <div class="stat-card">
-          <div class="stat-lbl">有效預約</div>
-          <div class="stat-val" id="st-total">—</div>
-          <div class="stat-sub">累計確認</div>
-        </div>
-        <div class="stat-card">
-          <div class="stat-lbl">今日預約</div>
-          <div class="stat-val" id="st-today">—</div>
-          <div class="stat-sub" id="st-today-date">今天</div>
-        </div>
-        <div class="stat-card">
-          <div class="stat-lbl">可用會議室</div>
-          <div class="stat-val" id="st-rooms">—</div>
-          <div class="stat-sub">已啟用</div>
-        </div>
-        <div class="stat-card">
-          <div class="stat-lbl">累計營收</div>
-          <div class="stat-val" id="st-revenue">—</div>
-          <div class="stat-sub">NT$</div>
-        </div>
-        <div class="stat-card">
-          <div class="stat-lbl">已取消</div>
-          <div class="stat-val" id="st-cancelled">—</div>
-          <div class="stat-sub">取消數</div>
-        </div>
-        <div class="stat-card">
-          <div class="stat-lbl">已完成</div>
-          <div class="stat-val" id="st-completed">—</div>
-          <div class="stat-sub">完成數</div>
-        </div>
+        <div class="stat-card"><div class="stat-lbl">有效預約</div><div class="stat-val" id="st-total">—</div><div class="stat-sub">累計確認</div></div>
+        <div class="stat-card"><div class="stat-lbl">今日預約</div><div class="stat-val" id="st-today">—</div><div class="stat-sub" id="st-today-date">今天</div></div>
+        <div class="stat-card"><div class="stat-lbl">可用會議室</div><div class="stat-val" id="st-rooms">—</div><div class="stat-sub">已啟用</div></div>
+        <div class="stat-card"><div class="stat-lbl">累計營收</div><div class="stat-val" id="st-revenue">—</div><div class="stat-sub">NT$</div></div>
+        <div class="stat-card"><div class="stat-lbl">已取消</div><div class="stat-val" id="st-cancelled">—</div><div class="stat-sub">取消數</div></div>
+        <div class="stat-card"><div class="stat-lbl">已完成</div><div class="stat-val" id="st-completed">—</div><div class="stat-sub">完成數</div></div>
       </div>
 
-      <!-- ── 樓層時段看板 ── -->
       <div class="card" style="margin-bottom:20px;">
         <div class="card-head">
           <div class="card-title">樓層時段看板</div>
           <div style="display:flex;align-items:center;gap:12px;">
-            <input type="date" id="floor-date" class="filter-input"
-              style="font-size:13px;padding:6px 10px;border:1px solid var(--border);border-radius:6px;background:var(--white);"
-              onchange="loadFloorStatus()">
+            <input type="date" id="floor-date" class="filter-input" style="font-size:13px;padding:6px 10px;border:1px solid var(--border);border-radius:6px;background:var(--white);" onchange="loadFloorStatus()">
             <button class="btn btn-outline btn-sm" onclick="loadFloorStatus()">重新整理</button>
           </div>
         </div>
         <div class="card-body" style="padding:16px 20px;">
           <div style="display:flex;align-items:center;gap:16px;margin-bottom:16px;flex-wrap:wrap;">
-            <div style="display:flex;align-items:center;gap:6px;font-size:12px;color:var(--ink-60);">
-              <div style="width:14px;height:14px;border-radius:3px;background:#3A7C55;"></div> 空閒
-            </div>
-            <div style="display:flex;align-items:center;gap:6px;font-size:12px;color:var(--ink-60);">
-              <div style="width:14px;height:14px;border-radius:3px;background:#C44B3A;"></div> 已預約
-            </div>
-            <div style="display:flex;align-items:center;gap:6px;font-size:12px;color:var(--ink-60);">
-              <div style="width:14px;height:14px;border-radius:3px;background:#B8965A;"></div> 進行中
-            </div>
-            <div style="display:flex;align-items:center;gap:6px;font-size:12px;color:var(--ink-60);">
-              <div style="width:14px;height:14px;border-radius:3px;background:var(--ink-20);"></div> 非服務時段
-            </div>
+            <div style="display:flex;align-items:center;gap:6px;font-size:12px;color:var(--ink-60);"><div style="width:14px;height:14px;border-radius:3px;background:#3A7C55;"></div> 空閒</div>
+            <div style="display:flex;align-items:center;gap:6px;font-size:12px;color:var(--ink-60);"><div style="width:14px;height:14px;border-radius:3px;background:#C44B3A;"></div> 已預約</div>
+            <div style="display:flex;align-items:center;gap:6px;font-size:12px;color:var(--ink-60);"><div style="width:14px;height:14px;border-radius:3px;background:#B8965A;"></div> 進行中</div>
+            <div style="display:flex;align-items:center;gap:6px;font-size:12px;color:var(--ink-60);"><div style="width:14px;height:14px;border-radius:3px;background:var(--ink-20);"></div> 非服務時段</div>
           </div>
-          <div id="floor-board" style="overflow-x:auto;">
-            <div style="text-align:center;padding:30px;color:var(--ink-60);">載入中...</div>
-          </div>
+          <div id="floor-board" style="overflow-x:auto;"><div style="text-align:center;padding:30px;color:var(--ink-60);">載入中...</div></div>
         </div>
       </div>
 
@@ -835,44 +799,17 @@ input[list]::-webkit-calendar-picker-indicator { display: none !important; }
         </div>
         <div class="card-body">
           <div class="filters" style="margin-bottom:16px;flex-wrap:wrap;gap:8px;">
-            <div class="filter-group">
-              <span class="filter-lbl">開始日期</span>
-              <input type="date" class="filter-input" id="dash-fil-date-from" onchange="loadDashboardBookings()" style="font-size:13px;padding:6px 10px;">
-            </div>
-            <div class="filter-group">
-              <span class="filter-lbl">開始時間</span>
-              <input type="time" class="filter-input" id="dash-fil-time-from" onchange="loadDashboardBookings()" style="font-size:13px;padding:6px 10px;" step="3600">
-            </div>
-            <div class="filter-group">
-              <span class="filter-lbl">結束日期</span>
-              <input type="date" class="filter-input" id="dash-fil-date-to" onchange="loadDashboardBookings()" style="font-size:13px;padding:6px 10px;">
-            </div>
-            <div class="filter-group">
-              <span class="filter-lbl">結束時間</span>
-              <input type="time" class="filter-input" id="dash-fil-time-to" onchange="loadDashboardBookings()" style="font-size:13px;padding:6px 10px;" step="3600">
-            </div>
-            <div class="filter-group">
-              <span class="filter-lbl">狀態</span>
-              <select class="filter-select" id="dash-fil-status" onchange="loadDashboardBookings()" style="font-size:13px;padding:6px 10px;">
-                <option value="">全部</option>
-                <option value="confirmed">已確認</option>
-                <option value="cancelled">已取消</option>
-                <option value="completed">已完成</option>
-              </select>
-            </div>
-            <div class="filter-group">
-              <span class="filter-lbl">會議室</span>
-              <select class="filter-select" id="dash-fil-room" onchange="loadDashboardBookings()" style="font-size:13px;padding:6px 10px;">
-                <option value="">全部</option>
-              </select>
-            </div>
+            <div class="filter-group"><span class="filter-lbl">開始日期</span><input type="date" class="filter-input" id="dash-fil-date-from" onchange="loadDashboardBookings()" style="font-size:13px;padding:6px 10px;"></div>
+            <div class="filter-group"><span class="filter-lbl">開始時間</span><input type="time" class="filter-input" id="dash-fil-time-from" onchange="loadDashboardBookings()" style="font-size:13px;padding:6px 10px;" step="3600"></div>
+            <div class="filter-group"><span class="filter-lbl">結束日期</span><input type="date" class="filter-input" id="dash-fil-date-to" onchange="loadDashboardBookings()" style="font-size:13px;padding:6px 10px;"></div>
+            <div class="filter-group"><span class="filter-lbl">結束時間</span><input type="time" class="filter-input" id="dash-fil-time-to" onchange="loadDashboardBookings()" style="font-size:13px;padding:6px 10px;" step="3600"></div>
+            <div class="filter-group"><span class="filter-lbl">狀態</span><select class="filter-select" id="dash-fil-status" onchange="loadDashboardBookings()" style="font-size:13px;padding:6px 10px;"><option value="">全部</option><option value="confirmed">已確認</option><option value="cancelled">已取消</option><option value="completed">已完成</option></select></div>
+            <div class="filter-group"><span class="filter-lbl">會議室</span><select class="filter-select" id="dash-fil-room" onchange="loadDashboardBookings()" style="font-size:13px;padding:6px 10px;"><option value="">全部</option></select></div>
             <button class="btn btn-outline btn-sm" onclick="clearDashFilters()">清除篩選</button>
           </div>
           <div class="tbl-wrap">
             <table>
-              <thead><tr>
-                <th>預約編號</th><th>聯絡人</th><th>會議室</th><th>日期</th><th>時段</th><th>狀態</th><th>操作</th>
-              </tr></thead>
+              <thead><tr><th>預約編號</th><th>聯絡人</th><th>會議室</th><th>日期</th><th>時段</th><th>狀態</th><th>操作</th></tr></thead>
               <tbody id="dash-bookings"></tbody>
             </table>
           </div>
@@ -883,37 +820,16 @@ input[list]::-webkit-calendar-picker-indicator { display: none !important; }
     <!-- ── BOOKINGS ── -->
     <div class="page" id="page-bookings">
       <div class="card">
-        <div class="card-head">
-          <div class="card-title">預約管理</div>
-        </div>
+        <div class="card-head"><div class="card-title">預約管理</div></div>
         <div class="card-body">
           <div class="filters">
-            <div class="filter-group">
-              <span class="filter-lbl">日期</span>
-              <input type="date" class="filter-input" id="fil-date" onchange="loadBookings()">
-            </div>
-            <div class="filter-group">
-              <span class="filter-lbl">狀態</span>
-              <select class="filter-select" id="fil-status" onchange="loadBookings()">
-                <option value="">全部</option>
-                <option value="confirmed">已確認</option>
-                <option value="cancelled">已取消</option>
-                <option value="completed">已完成</option>
-              </select>
-            </div>
-            <div class="filter-group">
-              <span class="filter-lbl">會議室</span>
-              <select class="filter-select" id="fil-room" onchange="loadBookings()">
-                <option value="">全部</option>
-              </select>
-            </div>
+            <div class="filter-group"><span class="filter-lbl">日期</span><input type="date" class="filter-input" id="fil-date" onchange="loadBookings()"></div>
+            <div class="filter-group"><span class="filter-lbl">狀態</span><select class="filter-select" id="fil-status" onchange="loadBookings()"><option value="">全部</option><option value="confirmed">已確認</option><option value="cancelled">已取消</option><option value="completed">已完成</option></select></div>
+            <div class="filter-group"><span class="filter-lbl">會議室</span><select class="filter-select" id="fil-room" onchange="loadBookings()"><option value="">全部</option></select></div>
           </div>
           <div class="tbl-wrap">
             <table>
-              <thead><tr>
-                <th>預約編號</th><th>聯絡人</th><th>部門</th><th>會議室</th>
-                <th>日期</th><th>時段</th><th>時長</th><th>人數</th><th>金額</th><th>狀態</th><th>操作</th>
-              </tr></thead>
+              <thead><tr><th>預約編號</th><th>聯絡人</th><th>部門</th><th>會議室</th><th>日期</th><th>時段</th><th>時長</th><th>人數</th><th>金額</th><th>狀態</th><th>操作</th></tr></thead>
               <tbody id="bookings-tbody"></tbody>
             </table>
           </div>
@@ -924,47 +840,25 @@ input[list]::-webkit-calendar-picker-indicator { display: none !important; }
     <!-- ── ROOMS ── -->
     <div class="page" id="page-rooms">
       <div class="card">
-        <div class="card-head">
-          <div class="card-title">會議室管理</div>
-          <button class="btn btn-primary" onclick="openRoomModal()">＋ 新增會議室</button>
-        </div>
-        <div class="card-body">
-          <div class="room-admin-grid" id="roomAdminGrid">
-            <div style="grid-column:1/-1;text-align:center;padding:40px;color:var(--ink-60);">載入中...</div>
-          </div>
-        </div>
+        <div class="card-head"><div class="card-title">會議室管理</div><button class="btn btn-primary" onclick="openRoomModal()">＋ 新增會議室</button></div>
+        <div class="card-body"><div class="room-admin-grid" id="roomAdminGrid"><div style="grid-column:1/-1;text-align:center;padding:40px;color:var(--ink-60);">載入中...</div></div></div>
       </div>
     </div>
 
     <!-- ── SITE CONTENT ── -->
     <div class="page" id="page-content">
       <div class="card">
-        <div class="card-head">
-          <div class="card-title">前台文字內容編輯</div>
-          <button class="btn btn-primary" onclick="saveContent()">儲存所有變更</button>
-        </div>
+        <div class="card-head"><div class="card-title">前台文字內容編輯</div><button class="btn btn-primary" onclick="saveContent()">儲存所有變更</button></div>
         <div class="card-body">
           <div class="content-sections">
             <div class="content-section" style="grid-column:1/-1;">
               <div class="cs-head">主頁 Hero 區塊</div>
               <div class="cs-body">
                 <div class="fgrid">
-                  <div class="cs-field">
-                    <label class="cs-label">網站標題（瀏覽器分頁 / Logo）</label>
-                    <input class="finput" type="text" id="c-site_title" placeholder="會議室預約系統">
-                  </div>
-                  <div class="cs-field">
-                    <label class="cs-label">標語小標籤（Hero Badge）</label>
-                    <input class="finput" type="text" id="c-hero_badge" placeholder="專業會議空間">
-                  </div>
-                  <div class="cs-field" style="grid-column:1/-1;">
-                    <label class="cs-label">主標題（支援 &lt;em&gt; 強調色）</label>
-                    <input class="finput" type="text" id="c-site_subtitle" placeholder="企業&lt;em&gt;會議室&lt;/em&gt;&lt;br&gt;即時預約">
-                  </div>
-                  <div class="cs-field" style="grid-column:1/-1;">
-                    <label class="cs-label">Hero 副標說明文字</label>
-                    <textarea class="ftarea" id="c-site_description" rows="2"></textarea>
-                  </div>
+                  <div class="cs-field"><label class="cs-label">網站標題</label><input class="finput" type="text" id="c-site_title"></div>
+                  <div class="cs-field"><label class="cs-label">標語小標籤</label><input class="finput" type="text" id="c-hero_badge"></div>
+                  <div class="cs-field" style="grid-column:1/-1;"><label class="cs-label">主標題</label><input class="finput" type="text" id="c-site_subtitle"></div>
+                  <div class="cs-field" style="grid-column:1/-1;"><label class="cs-label">Hero 副標說明文字</label><textarea class="ftarea" id="c-site_description" rows="2"></textarea></div>
                 </div>
               </div>
             </div>
@@ -998,9 +892,7 @@ input[list]::-webkit-calendar-picker-indicator { display: none !important; }
               </div>
             </div>
           </div>
-          <div style="margin-top:20px;text-align:right;">
-            <button class="btn btn-primary" onclick="saveContent()" style="padding:12px 28px;font-size:15px;">儲存所有變更</button>
-          </div>
+          <div style="margin-top:20px;text-align:right;"><button class="btn btn-primary" onclick="saveContent()" style="padding:12px 28px;font-size:15px;">儲存所有變更</button></div>
           <div style="margin-top:28px;padding:20px;background:var(--paper);border-radius:8px;border:1px solid var(--border);">
             <div style="font-size:13px;font-weight:700;text-transform:uppercase;letter-spacing:.08em;color:var(--ink);margin-bottom:12px;">通知服務設定（Render 環境變數）</div>
             <div style="font-size:13px;color:var(--ink-60);line-height:1.9;">
@@ -1023,20 +915,12 @@ input[list]::-webkit-calendar-picker-indicator { display: none !important; }
     <!-- ── PHOTOS ── -->
     <div class="page" id="page-photos">
       <div class="card" style="margin-bottom:20px;">
-        <div class="card-head">
-          <div class="card-title">系統 Logo</div>
-          <div style="font-size:13px;color:var(--ink-60);">更換後台與前台左上角 Logo</div>
-        </div>
+        <div class="card-head"><div class="card-title">系統 Logo</div><div style="font-size:13px;color:var(--ink-60);">更換後台與前台左上角 Logo</div></div>
         <div class="card-body">
           <div style="display:flex;align-items:center;gap:24px;flex-wrap:wrap;">
-            <div id="logoPreviewWrap" style="width:80px;height:80px;border-radius:12px;background:#111;display:flex;align-items:center;justify-content:center;font-size:22px;font-weight:700;color:var(--gold);flex-shrink:0;overflow:hidden;">
-              <span id="logoPreviewText">MR</span>
-            </div>
+            <div id="logoPreviewWrap" style="width:80px;height:80px;border-radius:12px;background:#111;display:flex;align-items:center;justify-content:center;font-size:22px;font-weight:700;color:var(--gold);flex-shrink:0;overflow:hidden;"><span id="logoPreviewText">MR</span></div>
             <div style="flex:1;min-width:200px;">
-              <label class="btn btn-outline" style="cursor:pointer;display:inline-block;">
-                <input type="file" accept="image/*" style="display:none;" onchange="uploadLogo(event)">
-                &#128247; 選擇 Logo 圖片
-              </label>
+              <label class="btn btn-outline" style="cursor:pointer;display:inline-block;"><input type="file" accept="image/*" style="display:none;" onchange="uploadLogo(event)">&#128247; 選擇 Logo 圖片</label>
               <div style="font-size:12px;color:var(--ink-60);margin-top:8px;">支援 JPG、PNG、WEBP，建議尺寸 80×80px 以上，最大 16MB</div>
             </div>
             <div id="logoUploadStatus" style="font-size:13px;color:var(--teal);display:none;">上傳中...</div>
@@ -1046,25 +930,18 @@ input[list]::-webkit-calendar-picker-indicator { display: none !important; }
       <div class="card">
         <div class="card-head">
           <div class="card-title">會議室照片管理</div>
-          <div style="font-size:13px;color:var(--ink-60);">每間最多 5 張，可設定主封面</div>
+          <div style="font-size:13px;color:var(--ink-60);">每間最多 5 張・拖曳數字可排序・可設定主封面</div>
         </div>
-        <div class="card-body">
-          <div id="photoRoomList"><div style="text-align:center;padding:40px;color:var(--ink-60);">載入中...</div></div>
-        </div>
+        <div class="card-body"><div id="photoRoomList"><div style="text-align:center;padding:40px;color:var(--ink-60);">載入中...</div></div></div>
       </div>
     </div>
 
     <!-- ── FORM FIELDS ── -->
     <div class="page" id="page-formfields">
       <div class="card">
-        <div class="card-head">
-          <div class="card-title">表單欄位管理</div>
-          <button class="btn btn-primary btn-sm" onclick="addFormField()">+ 新增欄位</button>
-        </div>
+        <div class="card-head"><div class="card-title">表單欄位管理</div><button class="btn btn-primary btn-sm" onclick="addFormField()">+ 新增欄位</button></div>
         <div class="card-body">
-          <div style="font-size:13px;color:var(--ink-60);margin-bottom:16px;">
-            拖曳可調整順序・系統欄位（姓名/手機/Email）無法刪除・必填欄位未填無法送出
-          </div>
+          <div style="font-size:13px;color:var(--ink-60);margin-bottom:16px;">拖曳可調整順序・系統欄位無法刪除・必填欄位未填無法送出</div>
           <div id="ffList" style="display:flex;flex-direction:column;gap:10px;"></div>
           <div style="margin-top:20px;display:flex;gap:10px;">
             <button class="btn btn-primary" onclick="saveFormFields()">儲存變更</button>
@@ -1080,35 +957,14 @@ input[list]::-webkit-calendar-picker-indicator { display: none !important; }
         <div class="card-head"><div class="card-title">新增封鎖時段</div></div>
         <div class="card-body">
           <div style="display:flex;flex-wrap:wrap;gap:12px;align-items:flex-end;">
-            <div style="min-width:140px;">
-              <label style="font-size:12px;color:var(--ink-60);display:block;margin-bottom:4px;">日期</label>
-              <input type="date" class="finput" id="bl-date" style="padding:8px;">
-            </div>
-            <div style="min-width:110px;">
-              <label style="font-size:12px;color:var(--ink-60);display:block;margin-bottom:4px;">開始時間</label>
-              <select class="fselect" id="bl-start" style="padding:8px;" onchange="updateBlEndOptions()"></select>
-            </div>
-            <div style="min-width:110px;">
-              <label style="font-size:12px;color:var(--ink-60);display:block;margin-bottom:4px;">結束時間</label>
-              <select class="fselect" id="bl-end" style="padding:8px;"></select>
-            </div>
-            <div style="min-width:160px;">
-              <label style="font-size:12px;color:var(--ink-60);display:block;margin-bottom:4px;">會議室</label>
-              <select class="fselect" id="bl-room" style="padding:8px;">
-                <option value="">全館（所有會議室）</option>
-              </select>
-            </div>
-            <div style="flex:1;min-width:200px;">
-              <label style="font-size:12px;color:var(--ink-60);display:block;margin-bottom:4px;">原因（選填）</label>
-              <input type="text" class="finput" id="bl-reason" placeholder="例：清潔維護、場地整修..." style="padding:8px;">
-            </div>
-            <div>
-              <button class="btn btn-primary" onclick="addBlockedSlot()" style="white-space:nowrap;">+ 新增封鎖</button>
-            </div>
+            <div style="min-width:140px;"><label style="font-size:12px;color:var(--ink-60);display:block;margin-bottom:4px;">日期</label><input type="date" class="finput" id="bl-date" style="padding:8px;"></div>
+            <div style="min-width:110px;"><label style="font-size:12px;color:var(--ink-60);display:block;margin-bottom:4px;">開始時間</label><select class="fselect" id="bl-start" style="padding:8px;" onchange="updateBlEndOptions()"></select></div>
+            <div style="min-width:110px;"><label style="font-size:12px;color:var(--ink-60);display:block;margin-bottom:4px;">結束時間</label><select class="fselect" id="bl-end" style="padding:8px;"></select></div>
+            <div style="min-width:160px;"><label style="font-size:12px;color:var(--ink-60);display:block;margin-bottom:4px;">會議室</label><select class="fselect" id="bl-room" style="padding:8px;"><option value="">全館（所有會議室）</option></select></div>
+            <div style="flex:1;min-width:200px;"><label style="font-size:12px;color:var(--ink-60);display:block;margin-bottom:4px;">原因（選填）</label><input type="text" class="finput" id="bl-reason" placeholder="例：清潔維護..." style="padding:8px;"></div>
+            <div><button class="btn btn-primary" onclick="addBlockedSlot()" style="white-space:nowrap;">+ 新增封鎖</button></div>
           </div>
-          <div style="margin-top:8px;height:20px;">
-            <span id="blAddStatus" style="font-size:13px;color:var(--teal);display:none;"></span>
-          </div>
+          <div style="margin-top:8px;height:20px;"><span id="blAddStatus" style="font-size:13px;color:var(--teal);display:none;"></span></div>
         </div>
       </div>
       <div class="card">
@@ -1121,8 +977,48 @@ input[list]::-webkit-calendar-picker-indicator { display: none !important; }
             <button class="btn btn-outline btn-sm" onclick="clearBlFilter()">清除</button>
           </div>
         </div>
+        <div class="card-body"><div id="blList"><div style="text-align:center;padding:40px;color:var(--ink-60);">載入中...</div></div></div>
+      </div>
+    </div>
+
+    <!-- ── LINE USERS ── -->
+    <div class="page" id="page-lineusers">
+      <div class="card" style="margin-bottom:20px;">
+        <div class="card-head">
+          <div class="card-title">LINE 用戶管理</div>
+          <div style="display:flex;align-items:center;gap:12px;">
+            <button class="btn btn-outline btn-sm" onclick="loadLineUsers()">重新整理</button>
+          </div>
+        </div>
         <div class="card-body">
-          <div id="blList"><div style="text-align:center;padding:40px;color:var(--ink-60);">載入中...</div></div>
+          <div class="tbl-wrap">
+            <table>
+              <thead><tr>
+                <th>LINE 用戶 ID</th><th>顯示名稱</th><th>手機</th><th>管理員通知</th><th>加入時間</th><th>操作</th>
+              </tr></thead>
+              <tbody id="lineuser-tbody"></tbody>
+            </table>
+          </div>
+        </div>
+      </div>
+      <div class="card">
+        <div class="card-head">
+          <div class="card-title">廣播訊息</div>
+        </div>
+        <div class="card-body">
+          <div style="display:flex;flex-direction:column;gap:12px;max-width:600px;">
+            <div class="fg">
+              <label>訊息內容</label>
+              <textarea class="ftarea" id="broadcast-msg" placeholder="輸入要廣播的訊息..." rows="3"></textarea>
+            </div>
+            <div style="display:flex;align-items:center;gap:12px;">
+              <label style="display:flex;align-items:center;gap:6px;font-size:13px;cursor:pointer;">
+                <input type="checkbox" id="broadcast-admin-only" style="accent-color:var(--teal);"> 只傳給管理員帳號
+              </label>
+              <button class="btn btn-primary" onclick="sendBroadcast()">發送廣播</button>
+            </div>
+            <div id="broadcast-status" style="font-size:13px;color:var(--teal);display:none;"></div>
+          </div>
         </div>
       </div>
     </div>
@@ -1130,159 +1026,83 @@ input[list]::-webkit-calendar-picker-indicator { display: none !important; }
     <!-- ── PAYMENT ── -->
     <div class="page" id="page-payment">
       <div style="display:grid;gap:20px;">
-
-        <!-- 付款方式選擇 -->
         <div class="card">
-          <div class="card-head">
-            <div class="card-title">付款方式設定</div>
-            <button class="btn btn-primary btn-sm" onclick="savePaymentSettings()">儲存設定</button>
-          </div>
+          <div class="card-head"><div class="card-title">付款方式設定</div><button class="btn btn-primary btn-sm" onclick="savePaymentSettings()">儲存設定</button></div>
           <div class="card-body" style="padding:24px;">
-            <p style="color:var(--ink-60);font-size:13px;margin-bottom:20px;">選擇要啟用的付款方式，並填入對應的 API 金鑰。未填寫 API 金鑰的方式將自動停用。</p>
-
-            <!-- 付款方式卡片列 -->
+            <p style="color:var(--ink-60);font-size:13px;margin-bottom:20px;">選擇要啟用的付款方式，並填入對應的 API 金鑰。</p>
             <div style="display:grid;gap:16px;">
-
               <!-- 現場付款 -->
               <div class="pay-method-card" id="pmc-cash">
                 <div class="pay-method-head">
                   <label style="display:flex;align-items:center;gap:10px;cursor:pointer;">
                     <input type="checkbox" id="pay-cash-enabled" class="pay-toggle" onchange="onPayToggle('cash')" style="width:18px;height:18px;accent-color:var(--teal);">
                     <span class="pay-method-icon">💵</span>
-                    <div>
-                      <div style="font-weight:600;font-size:15px;">現場付款</div>
-                      <div style="font-size:12px;color:var(--ink-60);">預約成立後現場以現金或轉帳付款</div>
-                    </div>
+                    <div><div style="font-weight:600;font-size:15px;">現場付款</div><div style="font-size:12px;color:var(--ink-60);">預約成立後現場以現金或轉帳付款</div></div>
                   </label>
                   <span class="pay-badge pay-badge-manual">人工確認</span>
                 </div>
                 <div class="pay-method-body" id="pay-cash-body">
-                  <div class="fg">
-                    <label>付款說明 <span>（顯示在預約確認頁）</span></label>
-                    <textarea class="finput" id="pay-cash-desc" rows="2" placeholder="例：請於使用當日至櫃台繳費，逾時未繳視同取消。"></textarea>
-                  </div>
+                  <div class="fg"><label>付款說明 <span>（顯示在預約確認頁）</span></label><textarea class="finput" id="pay-cash-desc" rows="2" placeholder="例：請於使用當日至櫃台繳費，逾時未繳視同取消。"></textarea></div>
                 </div>
               </div>
-
               <!-- LINE Pay -->
               <div class="pay-method-card" id="pmc-linepay">
                 <div class="pay-method-head">
                   <label style="display:flex;align-items:center;gap:10px;cursor:pointer;">
                     <input type="checkbox" id="pay-linepay-enabled" class="pay-toggle" onchange="onPayToggle('linepay')" style="width:18px;height:18px;accent-color:var(--teal);">
                     <span class="pay-method-icon" style="background:#00B900;color:#fff;border-radius:8px;padding:2px 6px;font-size:12px;font-weight:700;">LINE</span>
-                    <div>
-                      <div style="font-weight:600;font-size:15px;">LINE Pay</div>
-                      <div style="font-size:12px;color:var(--ink-60);">透過 LINE Pay 線上付款，即時確認</div>
-                    </div>
+                    <div><div style="font-weight:600;font-size:15px;">LINE Pay</div><div style="font-size:12px;color:var(--ink-60);">透過 LINE Pay 線上付款，即時確認</div></div>
                   </label>
                   <span class="pay-badge pay-badge-online">線上即時</span>
                 </div>
                 <div class="pay-method-body" id="pay-linepay-body" style="display:none;">
                   <div style="background:#fff3cd;border:1px solid #ffc107;border-radius:8px;padding:12px 16px;margin-bottom:16px;font-size:13px;">
                     ⚠ 尚未設定 API 金鑰，LINE Pay 功能目前停用。請至
-                    <a href="https://pay.line.me/tw/developers/techsupport/sandbox/testflow" target="_blank" style="color:var(--teal);">LINE Pay 開發者後台</a>
-                    申請金鑰後填入。
-                  </div>
+                    <a href="https://pay.line.me/tw/developers/techsupport/sandbox/testflow" target="_blank" style="color:var(--teal);">LINE Pay 開發者後台</a> 申請金鑰後填入。</div>
                   <div style="display:grid;grid-template-columns:1fr 1fr;gap:12px;">
-                    <div class="fg">
-                      <label>Channel ID <span>（必填）</span></label>
-                      <input class="finput" type="text" id="pay-linepay-channel-id" placeholder="1234567890">
-                    </div>
-                    <div class="fg">
-                      <label>Channel Secret Key <span>（必填）</span></label>
-                      <input class="finput" type="password" id="pay-linepay-secret" placeholder="••••••••••••••••••••••••••••••••">
-                    </div>
-                    <div class="fg">
-                      <label>環境</label>
-                      <select class="fselect" id="pay-linepay-env">
-                        <option value="sandbox">Sandbox（測試）</option>
-                        <option value="production">Production（正式）</option>
-                      </select>
-                    </div>
-                    <div class="fg">
-                      <label>付款逾時（分鐘）</label>
-                      <input class="finput" type="number" id="pay-linepay-timeout" placeholder="10" min="1" max="60">
-                    </div>
+                    <div class="fg"><label>Channel ID <span>（必填）</span></label><input class="finput" type="text" id="pay-linepay-channel-id" placeholder="1234567890"></div>
+                    <div class="fg"><label>Channel Secret Key <span>（必填）</span></label><input class="finput" type="password" id="pay-linepay-secret" placeholder="••••••••••••••••••••••••••••••••"></div>
+                    <div class="fg"><label>環境</label><select class="fselect" id="pay-linepay-env"><option value="sandbox">Sandbox（測試）</option><option value="production">Production（正式）</option></select></div>
+                    <div class="fg"><label>付款逾時（分鐘）</label><input class="finput" type="number" id="pay-linepay-timeout" placeholder="10" min="1" max="60"></div>
                   </div>
-                  <div class="fg" style="margin-top:4px;">
-                    <label>Confirm URL <span>（付款成功後跳轉）</span></label>
-                    <input class="finput" type="text" id="pay-linepay-confirm-url" placeholder="https://yourdomain.com/payment/linepay/confirm">
-                  </div>
+                  <div class="fg"><label>Confirm URL <span>（付款成功後跳轉）</span></label><input class="finput" type="text" id="pay-linepay-confirm-url" placeholder="https://yourdomain.com/payment/linepay/confirm"></div>
                 </div>
               </div>
-
-              <!-- 綠界 ECPay 信用卡 -->
+              <!-- 綠界 ECPay -->
               <div class="pay-method-card" id="pmc-ecpay">
                 <div class="pay-method-head">
                   <label style="display:flex;align-items:center;gap:10px;cursor:pointer;">
                     <input type="checkbox" id="pay-ecpay-enabled" class="pay-toggle" onchange="onPayToggle('ecpay')" style="width:18px;height:18px;accent-color:var(--teal);">
                     <span class="pay-method-icon" style="background:#0070c0;color:#fff;border-radius:8px;padding:2px 6px;font-size:12px;font-weight:700;">綠界</span>
-                    <div>
-                      <div style="font-weight:600;font-size:15px;">綠界 ECPay 信用卡</div>
-                      <div style="font-size:12px;color:var(--ink-60);">透過綠界金流刷卡付款，支援 VISA / Master / JCB</div>
-                    </div>
+                    <div><div style="font-weight:600;font-size:15px;">綠界 ECPay 信用卡</div><div style="font-size:12px;color:var(--ink-60);">透過綠界金流刷卡付款，支援 VISA / Master / JCB</div></div>
                   </label>
                   <span class="pay-badge pay-badge-online">線上即時</span>
                 </div>
                 <div class="pay-method-body" id="pay-ecpay-body" style="display:none;">
                   <div style="background:#fff3cd;border:1px solid #ffc107;border-radius:8px;padding:12px 16px;margin-bottom:16px;font-size:13px;">
                     ⚠ 尚未設定 API 金鑰，綠界 ECPay 功能目前停用。請至
-                    <a href="https://www.ecpay.com.tw/Service/Login_Pay" target="_blank" style="color:var(--teal);">綠界科技後台</a>
-                    申請特店編號與 HashKey/HashIV 後填入。
-                  </div>
+                    <a href="https://www.ecpay.com.tw/Service/Login_Pay" target="_blank" style="color:var(--teal);">綠界科技後台</a> 申請特店編號與 HashKey/HashIV 後填入。</div>
                   <div style="display:grid;grid-template-columns:1fr 1fr;gap:12px;">
-                    <div class="fg">
-                      <label>特店編號 MerchantID <span>（必填）</span></label>
-                      <input class="finput" type="text" id="pay-ecpay-merchant-id" placeholder="2000132">
-                    </div>
-                    <div class="fg">
-                      <label>環境</label>
-                      <select class="fselect" id="pay-ecpay-env">
-                        <option value="sandbox">Sandbox（測試）</option>
-                        <option value="production">Production（正式）</option>
-                      </select>
-                    </div>
-                    <div class="fg">
-                      <label>HashKey <span>（必填）</span></label>
-                      <input class="finput" type="password" id="pay-ecpay-hash-key" placeholder="••••••••••••••••">
-                    </div>
-                    <div class="fg">
-                      <label>HashIV <span>（必填）</span></label>
-                      <input class="finput" type="password" id="pay-ecpay-hash-iv" placeholder="••••••••••••••••">
-                    </div>
+                    <div class="fg"><label>特店編號 MerchantID <span>（必填）</span></label><input class="finput" type="text" id="pay-ecpay-merchant-id" placeholder="2000132"></div>
+                    <div class="fg"><label>環境</label><select class="fselect" id="pay-ecpay-env"><option value="sandbox">Sandbox（測試）</option><option value="production">Production（正式）</option></select></div>
+                    <div class="fg"><label>HashKey <span>（必填）</span></label><input class="finput" type="password" id="pay-ecpay-hash-key" placeholder="••••••••••••••••"></div>
+                    <div class="fg"><label>HashIV <span>（必填）</span></label><input class="finput" type="password" id="pay-ecpay-hash-iv" placeholder="••••••••••••••••"></div>
+                    <div class="fg"><label>付款完成 ReturnURL</label><input class="finput" type="text" id="pay-ecpay-return-url" placeholder="https://yourdomain.com/payment/ecpay/return"></div>
+                    <div class="fg"><label>前台跳轉 OrderResultURL</label><input class="finput" type="text" id="pay-ecpay-result-url" placeholder="https://yourdomain.com/payment/ecpay/result"></div>
                   </div>
-                  <div style="display:grid;grid-template-columns:1fr 1fr;gap:12px;margin-top:4px;">
-                    <div class="fg">
-                      <label>付款完成 ReturnURL</label>
-                      <input class="finput" type="text" id="pay-ecpay-return-url" placeholder="https://yourdomain.com/payment/ecpay/return">
-                    </div>
-                    <div class="fg">
-                      <label>前台跳轉 OrderResultURL</label>
-                      <input class="finput" type="text" id="pay-ecpay-result-url" placeholder="https://yourdomain.com/payment/ecpay/result">
-                    </div>
-                  </div>
-                  <div class="fg" style="margin-top:4px;">
-                    <label>付款期限（天）</label>
-                    <input class="finput" type="number" id="pay-ecpay-expire-days" placeholder="3" min="1" max="30" style="max-width:120px;">
-                  </div>
+                  <div class="fg"><label>付款期限（天）</label><input class="finput" type="number" id="pay-ecpay-expire-days" placeholder="3" min="1" max="30" style="max-width:120px;"></div>
                 </div>
               </div>
-
-
-              <!-- 直接刷卡（Stripe / 藍新 / 自有金流） -->
+              <!-- 信用卡 -->
               <div class="pay-method-card" id="pmc-creditcard">
                 <div class="pay-method-head">
                   <label style="display:flex;align-items:center;gap:10px;cursor:pointer;">
                     <input type="checkbox" id="pay-creditcard-enabled" class="pay-toggle" onchange="onPayToggle('creditcard')" style="width:18px;height:18px;accent-color:var(--teal);">
                     <span class="pay-method-icon" style="display:flex;gap:4px;align-items:center;">
-                      <span style="background:#1a1f71;color:#fff;border-radius:4px;padding:2px 6px;font-size:11px;font-weight:700;letter-spacing:1px;">VISA</span>
-                      <span style="background:#eb001b;color:#fff;border-radius:4px;padding:2px 6px;font-size:11px;font-weight:700;">Master</span>
-                      <span style="background:#003087;color:#fff;border-radius:4px;padding:2px 6px;font-size:11px;font-weight:700;">JCB</span>
+                      <span style="background:#1a1f71;color:#fff;border-radius:4px;padding:2px 5px;font-size:11px;font-weight:700;">VISA</span>
+                      <span style="background:#eb001b;color:#fff;border-radius:4px;padding:2px 5px;font-size:11px;font-weight:700;">Master</span>
                     </span>
-                    <div>
-                      <div style="font-weight:600;font-size:15px;">信用卡付款</div>
-                      <div style="font-size:12px;color:var(--ink-60);">支援 VISA / MasterCard / JCB，透過第三方金流串接</div>
-                    </div>
+                    <div><div style="font-weight:600;font-size:15px;">信用卡付款</div><div style="font-size:12px;color:var(--ink-60);">支援 VISA / MasterCard / JCB，透過第三方金流串接</div></div>
                   </label>
                   <span class="pay-badge pay-badge-online">線上即時</span>
                 </div>
@@ -1293,101 +1113,41 @@ input[list]::-webkit-calendar-picker-indicator { display: none !important; }
                   <div style="margin-bottom:14px;">
                     <label style="font-size:13px;font-weight:600;color:var(--ink-60);display:block;margin-bottom:8px;">金流服務商</label>
                     <div style="display:flex;gap:10px;flex-wrap:wrap;">
-                      <label style="display:flex;align-items:center;gap:6px;font-size:13px;cursor:pointer;">
-                        <input type="radio" name="creditcard-provider" id="pay-cc-provider-stripe" value="stripe" style="accent-color:var(--teal);"> Stripe
-                      </label>
-                      <label style="display:flex;align-items:center;gap:6px;font-size:13px;cursor:pointer;">
-                        <input type="radio" name="creditcard-provider" id="pay-cc-provider-newebpay" value="newebpay" style="accent-color:var(--teal);"> 藍新金流（NewebPay）
-                      </label>
-                      <label style="display:flex;align-items:center;gap:6px;font-size:13px;cursor:pointer;">
-                        <input type="radio" name="creditcard-provider" id="pay-cc-provider-other" value="other" style="accent-color:var(--teal);"> 其他
-                      </label>
+                      <label style="display:flex;align-items:center;gap:6px;font-size:13px;cursor:pointer;"><input type="radio" name="creditcard-provider" id="pay-cc-provider-stripe" value="stripe" style="accent-color:var(--teal);"> Stripe</label>
+                      <label style="display:flex;align-items:center;gap:6px;font-size:13px;cursor:pointer;"><input type="radio" name="creditcard-provider" id="pay-cc-provider-newebpay" value="newebpay" style="accent-color:var(--teal);"> 藍新金流（NewebPay）</label>
+                      <label style="display:flex;align-items:center;gap:6px;font-size:13px;cursor:pointer;"><input type="radio" name="creditcard-provider" id="pay-cc-provider-other" value="other" style="accent-color:var(--teal);"> 其他</label>
                     </div>
                   </div>
                   <div style="display:grid;grid-template-columns:1fr 1fr;gap:12px;">
-                    <div class="fg">
-                      <label>API 金鑰 / Publishable Key <span>（必填）</span></label>
-                      <input class="finput" type="password" id="pay-cc-api-key" placeholder="pk_live_•••• 或服務商提供的金鑰">
-                    </div>
-                    <div class="fg">
-                      <label>Secret Key <span>（必填）</span></label>
-                      <input class="finput" type="password" id="pay-cc-secret-key" placeholder="sk_live_•••• 或服務商私鑰">
-                    </div>
-                    <div class="fg">
-                      <label>環境</label>
-                      <select class="fselect" id="pay-cc-env">
-                        <option value="sandbox">Sandbox（測試）</option>
-                        <option value="production">Production（正式）</option>
-                      </select>
-                    </div>
-                    <div class="fg">
-                      <label>Webhook / Notify URL</label>
-                      <input class="finput" type="text" id="pay-cc-webhook-url" placeholder="https://yourdomain.com/payment/creditcard/notify">
-                    </div>
-                    <div class="fg">
-                      <label>付款完成跳轉 URL</label>
-                      <input class="finput" type="text" id="pay-cc-return-url" placeholder="https://yourdomain.com/payment/creditcard/return">
-                    </div>
-                    <div class="fg">
-                      <label>付款期限（分鐘）</label>
-                      <input class="finput" type="number" id="pay-cc-timeout" placeholder="15" min="5" max="60" style="max-width:120px;">
-                    </div>
+                    <div class="fg"><label>API 金鑰 / Publishable Key</label><input class="finput" type="password" id="pay-cc-api-key" placeholder="pk_live_••••"></div>
+                    <div class="fg"><label>Secret Key</label><input class="finput" type="password" id="pay-cc-secret-key" placeholder="sk_live_••••"></div>
+                    <div class="fg"><label>環境</label><select class="fselect" id="pay-cc-env"><option value="sandbox">Sandbox（測試）</option><option value="production">Production（正式）</option></select></div>
+                    <div class="fg"><label>Webhook / Notify URL</label><input class="finput" type="text" id="pay-cc-webhook-url" placeholder="https://yourdomain.com/payment/creditcard/notify"></div>
+                    <div class="fg"><label>付款完成跳轉 URL</label><input class="finput" type="text" id="pay-cc-return-url" placeholder="https://yourdomain.com/payment/creditcard/return"></div>
+                    <div class="fg"><label>付款期限（分鐘）</label><input class="finput" type="number" id="pay-cc-timeout" placeholder="15" min="5" max="60" style="max-width:120px;"></div>
                   </div>
-                  <div class="fg" style="margin-top:4px;">
-                    <label>付款說明 <span>（顯示在結帳頁）</span></label>
-                    <textarea class="finput" id="pay-cc-desc" rows="2" placeholder="例：支援 VISA、MasterCard、JCB，請於 15 分鐘內完成付款。"></textarea>
-                  </div>
+                  <div class="fg"><label>付款說明 <span>（顯示在結帳頁）</span></label><textarea class="finput" id="pay-cc-desc" rows="2" placeholder="例：支援 VISA、MasterCard、JCB，請於 15 分鐘內完成付款。"></textarea></div>
                   <div style="background:#e8f5e9;border:1px solid #a5d6a7;border-radius:8px;padding:10px 14px;margin-top:12px;font-size:12px;color:#2e7d32;">
                     ℹ 功能已串接完成，取得 API 金鑰後填入上方欄位並儲存，即可正式啟用信用卡付款。
                   </div>
                 </div>
               </div>
-
             </div><!-- end grid -->
           </div>
         </div>
-
         <!-- 付款規則 -->
         <div class="card">
           <div class="card-head"><div class="card-title">付款規則</div></div>
           <div class="card-body" style="padding:24px;">
             <div style="display:grid;grid-template-columns:1fr 1fr;gap:16px;">
-              <div class="fg">
-                <label>付款時機</label>
-                <select class="fselect" id="pay-timing">
-                  <option value="on_confirm">預約確認後付款</option>
-                  <option value="on_booking">預約同時付款</option>
-                  <option value="manual">人工收款（不走線上金流）</option>
-                </select>
-              </div>
-              <div class="fg">
-                <label>付款逾時後</label>
-                <select class="fselect" id="pay-timeout-action">
-                  <option value="cancel">自動取消預約</option>
-                  <option value="keep">保留預約（人工處理）</option>
-                  <option value="notify">發送提醒後保留</option>
-                </select>
-              </div>
-              <div class="fg">
-                <label>付款逾時時限（小時）</label>
-                <input class="finput" type="number" id="pay-timeout-hours" placeholder="24" min="1" max="168">
-              </div>
-              <div class="fg">
-                <label>收據/發票</label>
-                <select class="fselect" id="pay-invoice-type">
-                  <option value="none">不開立</option>
-                  <option value="ecpay_invoice">綠界電子發票</option>
-                  <option value="manual">人工開立</option>
-                </select>
-              </div>
+              <div class="fg"><label>付款時機</label><select class="fselect" id="pay-timing"><option value="on_confirm">預約確認後付款</option><option value="on_booking">預約同時付款</option><option value="manual">人工收款</option></select></div>
+              <div class="fg"><label>付款逾時後</label><select class="fselect" id="pay-timeout-action"><option value="cancel">自動取消預約</option><option value="keep">保留預約（人工處理）</option><option value="notify">發送提醒後保留</option></select></div>
+              <div class="fg"><label>付款逾時時限（小時）</label><input class="finput" type="number" id="pay-timeout-hours" placeholder="24" min="1" max="168"></div>
+              <div class="fg"><label>收據/發票</label><select class="fselect" id="pay-invoice-type"><option value="none">不開立</option><option value="ecpay_invoice">綠界電子發票</option><option value="manual">人工開立</option></select></div>
             </div>
-            <div class="fg" style="margin-top:4px;">
-              <label>付款頁面說明 <span>（顯示在結帳頁面頂部）</span></label>
-              <textarea class="finput" id="pay-checkout-note" rows="2" placeholder="例：完成付款後將自動確認您的預約，並寄送確認信至您的信箱。"></textarea>
-            </div>
+            <div class="fg"><label>付款頁面說明</label><textarea class="finput" id="pay-checkout-note" rows="2" placeholder="例：完成付款後將自動確認您的預約，並寄送確認信至您的信箱。"></textarea></div>
           </div>
         </div>
-
         <!-- 退款政策 -->
         <div class="card">
           <div class="card-head"><div class="card-title">退款政策</div></div>
@@ -1396,33 +1156,23 @@ input[list]::-webkit-calendar-picker-indicator { display: none !important; }
               <div style="display:grid;grid-template-columns:auto 1fr 1fr;gap:12px;align-items:center;font-size:13px;font-weight:600;color:var(--ink-60);padding:0 4px;">
                 <span style="width:120px;">取消時間</span><span>退款比例</span><span>說明</span>
               </div>
-              <div id="refund-rules" style="display:grid;gap:8px;">
-                <!-- JS 渲染 -->
-              </div>
+              <div id="refund-rules" style="display:grid;gap:8px;"></div>
               <button class="btn btn-outline btn-sm" style="align-self:flex-start;" onclick="addRefundRule()">＋ 新增規則</button>
             </div>
           </div>
         </div>
-
-        <!-- 底部儲存按鈕 -->
-        <div style="display:flex;justify-content:flex-end;padding:16px 24px;background:var(--white);border-top:1px solid var(--border);border-radius:0 0 12px 12px;gap:12px;">
+        <div style="display:flex;justify-content:flex-end;padding:16px 24px;background:var(--white);border-radius:12px;gap:12px;">
           <button class="btn btn-outline btn-sm" onclick="loadPaymentSettings()">重設</button>
           <button class="btn btn-primary" onclick="savePaymentSettings()" style="padding:10px 32px;font-size:15px;">儲存付款設定</button>
         </div>
-
       </div>
     </div>
 
     <!-- ── ACCOUNTS ── -->
     <div class="page" id="page-accounts">
       <div class="card">
-        <div class="card-head">
-          <div class="card-title">帳號管理</div>
-          <button class="btn btn-primary btn-sm" onclick="openAddAccount()">＋ 新增帳號</button>
-        </div>
-        <div class="card-body">
-          <div id="accountList"><div style="text-align:center;padding:40px;color:var(--ink-60);">載入中...</div></div>
-        </div>
+        <div class="card-head"><div class="card-title">帳號管理</div><button class="btn btn-primary btn-sm" onclick="openAddAccount()">＋ 新增帳號</button></div>
+        <div class="card-body"><div id="accountList"><div style="text-align:center;padding:40px;color:var(--ink-60);">載入中...</div></div></div>
       </div>
     </div>
 
@@ -1437,20 +1187,9 @@ input[list]::-webkit-calendar-picker-indicator { display: none !important; }
           </div>
         </div>
         <div class="card-body">
-          <!-- 篩選列 -->
           <div style="display:flex;gap:10px;flex-wrap:wrap;margin-bottom:16px;align-items:center;">
-            <div class="filter-group">
-              <span class="filter-lbl">帳號</span>
-              <input type="text" class="filter-input" id="log-fil-user" placeholder="搜尋帳號..." style="width:140px;" oninput="loadLoginLogs()">
-            </div>
-            <div class="filter-group">
-              <span class="filter-lbl">結果</span>
-              <select class="filter-select" id="log-fil-result" onchange="loadLoginLogs()">
-                <option value="">全部</option>
-                <option value="1">✓ 成功</option>
-                <option value="0">✗ 失敗</option>
-              </select>
-            </div>
+            <div class="filter-group"><span class="filter-lbl">帳號</span><input type="text" class="filter-input" id="log-fil-user" placeholder="搜尋帳號..." style="width:140px;" oninput="loadLoginLogs()"></div>
+            <div class="filter-group"><span class="filter-lbl">結果</span><select class="filter-select" id="log-fil-result" onchange="loadLoginLogs()"><option value="">全部</option><option value="1">✓ 成功</option><option value="0">✗ 失敗</option></select></div>
             <button class="btn btn-outline btn-sm" onclick="clearLogFilters()">清除篩選</button>
           </div>
           <div id="loginLogList"><div style="text-align:center;padding:40px;color:var(--ink-60);">載入中...</div></div>
@@ -1464,14 +1203,10 @@ input[list]::-webkit-calendar-picker-indicator { display: none !important; }
 <!-- Crop Modal -->
 <div id="cropModal" style="display:none;position:fixed;inset:0;background:rgba(0,0,0,.75);z-index:9999;align-items:center;justify-content:center;">
   <div style="background:#fff;border-radius:12px;overflow:hidden;width:min(640px,96vw);display:flex;flex-direction:column;max-height:92vh;box-shadow:0 20px 60px rgba(0,0,0,.4);">
-
-    <!-- Header -->
     <div style="padding:16px 20px;border-bottom:1px solid var(--border);display:flex;align-items:center;justify-content:space-between;flex-shrink:0;">
       <div style="font-weight:700;font-size:16px;">&#9986; 選擇顯示範圍</div>
       <button onclick="closeCropModal()" style="background:none;border:none;font-size:24px;cursor:pointer;color:var(--ink-60);line-height:1;width:32px;height:32px;display:flex;align-items:center;justify-content:center;border-radius:6px;" onmouseover="this.style.background='#f0f0f0'" onmouseout="this.style.background='none'">&#215;</button>
     </div>
-
-    <!-- Crop Area -->
     <div style="padding:16px;overflow:auto;flex:1;">
       <p style="font-size:13px;color:var(--ink-60);margin-bottom:12px;">拖曳藍色裁切框或拉動四角調整顯示範圍，完成後點擊「確認套用」。</p>
       <div id="cropContainer" style="position:relative;background:#111;display:inline-block;border-radius:8px;overflow:hidden;max-width:100%;line-height:0;">
@@ -1484,17 +1219,12 @@ input[list]::-webkit-calendar-picker-indicator { display: none !important; }
         </div>
       </div>
     </div>
-
-    <!-- Footer -->
     <div style="padding:12px 20px;border-top:1px solid var(--border);display:flex;justify-content:flex-end;gap:10px;align-items:center;flex-wrap:wrap;flex-shrink:0;">
       <span style="flex:1;font-size:12px;color:var(--ink-60);" id="cropSizeInfo"></span>
-      <label style="display:flex;align-items:center;gap:6px;font-size:13px;cursor:pointer;white-space:nowrap;">
-        <input type="checkbox" id="cropAspectLock" style="accent-color:var(--teal);width:15px;height:15px;"> 鎖定 16:9
-      </label>
+      <label style="display:flex;align-items:center;gap:6px;font-size:13px;cursor:pointer;white-space:nowrap;"><input type="checkbox" id="cropAspectLock" style="accent-color:var(--teal);width:15px;height:15px;"> 鎖定 16:9</label>
       <button class="btn btn-outline" onclick="closeCropModal()">取消</button>
       <button class="btn btn-primary" id="cropConfirmBtn" onclick="confirmCrop()">確認套用</button>
     </div>
-
   </div>
 </div>
 
@@ -1504,87 +1234,34 @@ input[list]::-webkit-calendar-picker-indicator { display: none !important; }
     <div class="modal-title" id="roomModalTitle">新增會議室</div>
     <input type="hidden" id="rm-id">
     <div class="fgrid">
-      <div class="fg">
-        <label>會議室名稱</label>
-        <input class="finput" type="text" id="rm-name" placeholder="例：精緻洽談室 A">
-      </div>
-      <div class="fg">
-        <label>類型</label>
-        <input class="finput" type="text" id="rm-type" list="rm-type-list" placeholder="輸入或選擇類型" autocomplete="off" style="-webkit-appearance:none;appearance:none;">
-        <datalist id="rm-type-list">
-          <option>腦力激盪</option><option>洽談室</option><option>簡報廳</option>
-          <option>視訊會議</option><option>行政套房</option><option>培訓教室</option>
-        </datalist>
-      </div>
-      <div class="fg">
-        <label>容納人數</label>
-        <div style="display:flex;gap:8px;align-items:center;">
-          <input class="finput" type="number" id="rm-capacity-min" placeholder="最少（選填）" min="1" style="flex:1;">
-          <span style="color:var(--ink-60);white-space:nowrap;">～</span>
-          <input class="finput" type="number" id="rm-capacity" placeholder="最多" min="1" style="flex:1;">
-          <span style="color:var(--ink-60);white-space:nowrap;">人</span>
-        </div>
-        <div style="font-size:12px;color:var(--ink-60);margin-top:4px;">填寫最少人數可顯示「4～6 人」範圍</div>
-      </div>
-      <div class="fg">
-        <label>每小時費率（NT$）</label>
-        <input class="finput" type="number" id="rm-rate" placeholder="500" min="0">
-      </div>
-      <div class="fg">
-        <label>最低預約時數 <span>（0 = 不限）</span></label>
-        <div style="display:flex;align-items:center;gap:8px;">
-          <input class="finput" type="number" id="rm-min-hours" placeholder="1" min="0" step="0.5" style="flex:1;">
-          <span style="color:var(--ink-60);white-space:nowrap;">小時</span>
-        </div>
-      </div>
-      <div class="fg">
-        <label>樓層</label>
-        <input class="finput" type="text" id="rm-floor" placeholder="例：3F">
-      </div>
-      <div class="fg">
-        <label>狀態</label>
-        <select class="fselect" id="rm-active">
-          <option value="true">啟用</option><option value="false">停用</option>
-        </select>
-      </div>
+      <div class="fg"><label>會議室名稱</label><input class="finput" type="text" id="rm-name" placeholder="例：精緻洽談室 A"></div>
+      <div class="fg"><label>類型</label><input class="finput" type="text" id="rm-type" list="rm-type-list" placeholder="輸入或選擇類型" autocomplete="off" style="-webkit-appearance:none;appearance:none;"><datalist id="rm-type-list"><option>腦力激盪</option><option>洽談室</option><option>簡報廳</option><option>視訊會議</option><option>行政套房</option><option>培訓教室</option></datalist></div>
+      <div class="fg"><label>容納人數</label><div style="display:flex;gap:8px;align-items:center;"><input class="finput" type="number" id="rm-capacity-min" placeholder="最少（選填）" min="1" style="flex:1;"><span style="color:var(--ink-60);white-space:nowrap;">～</span><input class="finput" type="number" id="rm-capacity" placeholder="最多" min="1" style="flex:1;"><span style="color:var(--ink-60);white-space:nowrap;">人</span></div><div style="font-size:12px;color:var(--ink-60);margin-top:4px;">填寫最少人數可顯示「4～6 人」範圍</div></div>
+      <div class="fg"><label>每小時費率（NT$）</label><input class="finput" type="number" id="rm-rate" placeholder="500" min="0"></div>
+      <div class="fg"><label>最低預約時數 <span>（0 = 不限）</span></label><div style="display:flex;align-items:center;gap:8px;"><input class="finput" type="number" id="rm-min-hours" placeholder="1" min="0" step="0.5" style="flex:1;"><span style="color:var(--ink-60);white-space:nowrap;">小時</span></div></div>
+      <div class="fg"><label>樓層</label><input class="finput" type="text" id="rm-floor" placeholder="例：3F"></div>
+      <div class="fg"><label>前台顯示順序 <span>（數字越小越前面，0=自動）</span></label><input class="finput" type="number" id="rm-sort-order" placeholder="0" min="0" style="width:120px;"></div>
+      <div class="fg"><label>狀態</label><select class="fselect" id="rm-active"><option value="true">啟用</option><option value="false">停用</option></select></div>
     </div>
-    <div class="fg">
-      <label>描述說明</label>
-      <textarea class="ftarea" id="rm-desc" placeholder="詳細描述此會議室的特色..." rows="4" style="min-height:100px;"></textarea>
-    </div>
+    <div class="fg"><label>描述說明</label><textarea class="ftarea" id="rm-desc" placeholder="詳細描述此會議室的特色..." rows="4" style="min-height:100px;"></textarea></div>
     <div class="fg">
       <label>設備設施 <span>（輸入後按 Enter 新增）</span></label>
-      <div class="amenity-input-row">
-        <input class="finput" type="text" id="rm-amenity-input" placeholder="例：白板、投影機、WiFi" onkeydown="amenityKeydown(event)" style="flex:1;">
-        <button class="btn btn-outline btn-sm" onclick="addAmenity()">新增</button>
-      </div>
+      <div class="amenity-input-row"><input class="finput" type="text" id="rm-amenity-input" placeholder="例：白板、投影機、WiFi" onkeydown="amenityKeydown(event)" style="flex:1;"><button class="btn btn-outline btn-sm" onclick="addAmenity()">新增</button></div>
       <div class="amenity-tags" id="amenityTags"></div>
     </div>
     <div class="fg">
       <label>封面照片</label>
-      <div class="current-photo-row" id="currentPhotoRow" style="display:none;">
-        <img id="currentPhotoThumb" src="" alt="目前照片">
-        <span>目前照片</span>
-        <button class="btn btn-outline btn-sm" onclick="clearModalPhoto()">移除</button>
-      </div>
+      <div class="current-photo-row" id="currentPhotoRow" style="display:none;"><img id="currentPhotoThumb" src="" alt="目前照片"><span>目前照片</span><button class="btn btn-outline btn-sm" onclick="clearModalPhoto()">移除</button></div>
       <div class="photo-upload-area" id="modalUploadArea" onclick="triggerModalFileInput()">
         <input type="file" id="modalPhotoInput" accept="image/*" onchange="handleModalPhotoSelect(event)" style="position:absolute;inset:0;opacity:0;cursor:pointer;">
         <div class="photo-upload-icon">&#9728;</div>
-        <div class="photo-upload-text">
-          <strong>點擊選擇照片</strong> 或拖曳到此處<br>
-          <small style="color:var(--ink-60);">支援 JPG、PNG、GIF、WEBP，最大 16MB</small>
-        </div>
-        <div class="upload-progress" id="modalUploadProgress">
-          <div class="upload-progress-bar" id="modalUploadBar" style="width:0%"></div>
-        </div>
+        <div class="photo-upload-text"><strong>點擊選擇照片</strong> 或拖曳到此處<br><small style="color:var(--ink-60);">支援 JPG、PNG、GIF、WEBP，最大 16MB</small></div>
+        <div class="upload-progress" id="modalUploadProgress"><div class="upload-progress-bar" id="modalUploadBar" style="width:0%"></div></div>
       </div>
       <div id="modalPhotoPreview"></div>
       <input type="hidden" id="rm-photo-url">
     </div>
-    <div class="modal-footer">
-      <button class="btn btn-outline" onclick="closeRoomModal()">取消</button>
-      <button class="btn btn-primary" onclick="saveRoom()">儲存</button>
-    </div>
+    <div class="modal-footer"><button class="btn btn-outline" onclick="closeRoomModal()">取消</button><button class="btn btn-primary" onclick="saveRoom()">儲存</button></div>
   </div>
 </div>
 
@@ -1594,48 +1271,17 @@ input[list]::-webkit-calendar-picker-indicator { display: none !important; }
     <div class="modal-title" id="accountModalTitle">新增帳號</div>
     <input type="hidden" id="acc-id">
     <div class="fgrid">
-      <div class="fg">
-        <label>帳號 <span>（登入用）</span></label>
-        <input class="finput" id="acc-username" placeholder="例：john" autocomplete="off">
-      </div>
-      <div class="fg">
-        <label>顯示名稱</label>
-        <input class="finput" id="acc-display" placeholder="例：王小明">
-      </div>
-      <div class="fg">
-        <label>密碼 <span id="acc-pw-hint">（新增時必填）</span></label>
-        <div style="position:relative;">
-          <input class="finput" type="password" id="acc-pw" autocomplete="new-password" style="padding-right:44px;" oninput="onPwInput()">
-          <button type="button" onclick="togglePwVis()" title="顯示/隱藏密碼"
-            style="position:absolute;right:10px;top:50%;transform:translateY(-50%);background:none;border:none;cursor:pointer;font-size:18px;color:var(--ink-60);line-height:1;" id="acc-pw-eye">👁</button>
-          <div id="acc-pw-status" style="font-size:12px;margin-top:5px;height:16px;"></div>
-        </div>
-      </div>
-      <div class="fg">
-        <label>角色</label>
-        <select class="fselect" id="acc-role" onchange="onRoleChange()">
-          <option value="superadmin">超級管理員</option>
-          <option value="admin">管理員</option>
-          <option value="manager" selected>店長/經理</option>
-          <option value="staff">門市人員</option>
-        </select>
-      </div>
-      <div class="fg">
-        <label>狀態</label>
-        <select class="fselect" id="acc-active">
-          <option value="true">啟用</option>
-          <option value="false">停用</option>
-        </select>
-      </div>
+      <div class="fg"><label>帳號 <span>（登入用）</span></label><input class="finput" id="acc-username" placeholder="例：john" autocomplete="off"></div>
+      <div class="fg"><label>顯示名稱</label><input class="finput" id="acc-display" placeholder="例：王小明"></div>
+      <div class="fg"><label>密碼 <span id="acc-pw-hint">（新增時必填）</span></label><div style="position:relative;"><input class="finput" type="password" id="acc-pw" autocomplete="new-password" style="padding-right:44px;" oninput="onPwInput()"><button type="button" onclick="togglePwVis()" style="position:absolute;right:10px;top:50%;transform:translateY(-50%);background:none;border:none;cursor:pointer;font-size:18px;color:var(--ink-60);" id="acc-pw-eye">👁</button><div id="acc-pw-status" style="font-size:12px;margin-top:5px;height:16px;"></div></div></div>
+      <div class="fg"><label>角色</label><select class="fselect" id="acc-role" onchange="onRoleChange()"><option value="superadmin">超級管理員</option><option value="admin">管理員</option><option value="manager" selected>店長/經理</option><option value="staff">門市人員</option></select></div>
+      <div class="fg"><label>狀態</label><select class="fselect" id="acc-active"><option value="true">啟用</option><option value="false">停用</option></select></div>
     </div>
     <div style="margin-top:8px;">
-      <div style="font-size:13px;font-weight:600;margin-bottom:6px;">功能權限 <span style="font-weight:400;color:var(--ink-60);font-size:12px;">（超級管理員自動擁有全部）</span></div>
+      <div style="font-size:13px;font-weight:600;margin-bottom:6px;">功能權限</div>
       <div id="accPermGrid" style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:8px;padding:14px;background:var(--paper);border-radius:6px;border:1px solid var(--border);"></div>
     </div>
-    <div class="modal-footer">
-      <button class="btn btn-outline" onclick="closeAccountModal()">取消</button>
-      <button class="btn btn-primary" onclick="saveAccount()">儲存</button>
-    </div>
+    <div class="modal-footer"><button class="btn btn-outline" onclick="closeAccountModal()">取消</button><button class="btn btn-primary" onclick="saveAccount()">儲存</button></div>
   </div>
 </div>
 
@@ -1662,23 +1308,20 @@ function showPage(id, navEl) {
   document.getElementById(`page-${id}`).classList.add('active');
   document.querySelectorAll('.nav-item').forEach(n => n.classList.remove('active'));
   if (navEl) navEl.classList.add('active');
-  const titles = {
-    dashboard: '儀表板', bookings: '預約管理', rooms: '會議室管理',
-    content: '文字內容編輯', photos: '照片管理', formfields: '表單欄位管理',
-    blocked: '封鎖時段管理', payment: '付款設定', accounts: '帳號管理', logs: '登入紀錄'
-  };
+  const titles = { dashboard:'儀表板', bookings:'預約管理', rooms:'會議室管理', content:'文字內容編輯', photos:'照片管理', formfields:'表單欄位管理', blocked:'封鎖時段管理', payment:'付款設定', accounts:'帳號管理', logs:'登入紀錄' };
   document.getElementById('topbarTitle').textContent = titles[id] || '';
   switch(id) {
     case 'dashboard': initFloorDate(); loadDashboard(); loadFloorStatus(); break;
-    case 'bookings': loadBookings(); break;
-    case 'rooms': loadRoomsAdmin(); break;
-    case 'content': loadContent(); break;
-    case 'photos': loadPhotos(); break;
-    case 'formfields': loadFormFields(); break;
-    case 'blocked': loadBlockedSlots(); break;
-    case 'accounts': loadAccounts(); break;
-      case 'payment': loadPaymentSettings(); break;
-    case 'logs': loadLoginLogs(); break;
+    case 'bookings':  loadBookings(); break;
+    case 'rooms':     loadRoomsAdmin(); break;
+    case 'content':   loadContent(); break;
+    case 'photos':    loadPhotos(); break;
+    case 'formfields':loadFormFields(); break;
+    case 'blocked':   loadBlockedSlots(); break;
+    case 'accounts':  loadAccounts(); break;
+    case 'lineusers':  loadLineUsers(); break;
+    case 'payment':   loadPaymentSettings(); break;
+    case 'logs':      loadLoginLogs(); break;
   }
 }
 
@@ -1703,10 +1346,7 @@ async function loadFloorStatus() {
   try {
     const res = await fetch(`/admin/api/floor-status?date=${date}`, { headers: H });
     const data = await res.json();
-    if (!data.rooms || !data.rooms.length) {
-      board.innerHTML = '<div style="text-align:center;padding:20px;color:var(--ink-60);">無會議室資料</div>';
-      return;
-    }
+    if (!data.rooms || !data.rooms.length) { board.innerHTML = '<div style="text-align:center;padding:20px;color:var(--ink-60);">無會議室資料</div>'; return; }
     const now = new Date();
     const nowDate = now.toISOString().split('T')[0];
     const isToday = date === nowDate;
@@ -1745,10 +1385,7 @@ async function loadFloorStatus() {
       html += `</div>`;
     });
     board.innerHTML = html;
-  } catch(e) {
-    board.innerHTML = '<div style="text-align:center;padding:20px;color:var(--red);">載入失敗，請重試</div>';
-    console.error(e);
-  }
+  } catch(e) { board.innerHTML = '<div style="text-align:center;padding:20px;color:var(--red);">載入失敗</div>'; }
 }
 
 async function loadStats() {
@@ -1764,47 +1401,33 @@ async function loadStats() {
     if (timeTo)   url += `time_to=${timeTo}&`;
     const statsRes = await fetch(url, { headers: H });
     const stats = await statsRes.json();
-    const hasRange = dateFrom || dateTo || timeFrom || timeTo;
     document.getElementById('st-total').textContent = stats.total_bookings;
     document.getElementById('st-today').textContent = stats.today_bookings;
     document.getElementById('st-rooms').textContent = stats.total_rooms;
     document.getElementById('st-revenue').textContent = 'NT$' + (stats.total_revenue || 0).toLocaleString();
     document.getElementById('st-cancelled').textContent = stats.cancelled;
     document.getElementById('st-completed').textContent = stats.completed;
-    // 今日日期 sub label
     const todayEl = document.getElementById('st-today-date');
     if (todayEl) todayEl.textContent = stats.tw_today || '今天';
-    // 範圍標示
+    const hasRange = dateFrom || dateTo || timeFrom || timeTo;
     const lbl = document.getElementById('stat-range-label');
-    if (lbl) {
-      if (hasRange) {
-        const f = (dateFrom || '') + (timeFrom ? ' ' + timeFrom : '');
-        const t = (dateTo   || '') + (timeTo   ? ' ' + timeTo   : '');
-        lbl.textContent = `${f || '最早'} ～ ${t || '最新'}`;
-      } else {
-        lbl.textContent = '顯示全部資料';
-      }
-    }
+    if (lbl) lbl.textContent = hasRange ? `${dateFrom||'最早'} ～ ${dateTo||'最新'}` : '顯示全部資料';
   } catch(e) { console.error('loadStats:', e); }
 }
 
 function clearStatFilters() {
-  ['stat-date-from','stat-date-to','stat-time-from','stat-time-to'].forEach(id => {
-    const el = document.getElementById(id); if (el) el.value = '';
-  });
+  ['stat-date-from','stat-date-to','stat-time-from','stat-time-to'].forEach(id => { const el = document.getElementById(id); if (el) el.value = ''; });
   loadStats();
 }
 
 async function loadDashboard() {
+  await loadStats();
   try {
-    await loadStats();
     const rr = await fetch('/admin/api/rooms', { headers: H });
     const rooms = await rr.json();
     const sel = document.getElementById('dash-fil-room');
-    if (sel && sel.options.length <= 1) {
-      rooms.forEach(r => { const opt = document.createElement('option'); opt.value = r.id; opt.textContent = r.name; sel.appendChild(opt); });
-    }
-  } catch(e) { console.error(e); }
+    if (sel && sel.options.length <= 1) rooms.forEach(r => { const opt = document.createElement('option'); opt.value = r.id; opt.textContent = r.name; sel.appendChild(opt); });
+  } catch(e) {}
   try {
     const sc = await (await fetch('/api/site-content', { headers: H })).json();
     if (sc.logo_url) applyLogo(sc.logo_url);
@@ -1831,25 +1454,19 @@ async function loadDashboardBookings() {
     const res = await fetch(url, { headers: H });
     const bookings = await res.json();
     const tbody = document.getElementById('dash-bookings');
-    if (!bookings.length) {
-      tbody.innerHTML = '<tr><td colspan="7" style="text-align:center;padding:30px;color:var(--ink-60);">找不到符合的預約</td></tr>';
-      return;
-    }
-    tbody.innerHTML = bookings.slice(0, 20).map(b => `
-      <tr>
-        <td><strong>${b.booking_number}</strong></td>
-        <td>${b.customer_name}</td>
-        <td>${b.room_name}</td>
-        <td>${b.date}</td>
-        <td>${fmtSegments(b)}</td>
-        <td>${badgeHtml(b.status)}</td>
-        <td>
-          <div style="display:flex;gap:4px;flex-wrap:wrap;">
-            ${b.status==='confirmed'?`<button class="btn btn-danger btn-sm" onclick="cancelBooking(${b.id})">取消</button>`:''}
-            <button class="btn btn-sm" onclick="deleteBooking(${b.id})" style="background:#6b3a2a;color:#fff;border:none;border-radius:4px;cursor:pointer;padding:4px 10px;font-size:12px;">刪除</button>
-          </div>
-        </td>
-      </tr>`).join('');
+    if (!bookings.length) { tbody.innerHTML = '<tr><td colspan="7" style="text-align:center;padding:30px;color:var(--ink-60);">找不到符合的預約</td></tr>'; return; }
+    tbody.innerHTML = bookings.slice(0, 20).map(b => `<tr>
+      <td><strong>${b.booking_number}</strong></td>
+      <td>${b.customer_name}</td>
+      <td>${b.room_name}</td>
+      <td>${b.date}</td>
+      <td>${fmtSegments(b)}</td>
+      <td>${badgeHtml(b.status)}</td>
+      <td><div style="display:flex;gap:4px;flex-wrap:wrap;">
+        ${b.status==='confirmed'?`<button class="btn btn-danger btn-sm" onclick="cancelBooking(${b.id})">取消</button>`:''}
+        <button class="btn btn-sm" onclick="deleteBooking(${b.id})" style="background:#6b3a2a;color:#fff;border:none;border-radius:4px;cursor:pointer;padding:4px 10px;font-size:12px;">刪除</button>
+      </div></td>
+    </tr>`).join('');
   } catch(e) { console.error(e); }
 }
 
@@ -1861,14 +1478,9 @@ function clearDashFilters() {
 // ── BOOKINGS ──
 async function loadBookings() {
   try {
-    if (!allRooms.length) {
-      const rr = await fetch('/admin/api/rooms', { headers: H });
-      allRooms = await rr.json();
-    }
+    if (!allRooms.length) { const rr = await fetch('/admin/api/rooms', { headers: H }); allRooms = await rr.json(); }
     const sel = document.getElementById('fil-room');
-    if (sel.options.length < 2) {
-      allRooms.forEach(r => { const opt = document.createElement('option'); opt.value = r.id; opt.textContent = r.name; sel.appendChild(opt); });
-    }
+    if (sel.options.length < 2) allRooms.forEach(r => { const opt = document.createElement('option'); opt.value = r.id; opt.textContent = r.name; sel.appendChild(opt); });
     const date = document.getElementById('fil-date').value;
     const status = document.getElementById('fil-status').value;
     const room = document.getElementById('fil-room').value;
@@ -1879,39 +1491,30 @@ async function loadBookings() {
     const res = await fetch(url, { headers: H });
     const bookings = await res.json();
     const tbody = document.getElementById('bookings-tbody');
-    if (!bookings.length) {
-      tbody.innerHTML = '<tr><td colspan="11" style="text-align:center;padding:30px;color:var(--ink-60);">找不到符合的預約</td></tr>';
-      return;
-    }
-    tbody.innerHTML = bookings.map(b => `
-      <tr>
-        <td><strong>${b.booking_number}</strong></td>
-        <td>${b.customer_name}<br><small style="color:var(--ink-60);">${b.customer_phone}</small></td>
-        <td>${b.department || '—'}</td>
-        <td>${b.room_name}</td>
-        <td>${b.date}</td>
-        <td>${fmtSegments(b)}</td>
-        <td>${b.duration}h</td>
-        <td>${b.attendees}人</td>
-        <td>NT$ ${(b.total_price||0).toLocaleString()}</td>
-        <td>${badgeHtml(b.status)}</td>
-        <td>
-          <div style="display:flex;gap:4px;flex-wrap:wrap;">
-            ${b.status === 'confirmed' ? `
-              <button class="btn btn-outline btn-sm" onclick="completeBooking(${b.id})">完成</button>
-              <button class="btn btn-danger btn-sm" onclick="cancelBooking(${b.id})">取消</button>
-            ` : ''}
-            <button class="btn btn-danger btn-sm" onclick="deleteBooking(${b.id})" title="永久刪除此紀錄" style="opacity:0.7;">刪除</button>
-          </div>
-        </td>
-      </tr>`).join('');
+    if (!bookings.length) { tbody.innerHTML = '<tr><td colspan="11" style="text-align:center;padding:30px;color:var(--ink-60);">找不到符合的預約</td></tr>'; return; }
+    tbody.innerHTML = bookings.map(b => `<tr>
+      <td><strong>${b.booking_number}</strong></td>
+      <td>${b.customer_name}<br><small style="color:var(--ink-60);">${b.customer_phone}</small></td>
+      <td>${b.department || '—'}</td>
+      <td>${b.room_name}</td>
+      <td>${b.date}</td>
+      <td>${fmtSegments(b)}</td>
+      <td>${b.duration}h</td>
+      <td>${b.attendees}人</td>
+      <td>NT$ ${(b.total_price||0).toLocaleString()}</td>
+      <td>${badgeHtml(b.status)}</td>
+      <td><div style="display:flex;gap:4px;flex-wrap:wrap;">
+        ${b.status === 'confirmed' ? `<button class="btn btn-outline btn-sm" onclick="completeBooking(${b.id})">完成</button><button class="btn btn-danger btn-sm" onclick="cancelBooking(${b.id})">取消</button>` : ''}
+        <button class="btn btn-danger btn-sm" onclick="deleteBooking(${b.id})" style="opacity:0.7;">刪除</button>
+      </div></td>
+    </tr>`).join('');
   } catch(e) { console.error(e); }
 }
 
 async function cancelBooking(id) {
   if (!confirm('確定要取消此預約？')) return;
   const res = await fetch(`/admin/api/bookings/${id}/cancel`, { method: 'POST', headers: H });
-  if (res.ok) { toast('預約已取消'); loadBookings(); }
+  if (res.ok) { toast('預約已取消'); loadBookings(); loadDashboardBookings(); }
   else toast('操作失敗', 'error');
 }
 
@@ -1925,7 +1528,7 @@ async function completeBooking(id) {
 async function deleteBooking(id) {
   if (!confirm('確定永久刪除此預約紀錄？此操作無法復原。')) return;
   const res = await fetch(`/admin/api/bookings/${id}`, { method: 'DELETE', headers: H });
-  if (res.ok) { toast('預約紀錄已刪除'); loadBookings(); }
+  if (res.ok) { toast('預約紀錄已刪除'); loadBookings(); loadDashboardBookings(); }
   else toast('刪除失敗', 'error');
 }
 
@@ -1940,20 +1543,19 @@ async function loadRoomsAdmin() {
       const photoHTML = r.photo_url
         ? `<div class="rac-photo" style="position:relative;"><img src="${r.photo_url}" alt="${r.name}" onerror="this.parentElement.innerHTML='<div class=rac-photo-placeholder>${icon}</div>'"><span class="rac-status ${r.is_active ? 'badge-green' : 'badge-red'}">${r.is_active ? '啟用中' : '已停用'}</span></div>`
         : `<div class="rac-photo-placeholder" style="position:relative;">${icon}<span class="rac-status badge-gray" style="position:absolute;top:8px;right:8px;">${r.is_active ? '啟用中' : '已停用'}</span></div>`;
-      return `
-        <div class="room-admin-card ${r.is_active ? '' : 'inactive'}">
-          ${photoHTML}
-          <div class="rac-body">
-            <div class="rac-type">${r.room_type}</div>
-            <div class="rac-name">${r.name}</div>
-            <div class="rac-meta">容納 ${r.capacity_label || r.capacity + ' 人'} · ${r.floor || 'F—'} · NT$ ${r.hourly_rate.toLocaleString()}/hr${r.min_hours>0?' · 最少 '+(r.min_hours===Math.floor(r.min_hours)?r.min_hours:r.min_hours)+' 小時':''}</div>
-            ${r.description ? `<div class="rac-desc">${r.description.length > 60 ? r.description.slice(0,60) + '…' : r.description}</div>` : ''}
-            <div class="rac-actions">
-              <button class="btn btn-outline btn-sm" onclick="editRoom(${r.id})" style="flex:1;">編輯</button>
-              <button class="btn btn-outline btn-sm" onclick="toggleRoomStatus(${r.id}, ${!r.is_active})" style="flex:1;">${r.is_active ? '停用' : '啟用'}</button>
-            </div>
+      return `<div class="room-admin-card ${r.is_active ? '' : 'inactive'}">
+        ${photoHTML}
+        <div class="rac-body">
+          <div class="rac-type">${r.room_type}</div>
+          <div class="rac-name">${r.name}</div>
+          <div class="rac-meta">容納 ${r.capacity_label || r.capacity + ' 人'} · ${r.floor || 'F—'} · NT$ ${r.hourly_rate.toLocaleString()}/hr${r.min_hours>0?' · 最少 '+(r.min_hours===Math.floor(r.min_hours)?r.min_hours:r.min_hours)+' 小時':''}</div>
+          ${r.description ? `<div class="rac-desc">${r.description.length > 60 ? r.description.slice(0,60) + '…' : r.description}</div>` : ''}
+          <div class="rac-actions">
+            <button class="btn btn-outline btn-sm" onclick="editRoom(${r.id})" style="flex:1;">編輯</button>
+            <button class="btn btn-outline btn-sm" onclick="toggleRoomStatus(${r.id}, ${!r.is_active})" style="flex:1;">${r.is_active ? '停用' : '啟用'}</button>
           </div>
-        </div>`;
+        </div>
+      </div>`;
     }).join('');
   } catch(e) { console.error(e); }
 }
@@ -1967,15 +1569,11 @@ async function toggleRoomStatus(id, newActive) {
 // ── ROOM MODAL ──
 function openRoomModal() {
   document.getElementById('rm-id').value = '';
-  document.getElementById('rm-name').value = '';
+  ['rm-name','rm-type','rm-capacity','rm-capacity-min','rm-rate','rm-floor','rm-desc'].forEach(id => document.getElementById(id).value = '');
   document.getElementById('rm-type').value = '洽談室';
-  document.getElementById('rm-capacity').value = '';
-  document.getElementById('rm-capacity-min').value = '';
-  document.getElementById('rm-rate').value = '';
-  document.getElementById('rm-floor').value = '';
-  document.getElementById('rm-desc').value = '';
   document.getElementById('rm-active').value = 'true';
   document.getElementById('rm-min-hours').value = '1';
+  document.getElementById('rm-sort-order').value = '0';
   document.getElementById('rm-photo-url').value = '';
   document.getElementById('currentPhotoRow').style.display = 'none';
   document.getElementById('modalPhotoPreview').innerHTML = '';
@@ -1986,8 +1584,7 @@ function openRoomModal() {
 }
 
 function editRoom(id) {
-  const r = allRooms.find(x => x.id === id);
-  if (!r) return;
+  const r = allRooms.find(x => x.id === id); if (!r) return;
   document.getElementById('rm-id').value = r.id;
   document.getElementById('rm-name').value = r.name;
   document.getElementById('rm-type').value = r.room_type;
@@ -1998,46 +1595,32 @@ function editRoom(id) {
   document.getElementById('rm-desc').value = r.description || '';
   document.getElementById('rm-active').value = r.is_active ? 'true' : 'false';
   document.getElementById('rm-min-hours').value = r.min_hours !== undefined ? r.min_hours : 1;
+  document.getElementById('rm-sort-order').value = r.sort_order !== undefined ? r.sort_order : 0;
   document.getElementById('rm-photo-url').value = r.photo_url || '';
   amenities = [...(r.amenities || [])];
   renderAmenities();
   const photoRow = document.getElementById('currentPhotoRow');
   if (r.photo_url) { photoRow.style.display = 'flex'; document.getElementById('currentPhotoThumb').src = r.photo_url; }
-  else { photoRow.style.display = 'none'; }
+  else photoRow.style.display = 'none';
   document.getElementById('roomModalTitle').textContent = `編輯：${r.name}`;
   document.getElementById('roomModal').classList.add('show');
 }
 
 function closeRoomModal() { document.getElementById('roomModal').classList.remove('show'); }
-
 function amenityKeydown(e) { if (e.key === 'Enter') { e.preventDefault(); addAmenity(); } }
-function addAmenity() {
-  const input = document.getElementById('rm-amenity-input');
-  const val = input.value.trim();
-  if (val && !amenities.includes(val)) { amenities.push(val); renderAmenities(); }
-  input.value = ''; input.focus();
-}
+function addAmenity() { const input = document.getElementById('rm-amenity-input'); const val = input.value.trim(); if (val && !amenities.includes(val)) { amenities.push(val); renderAmenities(); } input.value = ''; input.focus(); }
 function removeAmenity(idx) { amenities.splice(idx, 1); renderAmenities(); }
-function renderAmenities() {
-  document.getElementById('amenityTags').innerHTML = amenities.map((a, i) =>
-    `<span class="amenity-tag">${a} <span class="amenity-remove" onclick="removeAmenity(${i})">×</span></span>`
-  ).join('');
-}
-
+function renderAmenities() { document.getElementById('amenityTags').innerHTML = amenities.map((a, i) => `<span class="amenity-tag">${a} <span class="amenity-remove" onclick="removeAmenity(${i})">×</span></span>`).join(''); }
 function triggerModalFileInput() {}
 let pendingPhotoUrl = '';
 
 async function handleModalPhotoSelect(event) {
-  const rawFile = event.target.files[0];
-  if (!rawFile) return;
-  const progress = document.getElementById('modalUploadProgress');
-  const bar = document.getElementById('modalUploadBar');
+  const rawFile = event.target.files[0]; if (!rawFile) return;
+  const progress = document.getElementById('modalUploadProgress'), bar = document.getElementById('modalUploadBar');
   progress.style.display = 'block'; bar.style.width = '15%';
   let file;
-  try { file = await autoCropImage(rawFile, 16/9, 1600); bar.style.width = '30%'; }
-  catch { file = rawFile; bar.style.width = '30%'; }
-  const formData = new FormData();
-  formData.append('photo', file);
+  try { file = await autoCropImage(rawFile, 16/9, 1600); bar.style.width = '30%'; } catch { file = rawFile; bar.style.width = '30%'; }
+  const formData = new FormData(); formData.append('photo', file);
   try {
     bar.style.width = '70%';
     const res = await fetch('/admin/api/upload-photo', { method: 'POST', headers: { 'X-Admin-Password': PW }, body: formData });
@@ -2075,6 +1658,7 @@ async function saveRoom() {
     amenities: amenities,
     is_active: document.getElementById('rm-active').value === 'true',
     min_hours: parseFloat(document.getElementById('rm-min-hours').value) || 0,
+    sort_order: parseInt(document.getElementById('rm-sort-order').value) || 0,
     photo_url: document.getElementById('rm-photo-url').value,
   };
   if (!payload.name) { alert('請填寫會議室名稱'); return; }
@@ -2092,19 +1676,13 @@ async function loadContent() {
   try {
     const res = await fetch('/admin/api/site-content', { headers: H });
     const data = await res.json();
-    const keys = ['site_title','hero_badge','site_subtitle','site_description',
-                  'step1_title','step2_title','step3_title',
-                  'service_hours','contact_phone','contact_email','footer_text',
-                  'notice_1','notice_2','notice_3','notice_4','notice_5'];
+    const keys = ['site_title','hero_badge','site_subtitle','site_description','step1_title','step2_title','step3_title','service_hours','contact_phone','contact_email','footer_text','notice_1','notice_2','notice_3','notice_4','notice_5'];
     keys.forEach(k => { const el = document.getElementById(`c-${k}`); if (el && data[k] !== undefined) el.value = data[k]; });
   } catch { toast('載入失敗', 'error'); }
 }
 
 async function saveContent() {
-  const keys = ['site_title','hero_badge','site_subtitle','site_description',
-                'step1_title','step2_title','step3_title',
-                'service_hours','contact_phone','contact_email','footer_text',
-                'notice_1','notice_2','notice_3','notice_4','notice_5'];
+  const keys = ['site_title','hero_badge','site_subtitle','site_description','step1_title','step2_title','step3_title','service_hours','contact_phone','contact_email','footer_text','notice_1','notice_2','notice_3','notice_4','notice_5'];
   const payload = {};
   keys.forEach(k => { const el = document.getElementById(`c-${k}`); if (el) payload[k] = el.value.trim(); });
   try {
@@ -2114,17 +1692,19 @@ async function saveContent() {
   } catch { toast('儲存失敗', 'error'); }
 }
 
-// ── PHOTOS ──
+// ── PHOTOS (★ 完整重寫，支援拖曳排序) ──
 async function loadPhotos() {
   try {
     const res = await fetch('/admin/api/rooms', { headers: H });
     allRooms = await res.json();
     const ICONS = {'腦力激盪':'BS','洽談室':'MT','簡報廳':'PR','視訊會議':'VC','行政套房':'EX','培訓教室':'TR'};
+
     document.getElementById('photoRoomList').innerHTML = allRooms.map(r => {
       const icon     = ICONS[r.room_type] || 'MR';
       const photos   = r.photos ? (typeof r.photos === 'string' ? JSON.parse(r.photos) : r.photos) : (r.photo_url ? [r.photo_url] : []);
       const coverIdx = r.cover_index || 0;
       const canUpload = photos.length < 5;
+
       const photoGridHtml = photos.length > 0
         ? `<div id="photo-grid-${r.id}" style="display:flex;flex-wrap:wrap;gap:10px;margin-bottom:8px;"
                ondragover="photoDragOver(event)" ondrop="photoDrop(event,${r.id})">
@@ -2139,6 +1719,7 @@ async function loadPhotos() {
             <span id="save-order-hint-${r.id}" style="font-size:12px;color:var(--gold);display:none;"></span>
           </div>`
         : `<div style="color:var(--ink-60);font-size:13px;margin-bottom:12px;">尚未上傳照片</div>`;
+
       return `
       <div class="card" style="margin-bottom:20px;">
         <div class="card-head">
@@ -2166,20 +1747,34 @@ async function loadPhotos() {
   } catch(e) { console.error(e); }
 }
 
+// 產生照片卡片 HTML（可重用）
 function renderPhotoItems(photos, coverIdx, roomId) {
   return photos.map((url, i) => `
-    <div class="photo-sort-item" draggable="true" data-idx="${i}" data-rid="${roomId}"
-      ondragstart="photoDragStart(event,${roomId},${i})" ondragend="photoDragEnd(event)">
-      <div style="position:absolute;top:4px;left:4px;z-index:10;width:22px;height:22px;border-radius:50%;
-        background:${i===coverIdx?'var(--gold)':'rgba(0,0,0,0.55)'};color:#fff;font-size:12px;font-weight:700;
-        display:flex;align-items:center;justify-content:center;box-shadow:0 1px 4px rgba(0,0,0,.3);
-        user-select:none;pointer-events:none;">${i+1}</div>
+    <div class="photo-sort-item"
+      draggable="true"
+      data-idx="${i}"
+      data-rid="${roomId}"
+      ondragstart="photoDragStart(event,${roomId},${i})"
+      ondragend="photoDragEnd(event)"
+    >
+      <!-- 序號徽章 -->
+      <div style="
+        position:absolute;top:4px;left:4px;z-index:10;
+        width:22px;height:22px;border-radius:50%;
+        background:${i===coverIdx?'var(--gold)':'rgba(0,0,0,0.55)'};
+        color:#fff;font-size:12px;font-weight:700;
+        display:flex;align-items:center;justify-content:center;
+        box-shadow:0 1px 4px rgba(0,0,0,.3);
+        user-select:none;pointer-events:none;
+      ">${i+1}</div>
+
       <img src="${url}" draggable="false"
         style="width:120px;height:90px;object-fit:cover;border-radius:8px;
-               border:2px solid ${i===coverIdx?'var(--gold)':'var(--border)'};display:block;
-               user-select:none;pointer-events:none;">
-      ${i===coverIdx?`<div style="position:absolute;bottom:26px;left:0;right:0;text-align:center;
-        background:var(--gold);color:#1a1a1a;font-size:10px;font-weight:700;padding:1px 4px;pointer-events:none;">封面</div>`:''}
+               border:2px solid ${i===coverIdx?'var(--gold)':'var(--border)'};
+               display:block;user-select:none;pointer-events:none;">
+
+      ${i===coverIdx?`<div style="position:absolute;top:4px;right:4px;z-index:10;background:var(--gold);color:#1a1a1a;font-size:10px;font-weight:700;padding:2px 6px;border-radius:4px;pointer-events:none;box-shadow:0 1px 3px rgba(0,0,0,.3);">封面</div>`:''}
+
       <div style="display:flex;gap:4px;margin-top:4px;">
         ${i!==coverIdx
           ?`<button class="btn btn-outline btn-sm" style="flex:1;font-size:11px;padding:3px;" onclick="setCover(${roomId},${i})">設封面</button>`
@@ -2189,9 +1784,11 @@ function renderPhotoItems(photos, coverIdx, roomId) {
       </div>
       <button class="btn btn-sm" style="background:var(--teal);color:#fff;border:none;font-size:11px;padding:3px 7px;border-radius:4px;cursor:pointer;width:100%;margin-top:2px;"
         onclick="openCropForExisting(${roomId},${i})">✂ 調整範圍</button>
-    </div>`).join('');
+    </div>`
+  ).join('');
 }
 
+// ── 拖曳排序核心 ──
 let _pdDragRoomId = null, _pdDragFromIdx = null;
 
 function photoDragStart(e, roomId, fromIdx) {
@@ -2199,7 +1796,8 @@ function photoDragStart(e, roomId, fromIdx) {
   e.dataTransfer.setData('text/plain', JSON.stringify({ roomId, fromIdx }));
   e.currentTarget.style.opacity = '0.4';
   e.currentTarget.style.transform = 'scale(0.95)';
-  _pdDragRoomId = roomId; _pdDragFromIdx = fromIdx;
+  _pdDragRoomId  = roomId;
+  _pdDragFromIdx = fromIdx;
 }
 
 function photoDragEnd(e) {
@@ -2219,55 +1817,82 @@ function photoDragOver(e) {
 function photoDrop(e, roomId) {
   e.preventDefault();
   document.querySelectorAll('.photo-sort-item').forEach(el => el.classList.remove('drag-over'));
+
   let payload;
   try { payload = JSON.parse(e.dataTransfer.getData('text/plain')); } catch { return; }
   if (payload.roomId !== roomId) return;
+
   const toItem = e.target.closest('.photo-sort-item');
   if (!toItem) return;
-  const toIdx = parseInt(toItem.dataset.idx), fromIdx = payload.fromIdx;
+  const toIdx   = parseInt(toItem.dataset.idx);
+  const fromIdx = payload.fromIdx;
   if (fromIdx === toIdx) return;
-  const room = allRooms.find(r => r.id === roomId); if (!room) return;
-  const photos = room.photos ? (typeof room.photos === 'string' ? JSON.parse(room.photos) : [...room.photos]) : (room.photo_url ? [room.photo_url] : []);
+
+  // 找 room，重排照片
+  const room = allRooms.find(r => r.id === roomId);
+  if (!room) return;
+  const photos = room.photos
+    ? (typeof room.photos === 'string' ? JSON.parse(room.photos) : [...room.photos])
+    : (room.photo_url ? [room.photo_url] : []);
+
   const newPhotos = [...photos];
-  const [moved] = newPhotos.splice(fromIdx, 1);
+  const [moved]   = newPhotos.splice(fromIdx, 1);
   newPhotos.splice(toIdx, 0, moved);
-  const coverUrl = photos[room.cover_index || 0] || '';
-  const newCover = newPhotos.indexOf(coverUrl);
-  room.photos = JSON.stringify(newPhotos);
+
+  // 同步封面 index
+  const coverUrl  = photos[room.cover_index || 0] || '';
+  const newCover  = newPhotos.indexOf(coverUrl);
+  room.photos      = JSON.stringify(newPhotos);
   room.cover_index = newCover >= 0 ? newCover : 0;
-  const btn = document.getElementById(`save-order-btn-${roomId}`);
+
+  // 顯示「儲存排序」按鈕
+  const btn  = document.getElementById(`save-order-btn-${roomId}`);
   const hint = document.getElementById(`save-order-hint-${roomId}`);
-  if (btn) btn.style.display = '';
+  if (btn)  btn.style.display  = '';
   if (hint) { hint.style.display = ''; hint.textContent = '✎ 排序已變更，記得儲存'; }
+
+  // 即時重繪該格
   const grid = document.getElementById(`photo-grid-${roomId}`);
   if (grid) grid.innerHTML = renderPhotoItems(newPhotos, room.cover_index, roomId);
 }
 
 async function savePhotoOrder(roomId) {
-  const room = allRooms.find(r => r.id === roomId); if (!room) return;
-  const photos = room.photos ? (typeof room.photos === 'string' ? JSON.parse(room.photos) : room.photos) : [];
-  const btn = document.getElementById(`save-order-btn-${roomId}`);
+  const room = allRooms.find(r => r.id === roomId);
+  if (!room) return;
+  const photos = room.photos
+    ? (typeof room.photos === 'string' ? JSON.parse(room.photos) : room.photos)
+    : [];
+
+  const btn  = document.getElementById(`save-order-btn-${roomId}`);
   const hint = document.getElementById(`save-order-hint-${roomId}`);
   if (btn) { btn.textContent = '儲存中...'; btn.disabled = true; }
+
   try {
     const res = await fetch(`/admin/api/rooms/${roomId}/photos/reorder`, {
-      method: 'PUT', headers: { ...H, 'Content-Type': 'application/json' },
+      method: 'PUT',
+      headers: { ...H, 'Content-Type': 'application/json' },
       body: JSON.stringify({ order: photos }),
     });
     const data = await res.json();
     if (res.ok) {
       toast('照片排序已儲存 ✓', 'success');
       if (hint) hint.textContent = '✓ 已儲存';
-      if (btn) btn.style.display = 'none';
+      if (btn)  btn.style.display = 'none';
       setTimeout(() => loadPhotos(), 600);
-    } else { toast(data.error || '儲存失敗', 'error'); if (btn) { btn.textContent = '💾 儲存排序'; btn.disabled = false; } }
-  } catch(e2) { toast('儲存失敗', 'error'); if (btn) { btn.textContent = '💾 儲存排序'; btn.disabled = false; } }
+    } else {
+      toast(data.error || '儲存失敗', 'error');
+      if (btn) { btn.textContent = '💾 儲存排序'; btn.disabled = false; }
+    }
+  } catch(e2) {
+    toast('儲存失敗：' + e2.message, 'error');
+    if (btn) { btn.textContent = '💾 儲存排序'; btn.disabled = false; }
+  }
 }
 
-function dragover(e, id) { e.preventDefault(); document.getElementById(`drop-${id}`).classList.add('dragover'); }
-function dragleave(e, id) { document.getElementById(`drop-${id}`).classList.remove('dragover'); }
-function handleDrop(e, id) { e.preventDefault(); document.getElementById(`drop-${id}`).classList.remove('dragover'); const file = e.dataTransfer.files[0]; if (file) uploadRoomPhotoFile(file, id); }
-
+// 上傳 / 刪除 / 設封面（不變）
+function dragover(e, id) { e.preventDefault(); document.getElementById(`drop-${id}`)?.classList.add('dragover'); }
+function dragleave(e, id) { document.getElementById(`drop-${id}`)?.classList.remove('dragover'); }
+function handleDrop(e, id) { e.preventDefault(); document.getElementById(`drop-${id}`)?.classList.remove('dragover'); const file = e.dataTransfer.files[0]; if (file) uploadRoomPhotoFile(file, id); }
 async function uploadRoomPhoto(event, roomId) { uploadRoomPhotoFile(event.target.files[0], roomId); }
 
 async function uploadRoomPhotoFile(rawFile, roomId) {
@@ -2304,37 +1929,24 @@ async function setCover(roomId, idx) {
   else toast('設定失敗', 'error');
 }
 
-
-// ── 圖片自動裁切（Canvas cover crop）──
-// ratio: 目標寬高比，例 16/9 或 1（正方形）
-// maxSize: 輸出最大邊長（px），預設 1200
+// ── 圖片裁切工具 ──
 function autoCropImage(file, ratio, maxSize = 1200) {
   return new Promise((resolve, reject) => {
     const img = new Image();
     const url = URL.createObjectURL(file);
     img.onload = () => {
       URL.revokeObjectURL(url);
-      // 計算 cover crop 的來源區域
       let sw = img.width, sh = img.height;
       const srcRatio = sw / sh;
       let sx = 0, sy = 0;
-      if (srcRatio > ratio) {
-        // 圖片太寬，裁左右
-        sw = Math.round(sh * ratio);
-        sx = Math.round((img.width - sw) / 2);
-      } else {
-        // 圖片太高，裁上下
-        sh = Math.round(img.width / ratio);
-        sy = Math.round((img.height - sh) / 2);
-      }
-      // 輸出尺寸
+      if (srcRatio > ratio) { sw = Math.round(sh * ratio); sx = Math.round((img.width - sw) / 2); }
+      else { sh = Math.round(img.width / ratio); sy = Math.round((img.height - sh) / 2); }
       let dw = sw, dh = sh;
       if (dw > maxSize) { dh = Math.round(dh * maxSize / dw); dw = maxSize; }
       if (dh > maxSize) { dw = Math.round(dw * maxSize / dh); dh = maxSize; }
       const canvas = document.createElement('canvas');
       canvas.width = dw; canvas.height = dh;
-      const ctx = canvas.getContext('2d');
-      ctx.drawImage(img, sx, sy, sw, sh, 0, 0, dw, dh);
+      canvas.getContext('2d').drawImage(img, sx, sy, sw, sh, 0, 0, dw, dh);
       canvas.toBlob(blob => {
         if (!blob) { reject(new Error('裁切失敗')); return; }
         resolve(new File([blob], file.name.replace(/\.[^.]+$/, '.jpg'), { type: 'image/jpeg' }));
@@ -2371,6 +1983,125 @@ function applyLogo(url) {
   }
 }
 
+// ── CROP TOOL ──
+let _cropState = { roomId: null, photoIdx: null, mode: null, file: null };
+let _cropDrag = null;
+let _imgNaturalW = 1, _imgNaturalH = 1, _dispW = 1, _dispH = 1;
+
+function openCropModal(imgSrc, roomId, photoIdx, mode, file) {
+  _cropState = { roomId, photoIdx, mode, file };
+  const modal = document.getElementById('cropModal');
+  const img   = document.getElementById('cropImage');
+
+  function onReady() {
+    requestAnimationFrame(function() {
+      _imgNaturalW = img.naturalWidth  || img.width  || 1;
+      _imgNaturalH = img.naturalHeight || img.height || 1;
+      _dispW = img.offsetWidth  || img.clientWidth  || 200;
+      _dispH = img.offsetHeight || img.clientHeight || 150;
+      setCropBox(0, 0, _dispW, _dispH);
+      updateCropInfo();
+      bindCropEvents();
+    });
+  }
+
+  modal.style.display = 'flex';
+  img.onload = onReady;
+  img.src = imgSrc;
+  if (img.complete && img.naturalWidth > 0) {
+    onReady();
+  }
+}
+
+function openCropForExisting(roomId, photoIdx) {
+  const grid = document.getElementById('photo-grid-' + roomId);
+  if (!grid) return;
+  const imgs = grid.querySelectorAll('img');
+  if (!imgs[photoIdx]) return;
+  openCropModal(imgs[photoIdx].src, roomId, photoIdx, 'existing', null);
+  document.getElementById('cropConfirmBtn').textContent = '確認套用';
+}
+
+function closeCropModal() {
+  document.getElementById('cropModal').style.display = 'none';
+  _cropDrag = null;
+  document.getElementById('cropConfirmBtn').textContent = '確認套用';
+}
+
+function getCropBox() {
+  const box = document.getElementById('cropBox');
+  return { x: parseInt(box.style.left)||0, y: parseInt(box.style.top)||0, w: parseInt(box.style.width)||100, h: parseInt(box.style.height)||100 };
+}
+
+function setCropBox(x, y, w, h) {
+  const box = document.getElementById('cropBox'), minSz = 40;
+  w = Math.max(w, minSz); h = Math.max(h, minSz);
+  x = Math.max(0, Math.min(x, _dispW - w)); y = Math.max(0, Math.min(y, _dispH - h));
+  box.style.left = x+'px'; box.style.top = y+'px'; box.style.width = w+'px'; box.style.height = h+'px';
+}
+
+function updateCropInfo() {
+  const b = getCropBox();
+  const cw = Math.round(b.w * _imgNaturalW / _dispW), ch = Math.round(b.h * _imgNaturalH / _dispH);
+  document.getElementById('cropSizeInfo').textContent = cw + ' × ' + ch + ' px';
+}
+
+function bindCropEvents() {
+  const box = document.getElementById('cropBox');
+  function onDown(e) {
+    e.preventDefault();
+    const pt = e.touches ? e.touches[0] : e;
+    const dir = e.target.dataset && e.target.dataset.dir;
+    const b = getCropBox();
+    _cropDrag = { dir: dir || 'move', startX: pt.clientX, startY: pt.clientY, origX: b.x, origY: b.y, origW: b.w, origH: b.h };
+  }
+  function onMove(e) {
+    if (!_cropDrag) return; e.preventDefault();
+    const pt = e.touches ? e.touches[0] : e;
+    const dx = pt.clientX - _cropDrag.startX, dy = pt.clientY - _cropDrag.startY;
+    const d = _cropDrag, lock = document.getElementById('cropAspectLock').checked, aspect = 16/9;
+    let { x, y, w, h } = { x:d.origX, y:d.origY, w:d.origW, h:d.origH };
+    if (d.dir==='move') { x=d.origX+dx; y=d.origY+dy; }
+    else if (d.dir==='se') { w=d.origW+dx; h=lock?w/aspect:d.origH+dy; }
+    else if (d.dir==='sw') { w=d.origW-dx; h=lock?w/aspect:d.origH+dy; x=d.origX+d.origW-w; }
+    else if (d.dir==='ne') { w=d.origW+dx; h=lock?w/aspect:d.origH-dy; y=d.origY+d.origH-h; }
+    else if (d.dir==='nw') { w=d.origW-dx; h=lock?w/aspect:d.origH-dy; x=d.origX+d.origW-w; y=d.origY+d.origH-h; }
+    setCropBox(x, y, w, h); updateCropInfo();
+  }
+  function onUp() { _cropDrag = null; }
+  box.onmousedown = onDown; box.ontouchstart = onDown;
+  box.querySelectorAll('[data-dir]').forEach(h => { h.onmousedown = onDown; h.ontouchstart = onDown; });
+  document.onmousemove = onMove; document.ontouchmove = onMove;
+  document.onmouseup = onUp; document.ontouchend = onUp;
+}
+
+async function confirmCrop() {
+  const img = document.getElementById('cropImage');
+  const b = getCropBox();
+  const scaleX = _imgNaturalW / img.offsetWidth, scaleY = _imgNaturalH / img.offsetHeight;
+  const sx=Math.round(b.x*scaleX), sy=Math.round(b.y*scaleY), sw=Math.round(b.w*scaleX), sh=Math.round(b.h*scaleY);
+  const canvas = document.createElement('canvas');
+  canvas.width = sw; canvas.height = sh;
+  const origImg = new Image(); origImg.crossOrigin = 'anonymous'; origImg.src = img.src;
+  await new Promise(res => { origImg.onload = res; origImg.onerror = res; });
+  canvas.getContext('2d').drawImage(origImg, sx, sy, sw, sh, 0, 0, sw, sh);
+  document.getElementById('cropConfirmBtn').textContent = '處理中...';
+  document.getElementById('cropConfirmBtn').disabled = true;
+  canvas.toBlob(async blob => {
+    if (!blob) { toast('裁切失敗', 'error'); return; }
+    const state = _cropState; closeCropModal();
+    try {
+      const formData = new FormData(); formData.append('photo', blob, 'cropped.jpg');
+      const upRes = await fetch('/admin/api/rooms/' + state.roomId + '/photos', { method: 'POST', headers: H, body: formData });
+      if (!upRes.ok) throw new Error('上傳失敗');
+      await fetch('/admin/api/rooms/' + state.roomId + '/photos/' + state.photoIdx, { method: 'DELETE', headers: H });
+      toast('裁切完成', 'success'); loadPhotos();
+    } catch(e) { toast('裁切上傳失敗：' + e.message, 'error'); }
+    document.getElementById('cropConfirmBtn').disabled = false;
+    document.getElementById('cropConfirmBtn').textContent = '確認套用';
+  }, 'image/jpeg', 0.92);
+}
+
 // ── FORM FIELDS ──
 const FF_DEFAULT = [
   {id:"name",label:"聯絡人姓名",type:"text",placeholder:"請輸入姓名",required:true,system:true,full:false},
@@ -2388,52 +2119,25 @@ async function loadFormFields() {
   try {
     const sc = await (await fetch('/admin/api/site-content', {headers:H})).json();
     let fields;
-    try { fields = sc.form_fields ? JSON.parse(sc.form_fields) : [...FF_DEFAULT]; }
-    catch(e) { fields = [...FF_DEFAULT]; }
-    _ffFields = fields;
-    renderFFList();
+    try { fields = sc.form_fields ? JSON.parse(sc.form_fields) : [...FF_DEFAULT]; } catch(e) { fields = [...FF_DEFAULT]; }
+    _ffFields = fields; renderFFList();
   } catch(e) { console.error(e); }
 }
 
 function renderFFList() {
   const list = document.getElementById('ffList');
   list.innerHTML = _ffFields.map((f, i) => `
-    <div class="card" style="padding:0;border:1px solid var(--border);border-radius:8px;"
-      draggable="true" ondragstart="_ffDragStart(${i})" ondragover="_ffDragOver(event,${i})" ondrop="_ffDrop(event,${i})">
+    <div class="card" style="padding:0;border:1px solid var(--border);border-radius:8px;" draggable="true" ondragstart="_ffDragStart(${i})" ondragover="_ffDragOver(event,${i})" ondrop="_ffDrop(event,${i})">
       <div style="display:flex;align-items:center;gap:12px;padding:12px 16px;">
         <span style="cursor:grab;color:var(--ink-60);font-size:18px;padding:0 4px;">⠿</span>
         <div style="flex:1;display:grid;grid-template-columns:1fr 1fr 1fr auto auto;gap:8px;align-items:center;">
-          <div>
-            <div style="font-size:11px;color:var(--ink-60);margin-bottom:3px;">欄位名稱</div>
-            <input class="finput" style="padding:6px 8px;font-size:13px;" value="${esc(f.label)}" onchange="_ffUpdate(${i},'label',this.value)">
-          </div>
-          <div>
-            <div style="font-size:11px;color:var(--ink-60);margin-bottom:3px;">類型</div>
-            <select class="fselect" style="padding:6px 8px;font-size:13px;" onchange="_ffUpdate(${i},'type',this.value)" ${f.system?'disabled':''}>
-              <option value="text" ${f.type==='text'?'selected':''}>文字</option>
-              <option value="tel" ${f.type==='tel'?'selected':''}>電話</option>
-              <option value="email" ${f.type==='email'?'selected':''}>Email</option>
-              <option value="number" ${f.type==='number'?'selected':''}>數字</option>
-              <option value="select" ${f.type==='select'?'selected':''}>下拉選單</option>
-              <option value="textarea" ${f.type==='textarea'?'selected':''}>多行文字</option>
-            </select>
-          </div>
-          <div>
-            <div style="font-size:11px;color:var(--ink-60);margin-bottom:3px;">${f.type==='select'?'選項（逗號分隔）':'提示文字'}</div>
-            <input class="finput" style="padding:6px 8px;font-size:13px;" value="${esc(f.type==='select'?(f.options||''):(f.placeholder||''))}"
-              onchange="_ffUpdate(${i},'${f.type==='select'?'options':'placeholder'}',this.value)">
-          </div>
-          <div style="text-align:center;">
-            <div style="font-size:11px;color:var(--ink-60);margin-bottom:6px;">必填</div>
-            <input type="checkbox" ${f.required?'checked':''} onchange="_ffUpdate(${i},'required',this.checked)" ${f.id==='name'||f.id==='phone'||f.id==='email'?'disabled':''}>
-          </div>
-          <div style="text-align:center;">
-            <div style="font-size:11px;color:var(--ink-60);margin-bottom:6px;">全寬</div>
-            <input type="checkbox" ${f.full?'checked':''} onchange="_ffUpdate(${i},'full',this.checked)">
-          </div>
+          <div><div style="font-size:11px;color:var(--ink-60);margin-bottom:3px;">欄位名稱</div><input class="finput" style="padding:6px 8px;font-size:13px;" value="${esc(f.label)}" onchange="_ffUpdate(${i},'label',this.value)"></div>
+          <div><div style="font-size:11px;color:var(--ink-60);margin-bottom:3px;">類型</div><select class="fselect" style="padding:6px 8px;font-size:13px;" onchange="_ffUpdate(${i},'type',this.value)" ${f.system?'disabled':''}><option value="text" ${f.type==='text'?'selected':''}>文字</option><option value="tel" ${f.type==='tel'?'selected':''}>電話</option><option value="email" ${f.type==='email'?'selected':''}>Email</option><option value="number" ${f.type==='number'?'selected':''}>數字</option><option value="select" ${f.type==='select'?'selected':''}>下拉選單</option><option value="textarea" ${f.type==='textarea'?'selected':''}>多行文字</option></select></div>
+          <div><div style="font-size:11px;color:var(--ink-60);margin-bottom:3px;">${f.type==='select'?'選項（逗號分隔）':'提示文字'}</div><input class="finput" style="padding:6px 8px;font-size:13px;" value="${esc(f.type==='select'?(f.options||''):(f.placeholder||''))}" onchange="_ffUpdate(${i},'${f.type==='select'?'options':'placeholder'}',this.value)"></div>
+          <div style="text-align:center;"><div style="font-size:11px;color:var(--ink-60);margin-bottom:6px;">必填</div><input type="checkbox" ${f.required?'checked':''} onchange="_ffUpdate(${i},'required',this.checked)" ${f.id==='name'||f.id==='phone'||f.id==='email'?'disabled':''}></div>
+          <div style="text-align:center;"><div style="font-size:11px;color:var(--ink-60);margin-bottom:6px;">全寬</div><input type="checkbox" ${f.full?'checked':''} onchange="_ffUpdate(${i},'full',this.checked)"></div>
         </div>
-        ${f.system ? '<span style="font-size:11px;color:var(--ink-60);padding:0 8px;white-space:nowrap;">系統</span>'
-          : `<button class="btn btn-sm btn-danger" onclick="_ffDelete(${i})">刪除</button>`}
+        ${f.system ? '<span style="font-size:11px;color:var(--ink-60);padding:0 8px;white-space:nowrap;">系統</span>' : `<button class="btn btn-sm btn-danger" onclick="_ffDelete(${i})">刪除</button>`}
       </div>
     </div>`).join('');
 }
@@ -2444,25 +2148,9 @@ function _ffDelete(i) { if (!confirm(`確定刪除「${_ffFields[i].label}」欄
 function _ffDragStart(i) { _ffDragIdx = i; }
 function _ffDragOver(e, i) { e.preventDefault(); }
 function _ffDrop(e, i) { e.preventDefault(); if (_ffDragIdx === null || _ffDragIdx === i) return; const moved = _ffFields.splice(_ffDragIdx, 1)[0]; _ffFields.splice(i, 0, moved); _ffDragIdx = null; renderFFList(); }
-
-function addFormField() {
-  _ffFields.push({id: 'custom_' + Date.now(), label: '新欄位', type: 'text', placeholder: '', required: false, system: false, full: false});
-  renderFFList();
-  document.getElementById('ffList').lastElementChild?.scrollIntoView({behavior:'smooth'});
-}
-
-async function saveFormFields() {
-  const res = await fetch('/admin/api/site-content', { method: 'POST', headers: {...H, 'Content-Type':'application/json'}, body: JSON.stringify({form_fields: JSON.stringify(_ffFields)}) });
-  if (res.ok) toast('表單欄位已儲存');
-  else toast('儲存失敗', 'error');
-}
-
-async function resetFormFields() {
-  if (!confirm('確定還原為預設欄位？')) return;
-  _ffFields = JSON.parse(JSON.stringify(FF_DEFAULT));
-  renderFFList();
-  await saveFormFields();
-}
+function addFormField() { _ffFields.push({id:'custom_'+Date.now(),label:'新欄位',type:'text',placeholder:'',required:false,system:false,full:false}); renderFFList(); document.getElementById('ffList').lastElementChild?.scrollIntoView({behavior:'smooth'}); }
+async function saveFormFields() { const res = await fetch('/admin/api/site-content', { method:'POST', headers:{...H,'Content-Type':'application/json'}, body: JSON.stringify({form_fields: JSON.stringify(_ffFields)}) }); if (res.ok) toast('表單欄位已儲存'); else toast('儲存失敗','error'); }
+async function resetFormFields() { if (!confirm('確定還原為預設欄位？')) return; _ffFields = JSON.parse(JSON.stringify(FF_DEFAULT)); renderFFList(); await saveFormFields(); }
 
 // ── BLOCKED SLOTS ──
 const SLOT_TIMES = [];
@@ -2492,8 +2180,7 @@ async function initBlRoomSelect() {
 }
 
 async function loadBlockedSlots() {
-  initBlTimeSelects();
-  initBlRoomSelect();
+  initBlTimeSelects(); initBlRoomSelect();
   const today = new Date().toISOString().slice(0,10);
   const fromEl = document.getElementById('bl-filter-from'), toEl = document.getElementById('bl-filter-to');
   if (!fromEl.value) fromEl.value = today;
@@ -2507,34 +2194,114 @@ async function loadBlockedSlots() {
   list.innerHTML = Object.entries(byDate).map(([date, items]) => `
     <div style="margin-bottom:16px;">
       <div style="font-size:13px;font-weight:600;color:var(--ink-60);margin-bottom:8px;padding-bottom:4px;border-bottom:1px solid var(--border);">${date}</div>
-      ${items.map(s => `
-        <div style="display:flex;align-items:center;gap:12px;padding:10px 0;border-bottom:1px solid #f5f5f5;">
-          <div style="width:120px;font-weight:600;">${s.start_time} – ${s.end_time}</div>
-          <div style="flex:1;color:var(--ink-60);font-size:13px;">${s.room_name}${s.reason ? ' · ' + s.reason : ''}</div>
-          <button class="btn btn-sm btn-danger" onclick="deleteBlockedSlot(${s.id})">刪除</button>
-        </div>`).join('')}
+      ${items.map(s => `<div style="display:flex;align-items:center;gap:12px;padding:10px 0;border-bottom:1px solid #f5f5f5;">
+        <div style="width:120px;font-weight:600;">${s.start_time} – ${s.end_time}</div>
+        <div style="flex:1;color:var(--ink-60);font-size:13px;">${s.room_name}${s.reason?' · '+s.reason:''}</div>
+        <button class="btn btn-sm btn-danger" onclick="deleteBlockedSlot(${s.id})">刪除</button>
+      </div>`).join('')}
     </div>`).join('');
 }
 
 function clearBlFilter() { document.getElementById('bl-filter-from').value = ''; document.getElementById('bl-filter-to').value = ''; loadBlockedSlots(); }
 
 async function addBlockedSlot() {
-  const date = document.getElementById('bl-date').value, start = document.getElementById('bl-start').value;
-  const end = document.getElementById('bl-end').value, room = document.getElementById('bl-room').value;
-  const reason = document.getElementById('bl-reason').value.trim();
-  if (!date) { toast('請選擇日期', 'error'); return; }
+  const date=document.getElementById('bl-date').value, start=document.getElementById('bl-start').value;
+  const end=document.getElementById('bl-end').value, room=document.getElementById('bl-room').value;
+  const reason=document.getElementById('bl-reason').value.trim();
+  if (!date) { toast('請選擇日期','error'); return; }
   const status = document.getElementById('blAddStatus');
-  status.style.display = 'block'; status.textContent = '新增中...';
-  const res = await fetch('/admin/api/blocked-slots', { method: 'POST', headers: {...H, 'Content-Type':'application/json'}, body: JSON.stringify({ date, start_time: start, end_time: end, room_id: room ? parseInt(room) : null, reason }) });
-  if (res.ok) { status.textContent = '✓ 已新增'; toast('封鎖時段已新增'); loadBlockedSlots(); setTimeout(() => { status.style.display='none'; }, 2000); }
-  else { const d = await res.json(); toast(d.error || '新增失敗', 'error'); status.style.display = 'none'; }
+  status.style.display='block'; status.textContent='新增中...';
+  const res = await fetch('/admin/api/blocked-slots', { method:'POST', headers:{...H,'Content-Type':'application/json'}, body: JSON.stringify({date, start_time:start, end_time:end, room_id:room?parseInt(room):null, reason}) });
+  if (res.ok) { status.textContent='✓ 已新增'; toast('封鎖時段已新增'); loadBlockedSlots(); setTimeout(()=>{status.style.display='none';},2000); }
+  else { const d=await res.json(); toast(d.error||'新增失敗','error'); status.style.display='none'; }
 }
 
 async function deleteBlockedSlot(id) {
   if (!confirm('確定刪除此封鎖時段？')) return;
   const res = await fetch(`/admin/api/blocked-slots/${id}`, { method:'DELETE', headers:H });
   if (res.ok) { toast('已刪除'); loadBlockedSlots(); }
-  else toast('刪除失敗', 'error');
+  else toast('刪除失敗','error');
+}
+
+// ── PAYMENT SETTINGS ──
+const PAY_FIELDS = {
+  cash:    { desc: 'pay-cash-desc' },
+  linepay: { 'channel-id':'pay-linepay-channel-id', secret:'pay-linepay-secret', env:'pay-linepay-env', timeout:'pay-linepay-timeout', 'confirm-url':'pay-linepay-confirm-url' },
+  ecpay:   { 'merchant-id':'pay-ecpay-merchant-id', env:'pay-ecpay-env', 'hash-key':'pay-ecpay-hash-key', 'hash-iv':'pay-ecpay-hash-iv', 'return-url':'pay-ecpay-return-url', 'result-url':'pay-ecpay-result-url', 'expire-days':'pay-ecpay-expire-days' },
+  creditcard: { 'api-key':'pay-cc-api-key', 'secret-key':'pay-cc-secret-key', env:'pay-cc-env', 'webhook-url':'pay-cc-webhook-url', 'return-url':'pay-cc-return-url', timeout:'pay-cc-timeout', desc:'pay-cc-desc' },
+};
+const DEFAULT_REFUND_RULES = [
+  { hours:48, percent:100, note:'使用前 48 小時以上全額退款' },
+  { hours:24, percent:50,  note:'使用前 24–48 小時退款 50%' },
+  { hours:0,  percent:0,   note:'使用前 24 小時內不退款' },
+];
+let _refundRules = JSON.parse(JSON.stringify(DEFAULT_REFUND_RULES));
+
+function onPayToggle(method) {
+  const checked = document.getElementById('pay-'+method+'-enabled').checked;
+  const body = document.getElementById('pay-'+method+'-body');
+  if (body) body.style.display = checked ? '' : 'none';
+}
+
+function renderRefundRules() {
+  const container = document.getElementById('refund-rules'); if (!container) return;
+  container.innerHTML = _refundRules.map((r,i) =>
+    `<div class="refund-rule-row">
+      <div><select class="fselect" style="font-size:12px;padding:6px;" onchange="_refundRules[${i}].hours=parseInt(this.value)">
+        <option value="0" ${r.hours===0?'selected':''}>24 小時內</option>
+        <option value="24" ${r.hours===24?'selected':''}>24–48 小時前</option>
+        <option value="48" ${r.hours===48?'selected':''}>48–72 小時前</option>
+        <option value="72" ${r.hours===72?'selected':''}>72 小時以上</option>
+      </select></div>
+      <div><div style="display:flex;align-items:center;gap:6px;"><input type="number" class="finput" value="${r.percent}" min="0" max="100" style="width:70px;text-align:center;" onchange="_refundRules[${i}].percent=parseInt(this.value)||0"> %</div></div>
+      <div><input type="text" class="finput" value="${r.note||''}" placeholder="說明..." onchange="_refundRules[${i}].note=this.value"></div>
+      <div><button class="btn btn-sm" onclick="_refundRules.splice(${i},1);renderRefundRules();" style="background:#fee2e2;color:#b91c1c;border:none;padding:6px 10px;">✕</button></div>
+    </div>`).join('');
+}
+
+function addRefundRule() { _refundRules.push({hours:48,percent:100,note:''}); renderRefundRules(); }
+
+async function loadPaymentSettings() {
+  try {
+    const data = await (await fetch('/admin/api/site-content', { headers:H })).json();
+    const cfg = data.payment_config ? JSON.parse(data.payment_config) : {};
+    ['cash','linepay','ecpay','creditcard'].forEach(m => {
+      const el = document.getElementById('pay-'+m+'-enabled');
+      if (el) { el.checked = !!(cfg[m]&&cfg[m].enabled); onPayToggle(m); }
+    });
+    Object.entries(PAY_FIELDS).forEach(([method,fields]) => {
+      Object.entries(fields).forEach(([key,elId]) => {
+        const el = document.getElementById(elId);
+        if (el && cfg[method] && cfg[method][key] !== undefined) el.value = cfg[method][key];
+      });
+    });
+    const ccProvider = cfg.creditcard?.provider || 'stripe';
+    const ccRadio = document.querySelector(`input[name="creditcard-provider"][value="${ccProvider}"]`);
+    if (ccRadio) ccRadio.checked = true;
+    ['timing','timeout-action','timeout-hours','invoice-type','checkout-note'].forEach(k => {
+      const el = document.getElementById('pay-'+k);
+      if (el && cfg.rules && cfg.rules[k] !== undefined) el.value = cfg.rules[k];
+    });
+    if (cfg.refund_rules && cfg.refund_rules.length) _refundRules = cfg.refund_rules;
+    else _refundRules = JSON.parse(JSON.stringify(DEFAULT_REFUND_RULES));
+    renderRefundRules();
+  } catch(e) { console.error('loadPaymentSettings:', e); }
+}
+
+async function savePaymentSettings() {
+  const cfg = { rules:{}, refund_rules:_refundRules };
+  ['cash','linepay','ecpay','creditcard'].forEach(m => {
+    const enabled = document.getElementById('pay-'+m+'-enabled')?.checked || false;
+    cfg[m] = { enabled };
+    if (PAY_FIELDS[m]) Object.entries(PAY_FIELDS[m]).forEach(([key,elId]) => { const el=document.getElementById(elId); if(el) cfg[m][key]=el.value; });
+  });
+  const ccProviderEl = document.querySelector('input[name="creditcard-provider"]:checked');
+  if (ccProviderEl) cfg.creditcard.provider = ccProviderEl.value;
+  ['timing','timeout-action','timeout-hours','invoice-type','checkout-note'].forEach(k => { const el=document.getElementById('pay-'+k); if(el) cfg.rules[k]=el.value; });
+  try {
+    const res = await fetch('/admin/api/site-content', { method:'POST', headers:{...H,'Content-Type':'application/json'}, body:JSON.stringify({payment_config:JSON.stringify(cfg)}) });
+    if (res.ok) toast('付款設定已儲存','success'); else toast('儲存失敗','error');
+  } catch(e) { toast('儲存失敗：'+e.message,'error'); }
 }
 
 // ── ACCOUNTS ──
@@ -2546,65 +2313,44 @@ const ALL_PAGES = [
   {id:'accounts',label:'帳號管理'},{id:'logs',label:'登入紀錄'}
 ];
 
-function roleLabel(r) {
-  return {superadmin:'超級管理員',admin:'管理員',manager:'店長/經理',staff:'門市人員'}[r] || r;
-}
-
-function roleBadgeClass(r) {
-  return {superadmin:'badge-superadmin',admin:'badge-admin',manager:'badge-manager',staff:'badge-staff'}[r] || 'badge-gray';
-}
+function roleLabel(r) { return {superadmin:'超級管理員',admin:'管理員',manager:'店長/經理',staff:'門市人員'}[r] || r; }
+function roleBadgeClass(r) { return {superadmin:'badge-superadmin',admin:'badge-admin',manager:'badge-manager',staff:'badge-staff'}[r] || 'badge-gray'; }
 
 async function loadAccounts() {
   const res = await fetch('/admin/api/accounts', {headers:H});
   const users = await res.json();
   document.getElementById('accountList').innerHTML = `
-    <div class="tbl-wrap">
-      <table>
-        <thead><tr>
-          <th>帳號</th><th>顯示名稱</th><th>角色</th><th>狀態</th><th>建立者</th><th>建立時間</th><th>操作</th>
-        </tr></thead>
-        <tbody>
-          ${users.map(u => `<tr>
-            <td><strong>${u.username}</strong></td>
-            <td>${u.display_name||'—'}</td>
-            <td><span class="badge ${roleBadgeClass(u.role)}">${roleLabel(u.role)}</span></td>
-            <td>${u.is_active ? '<span style="color:var(--green);">● 啟用</span>' : '<span style="color:var(--red);">● 停用</span>'}</td>
-            <td style="color:var(--ink-60);">${u.created_by||'—'}</td>
-            <td style="color:var(--ink-60);">${u.created_at}</td>
-            <td>
-              <div style="display:flex;gap:6px;">
-                <button class="btn btn-outline btn-sm" onclick="editAccount(${u.id})">編輯</button>
-                ${u.role!=='superadmin' ? `<button class="btn btn-danger btn-sm" onclick="deleteAccount(${u.id})">刪除</button>` : ''}
-              </div>
-            </td>
-          </tr>`).join('')}
-        </tbody>
-      </table>
-    </div>`;
+    <div class="tbl-wrap"><table>
+      <thead><tr><th>帳號</th><th>顯示名稱</th><th>角色</th><th>狀態</th><th>建立者</th><th>建立時間</th><th>操作</th></tr></thead>
+      <tbody>${users.map(u => `<tr>
+        <td><strong>${u.username}</strong></td>
+        <td>${u.display_name||'—'}</td>
+        <td><span class="badge ${roleBadgeClass(u.role)}">${roleLabel(u.role)}</span></td>
+        <td>${u.is_active?'<span style="color:var(--green);">● 啟用</span>':'<span style="color:var(--red);">● 停用</span>'}</td>
+        <td style="color:var(--ink-60);">${u.created_by||'—'}</td>
+        <td style="color:var(--ink-60);">${u.created_at}</td>
+        <td><div style="display:flex;gap:6px;">
+          <button class="btn btn-outline btn-sm" onclick="editAccount(${u.id})">編輯</button>
+          ${u.role!=='superadmin'?`<button class="btn btn-danger btn-sm" onclick="deleteAccount(${u.id})">刪除</button>`:''}
+        </div></td>
+      </tr>`).join('')}</tbody>
+    </table></div>`;
 }
 
 function onRoleChange() {
   const role = document.getElementById('acc-role').value;
-  const grid = document.getElementById('accPermGrid');
   const isSuperadmin = role === 'superadmin';
-  grid.querySelectorAll('input[type=checkbox]').forEach(cb => {
-    cb.disabled = isSuperadmin;
-    if (isSuperadmin) cb.checked = true;
-  });
+  document.getElementById('accPermGrid').querySelectorAll('input[type=checkbox]').forEach(cb => { cb.disabled = isSuperadmin; if (isSuperadmin) cb.checked = true; });
 }
 
 function openAddAccount() {
   document.getElementById('accountModalTitle').textContent = '新增帳號';
   document.getElementById('acc-id').value = '';
-  document.getElementById('acc-username').value = '';
-  document.getElementById('acc-username').disabled = false;
+  document.getElementById('acc-username').value = ''; document.getElementById('acc-username').disabled = false;
   document.getElementById('acc-display').value = '';
-  document.getElementById('acc-pw').value = '';
-  document.getElementById('acc-pw').placeholder = '';
-  document.getElementById('acc-pw').required = true;
+  document.getElementById('acc-pw').value = ''; document.getElementById('acc-pw').required = true;
   document.getElementById('acc-pw-hint').textContent = '（新增時必填）';
-  const s = document.getElementById('acc-pw-status');
-  if (s) { s.textContent = ''; s.style.color = ''; }
+  const s = document.getElementById('acc-pw-status'); if (s) { s.textContent = ''; s.style.color = ''; }
   document.getElementById('acc-role').value = 'staff';
   document.getElementById('acc-active').value = 'true';
   renderPermGrid([]);
@@ -2612,28 +2358,18 @@ function openAddAccount() {
 }
 
 function togglePwVis() {
-  const inp = document.getElementById('acc-pw');
-  const eye = document.getElementById('acc-pw-eye');
+  const inp = document.getElementById('acc-pw'), eye = document.getElementById('acc-pw-eye');
   inp.type = inp.type === 'password' ? 'text' : 'password';
   eye.textContent = inp.type === 'password' ? '👁' : '🙈';
 }
 
 function onPwInput() {
-  const el = document.getElementById('acc-pw');
-  const val = el.value;
-  const s = document.getElementById('acc-pw-status');
-  const isEdit = !!document.getElementById('acc-id').value;
+  const el = document.getElementById('acc-pw'), val = el.value;
+  const s = document.getElementById('acc-pw-status'), isEdit = !!document.getElementById('acc-id').value;
   if (!s) return;
-  if (val.length === 0) {
-    s.textContent = isEdit ? '留空儲存將保留原密碼' : '';
-    s.style.color = 'var(--ink-60)';
-  } else if (val.length < 6) {
-    s.textContent = '⚠ 密碼太短（建議 6 碼以上）';
-    s.style.color = '#c44b3a';
-  } else {
-    s.textContent = '✓ 儲存後將變更密碼（' + val.length + ' 碼）';
-    s.style.color = '#3A7C55';
-  }
+  if (val.length === 0) { s.textContent = isEdit ? '留空儲存將保留原密碼' : ''; s.style.color = 'var(--ink-60)'; }
+  else if (val.length < 6) { s.textContent = '⚠ 密碼太短（建議 6 碼以上）'; s.style.color = '#c44b3a'; }
+  else { s.textContent = '✓ 儲存後將變更密碼（'+val.length+' 碼）'; s.style.color = '#3A7C55'; }
 }
 
 function editAccount(id) {
@@ -2641,17 +2377,11 @@ function editAccount(id) {
     const u = users.find(x => x.id === id); if (!u) return;
     document.getElementById('accountModalTitle').textContent = `編輯帳號：${u.username}`;
     document.getElementById('acc-id').value = id;
-    document.getElementById('acc-username').value = u.username;
-    document.getElementById('acc-username').disabled = true;
+    document.getElementById('acc-username').value = u.username; document.getElementById('acc-username').disabled = true;
     document.getElementById('acc-display').value = u.display_name||'';
-    const pwEl = document.getElementById('acc-pw');
-    pwEl.value = u.password_plain || '';  // 顯示實際密碼
-    pwEl.dataset.isFake = '0';
-    pwEl.required = false;
-    pwEl.placeholder = '留空表示不變更';
+    const pwEl = document.getElementById('acc-pw'); pwEl.value = u.password_plain || ''; pwEl.required = false; pwEl.placeholder = '留空表示不變更';
     document.getElementById('acc-pw-hint').textContent = '（留空表示不變更）';
-    const s2 = document.getElementById('acc-pw-status');
-    if (s2) { s2.textContent = u.password_plain ? '' : '目前未設定密碼'; s2.style.color = 'var(--ink-60)'; }
+    const s2 = document.getElementById('acc-pw-status'); if (s2) { s2.textContent = u.password_plain?'':'目前未設定密碼'; s2.style.color='var(--ink-60)'; }
     document.getElementById('acc-role').value = u.role;
     document.getElementById('acc-active').value = u.is_active ? 'true' : 'false';
     renderPermGrid(u.permissions||[]);
@@ -2660,38 +2390,30 @@ function editAccount(id) {
 }
 
 function renderPermGrid(selected) {
-  const role = document.getElementById('acc-role').value;
-  const isSuperadmin = role === 'superadmin';
+  const role = document.getElementById('acc-role').value, isSuperadmin = role === 'superadmin';
   document.getElementById('accPermGrid').innerHTML = ALL_PAGES.map(p =>
     `<label style="display:flex;align-items:center;gap:6px;cursor:pointer;font-size:13px;padding:4px;">
       <input type="checkbox" value="${p.id}" ${selected.includes(p.id)||isSuperadmin?'checked':''} ${isSuperadmin?'disabled':''}> ${p.label}
     </label>`).join('');
 }
 
-function getSelectedPerms() {
-  return [...document.querySelectorAll('#accPermGrid input:checked')].map(el => el.value);
-}
-
+function getSelectedPerms() { return [...document.querySelectorAll('#accPermGrid input:checked')].map(el => el.value); }
 function closeAccountModal() { document.getElementById('accountModal').classList.remove('show'); }
 
 async function saveAccount() {
-  const id      = document.getElementById('acc-id').value;
-  const uname   = document.getElementById('acc-username').value.trim();
-  const display = document.getElementById('acc-display').value.trim();
-  const pw      = document.getElementById('acc-pw').value;
-  const role    = document.getElementById('acc-role').value;
-  const active  = document.getElementById('acc-active').value === 'true';
-  const perms   = getSelectedPerms();
-  if (!uname) { toast('請填寫帳號', 'error'); return; }
-  if (!id && !pw) { toast('請設定密碼', 'error'); return; }
-  const body = {username: uname, display_name: display, role, is_active: active, permissions: perms};
+  const id=document.getElementById('acc-id').value, uname=document.getElementById('acc-username').value.trim();
+  const display=document.getElementById('acc-display').value.trim(), pw=document.getElementById('acc-pw').value;
+  const role=document.getElementById('acc-role').value, active=document.getElementById('acc-active').value==='true';
+  const perms=getSelectedPerms();
+  if (!uname) { toast('請填寫帳號','error'); return; }
+  if (!id && !pw) { toast('請設定密碼','error'); return; }
+  const body = {username:uname, display_name:display, role, is_active:active, permissions:perms};
   if (pw) body.password = pw;
   const url = id ? `/admin/api/accounts/${id}` : '/admin/api/accounts';
-  const method = id ? 'PUT' : 'POST';
-  const res = await fetch(url, {method, headers: {...H, 'Content-Type':'application/json'}, body: JSON.stringify(body)});
+  const res = await fetch(url, {method:id?'PUT':'POST', headers:{...H,'Content-Type':'application/json'}, body:JSON.stringify(body)});
   const data = await res.json();
-  if (res.ok) { toast(id ? '帳號已更新' : '帳號建立成功'); closeAccountModal(); loadAccounts(); }
-  else toast(data.error || '儲存失敗', 'error');
+  if (res.ok) { toast(id?'帳號已更新':'帳號建立成功'); closeAccountModal(); loadAccounts(); }
+  else toast(data.error||'儲存失敗','error');
 }
 
 async function deleteAccount(id) {
@@ -2699,7 +2421,7 @@ async function deleteAccount(id) {
   const res = await fetch(`/admin/api/accounts/${id}`, {method:'DELETE', headers:H});
   const data = await res.json();
   if (res.ok) { toast('帳號已刪除'); loadAccounts(); }
-  else toast(data.error || '刪除失敗', 'error');
+  else toast(data.error||'刪除失敗','error');
 }
 
 // ── LOGIN LOGS ──
@@ -2712,30 +2434,25 @@ function clearLogFilters() {
 }
 
 function formatLoginTime(dtStr) {
-  // 舊紀錄存的是 UTC，新紀錄存的是 UTC+8
-  // 辨識方法：2026-02-28 之前的算舊資料直接顯示（已無法確定）
-  // 統一做法：直接顯示資料庫的值，新資料已是 TW 時間
   return dtStr || '—';
 }
 
 function parseUA(ua) {
   if (!ua) return '—';
-  // 解析瀏覽器名稱
   let browser = ua;
-  if (/Edg\//i.test(ua))       browser = 'Edge ' + (ua.match(/Edg\/([\d.]+)/)?.[1]||'');
-  else if (/OPR\//i.test(ua))  browser = 'Opera ' + (ua.match(/OPR\/([\d.]+)/)?.[1]||'');
-  else if (/Chrome\//i.test(ua)) browser = 'Chrome ' + (ua.match(/Chrome\/([\d.]+)/)?.[1]||'');
-  else if (/Firefox\//i.test(ua)) browser = 'Firefox ' + (ua.match(/Firefox\/([\d.]+)/)?.[1]||'');
-  else if (/Safari\//i.test(ua)) browser = 'Safari ' + (ua.match(/Version\/([\d.]+)/)?.[1]||'');
-  // OS
+  if (/Edg\//i.test(ua))         browser = 'Edge '    + (ua.match(/Edg\/([\d.]+)/)?.[1]||'');
+  else if (/OPR\//i.test(ua))    browser = 'Opera '   + (ua.match(/OPR\/([\d.]+)/)?.[1]||'');
+  else if (/Chrome\//i.test(ua)) browser = 'Chrome '  + (ua.match(/Chrome\/([\d.]+)/)?.[1]||'');
+  else if (/Firefox\//i.test(ua))browser = 'Firefox ' + (ua.match(/Firefox\/([\d.]+)/)?.[1]||'');
+  else if (/Safari\//i.test(ua)) browser = 'Safari '  + (ua.match(/Version\/([\d.]+)/)?.[1]||'');
   let os = '';
-  if (/Windows NT 10/i.test(ua))   os = 'Windows 10/11';
+  if (/Windows NT 10/i.test(ua))       os = 'Windows 10/11';
   else if (/Windows NT 6.1/i.test(ua)) os = 'Windows 7';
-  else if (/Mac OS X/i.test(ua))   os = 'macOS ' + (ua.match(/Mac OS X ([\d_]+)/)?.[1]?.replace(/_/g,'.')||'');
-  else if (/iPhone/i.test(ua))     os = 'iPhone';
-  else if (/iPad/i.test(ua))       os = 'iPad';
-  else if (/Android/i.test(ua))    os = 'Android ' + (ua.match(/Android ([\d.]+)/)?.[1]||'');
-  else if (/Linux/i.test(ua))      os = 'Linux';
+  else if (/Mac OS X/i.test(ua))       os = 'macOS ' + (ua.match(/Mac OS X ([\d_]+)/)?.[1]?.replace(/_/g,'.')||'');
+  else if (/iPhone/i.test(ua))         os = 'iPhone';
+  else if (/iPad/i.test(ua))           os = 'iPad';
+  else if (/Android/i.test(ua))        os = 'Android ' + (ua.match(/Android ([\d.]+)/)?.[1]||'');
+  else if (/Linux/i.test(ua))          os = 'Linux';
   return os ? `${browser} / ${os}` : browser;
 }
 
@@ -2749,7 +2466,6 @@ async function loadLoginLogs() {
   const data = await res.json();
   const logs = data.logs || [];
   const list = document.getElementById('loginLogList');
-  // 上次登入資訊（不受篩選影響，取全部最近兩筆成功）
   const lastInfo = document.getElementById('lastLoginInfo');
   if (lastInfo && !uname && !success) {
     const succ = logs.filter(l => l.success);
@@ -2782,344 +2498,84 @@ async function loadLoginLogs() {
     </div>`;
 }
 
-// ── CROP TOOL ──
-let _cropState = { roomId: null, photoIdx: null, mode: null, file: null };
-let _cropDrag = null;
-let _imgNaturalW = 1, _imgNaturalH = 1, _dispW = 1, _dispH = 1;
-
-function openCropModal(imgSrc, roomId, photoIdx, mode, file) {
-  _cropState = { roomId, photoIdx, mode, file };
-  const modal = document.getElementById('cropModal');
-  const img   = document.getElementById('cropImage');
-
-  function onReady() {
-    // 等一個 tick 讓 layout 完成後再取 offsetWidth
-    requestAnimationFrame(function() {
-      _imgNaturalW = img.naturalWidth  || img.width  || 1;
-      _imgNaturalH = img.naturalHeight || img.height || 1;
-      _dispW = img.offsetWidth  || img.clientWidth  || 200;
-      _dispH = img.offsetHeight || img.clientHeight || 150;
-      setCropBox(0, 0, _dispW, _dispH);
-      updateCropInfo();
-      bindCropEvents();
-    });
+// ── HELPERS ──
+function fmtSegments(b) {
+  if (b.segments) {
+    try {
+      const segs = typeof b.segments==='string' ? JSON.parse(b.segments) : b.segments;
+      if (segs && segs.length > 1) return segs.map(s=>`${s.start}–${s.end}`).join('<br>');
+      if (segs && segs.length === 1) return `${segs[0].start} – ${segs[0].end}`;
+    } catch(e) {}
   }
-
-  modal.style.display = 'flex';
-  img.onload = onReady;
-
-  // 圖片已緩存時 onload 不會觸發，直接呼叫
-  img.src = imgSrc;
-  if (img.complete && img.naturalWidth > 0) {
-    onReady();
-  }
+  return `${b.start_time} – ${b.end_time}`;
 }
 
-function openCropForExisting(roomId, photoIdx) {
-  // 從頁面上取得現有照片 URL
-  const grid = document.getElementById('photo-grid-' + roomId);
-  if (!grid) return;
-  const imgs = grid.querySelectorAll('img');
-  if (!imgs[photoIdx]) return;
-  openCropModal(imgs[photoIdx].src, roomId, photoIdx, 'existing', null);
-  document.getElementById('cropConfirmBtn').textContent = '確認套用';
+function badgeHtml(status) {
+  const map = {confirmed:['badge-green','已確認'], cancelled:['badge-red','已取消'], completed:['badge-gold','已完成']};
+  const [cls, txt] = map[status] || ['badge-gray', status];
+  return `<span class="badge ${cls}">${txt}</span>`;
 }
 
-function closeCropModal() {
-  document.getElementById('cropModal').style.display = 'none';
-  _cropDrag = null;
-  document.getElementById('cropConfirmBtn').textContent = '確認上傳';
-}
-
-function getCropBox() {
-  const box = document.getElementById('cropBox');
-  return {
-    x: parseInt(box.style.left)  || 0,
-    y: parseInt(box.style.top)   || 0,
-    w: parseInt(box.style.width) || 100,
-    h: parseInt(box.style.height)|| 100,
-  };
-}
-
-function setCropBox(x, y, w, h) {
-  const box = document.getElementById('cropBox');
-  const minSz = 40;
-  w = Math.max(w, minSz); h = Math.max(h, minSz);
-  x = Math.max(0, Math.min(x, _dispW - w));
-  y = Math.max(0, Math.min(y, _dispH - h));
-  box.style.left   = x + 'px';
-  box.style.top    = y + 'px';
-  box.style.width  = w + 'px';
-  box.style.height = h + 'px';
-}
-
-function updateCropInfo() {
-  const b = getCropBox();
-  const scaleX = _imgNaturalW / _dispW;
-  const scaleY = _imgNaturalH / _dispH;
-  const cw = Math.round(b.w * scaleX);
-  const ch = Math.round(b.h * scaleY);
-  document.getElementById('cropSizeInfo').textContent = cw + ' × ' + ch + ' px';
-}
-
-function bindCropEvents() {
-  const box  = document.getElementById('cropBox');
-  const cont = document.getElementById('cropContainer');
-
-  function onDown(e) {
-    e.preventDefault();
-    const pt = e.touches ? e.touches[0] : e;
-    const dir = e.target.dataset && e.target.dataset.dir;
-    const b = getCropBox();
-    _cropDrag = {
-      dir: dir || 'move',
-      startX: pt.clientX, startY: pt.clientY,
-      origX: b.x, origY: b.y, origW: b.w, origH: b.h,
-    };
-  }
-
-  function onMove(e) {
-    if (!_cropDrag) return;
-    e.preventDefault();
-    const pt = e.touches ? e.touches[0] : e;
-    const dx = pt.clientX - _cropDrag.startX;
-    const dy = pt.clientY - _cropDrag.startY;
-    const d  = _cropDrag;
-    const lock = document.getElementById('cropAspectLock').checked;
-    const aspect = 16 / 9;
-    let { x, y, w, h } = { x: d.origX, y: d.origY, w: d.origW, h: d.origH };
-
-    if (d.dir === 'move') {
-      x = d.origX + dx; y = d.origY + dy;
-    } else if (d.dir === 'se') {
-      w = d.origW + dx; h = lock ? w / aspect : d.origH + dy;
-    } else if (d.dir === 'sw') {
-      w = d.origW - dx; h = lock ? w / aspect : d.origH + dy;
-      x = d.origX + d.origW - w;
-    } else if (d.dir === 'ne') {
-      w = d.origW + dx; h = lock ? w / aspect : d.origH - dy;
-      y = d.origY + d.origH - h;
-    } else if (d.dir === 'nw') {
-      w = d.origW - dx; h = lock ? w / aspect : d.origH - dy;
-      x = d.origX + d.origW - w; y = d.origY + d.origH - h;
-    }
-    setCropBox(x, y, w, h);
-    updateCropInfo();
-  }
-
-  function onUp() { _cropDrag = null; }
-
-  box.onmousedown  = onDown;
-  box.ontouchstart = onDown;
-  box.querySelectorAll('[data-dir]').forEach(function(h) {
-    h.onmousedown  = onDown;
-    h.ontouchstart = onDown;
-  });
-  document.onmousemove  = onMove;
-  document.ontouchmove  = onMove;
-  document.onmouseup    = onUp;
-  document.ontouchend   = onUp;
-}
-
-async function confirmCrop() {
-  const img  = document.getElementById('cropImage');
-  const b    = getCropBox();
-  const scaleX = _imgNaturalW / img.offsetWidth;
-  const scaleY = _imgNaturalH / img.offsetHeight;
-  const sx = Math.round(b.x * scaleX);
-  const sy = Math.round(b.y * scaleY);
-  const sw = Math.round(b.w * scaleX);
-  const sh = Math.round(b.h * scaleY);
-
-  // 用 Canvas 裁切
-  const canvas = document.createElement('canvas');
-  canvas.width  = sw;
-  canvas.height = sh;
-  const ctx = canvas.getContext('2d');
-
-  // 先畫原始圖
-  const origImg = new Image();
-  origImg.crossOrigin = 'anonymous';
-  origImg.src = img.src;
-  await new Promise(function(res) { origImg.onload = res; origImg.onerror = res; });
-  ctx.drawImage(origImg, sx, sy, sw, sh, 0, 0, sw, sh);
-
-  document.getElementById('cropConfirmBtn').textContent = '處理中...';
-  document.getElementById('cropConfirmBtn').disabled = true;
-
-  canvas.toBlob(async function(blob) {
-    if (!blob) { toast('裁切失敗', 'error'); return; }
-    const state = _cropState;
-    closeCropModal();
-
-    if (state.mode === 'existing') {
-      // 刪除舊圖並上傳新的裁切版本
-      try {
-        const formData = new FormData();
-        formData.append('photo', blob, 'cropped.jpg');
-        const upRes = await fetch('/admin/api/rooms/' + state.roomId + '/photos', {
-          method: 'POST', headers: H, body: formData
-        });
-        if (!upRes.ok) throw new Error('上傳失敗');
-        // 刪除原圖
-        await fetch('/admin/api/rooms/' + state.roomId + '/photos/' + state.photoIdx, {
-          method: 'DELETE', headers: H
-        });
-        toast('裁切完成', 'success');
-        loadPhotos();
-      } catch(e) { toast('裁切上傳失敗：' + e.message, 'error'); }
-    }
-    document.getElementById('cropConfirmBtn').disabled = false;
-    document.getElementById('cropConfirmBtn').textContent = '確認上傳';
-  }, 'image/jpeg', 0.92);
-}
-
-// ── PAYMENT SETTINGS ──
-const PAY_FIELDS = {
-  cash:    { desc: 'pay-cash-desc' },
-  linepay: { 'channel-id': 'pay-linepay-channel-id', secret: 'pay-linepay-secret',
-              env: 'pay-linepay-env', timeout: 'pay-linepay-timeout', 'confirm-url': 'pay-linepay-confirm-url' },
-  ecpay:   { 'merchant-id': 'pay-ecpay-merchant-id', env: 'pay-ecpay-env',
-              'hash-key': 'pay-ecpay-hash-key', 'hash-iv': 'pay-ecpay-hash-iv',
-              'return-url': 'pay-ecpay-return-url', 'result-url': 'pay-ecpay-result-url',
-              'expire-days': 'pay-ecpay-expire-days' },
-  creditcard: { 'api-key': 'pay-cc-api-key', 'secret-key': 'pay-cc-secret-key',
-                env: 'pay-cc-env', 'webhook-url': 'pay-cc-webhook-url',
-                'return-url': 'pay-cc-return-url', timeout: 'pay-cc-timeout',
-                desc: 'pay-cc-desc' },
-};
-
-const DEFAULT_REFUND_RULES = [
-  { hours: 48, percent: 100, note: '使用前 48 小時以上全額退款' },
-  { hours: 24, percent: 50,  note: '使用前 24–48 小時退款 50%' },
-  { hours: 0,  percent: 0,   note: '使用前 24 小時內不退款' },
-];
-let _refundRules = JSON.parse(JSON.stringify(DEFAULT_REFUND_RULES));
-
-function onPayToggle(method) {
-  const checked = document.getElementById('pay-' + method + '-enabled').checked;
-  const body = document.getElementById('pay-' + method + '-body');
-  if (body) body.style.display = checked ? '' : 'none';
-}
-
-function renderRefundRules() {
-  const container = document.getElementById('refund-rules');
-  if (!container) return;
-  container.innerHTML = _refundRules.map((r, i) => {
-    return '<div class="refund-rule-row">' +
-      '<div><select class="fselect" style="font-size:12px;padding:6px;" onchange="_refundRules[' + i + '].hours=parseInt(this.value)">' +
-        ['<option value="0">24 小時內</option>',
-         '<option value="24">24–48 小時前</option>',
-         '<option value="48">48–72 小時前</option>',
-         '<option value="72">72 小時以上</option>'].join('') +
-      '</select></div>' +
-      '<div><div style="display:flex;align-items:center;gap:6px;">' +
-        '<input type="number" class="finput" value="' + r.percent + '" min="0" max="100" style="width:70px;text-align:center;" onchange="_refundRules[' + i + '].percent=parseInt(this.value)||0"> %' +
-      '</div></div>' +
-      '<div><input type="text" class="finput" value="' + (r.note||'') + '" placeholder="說明..." onchange="_refundRules[' + i + '].note=this.value"></div>' +
-      '<div><button class="btn btn-sm" onclick="_refundRules.splice(' + i + ',1);renderRefundRules();" style="background:#fee2e2;color:#b91c1c;border:none;padding:6px 10px;">✕</button></div>' +
-    '</div>';
-  }).join('');
-  // 設定 select 選中值
-  container.querySelectorAll('.refund-rule-row').forEach((row, i) => {
-    const sel = row.querySelector('select');
-    if (sel) sel.value = String(_refundRules[i].hours);
-  });
-}
-
-function addRefundRule() {
-  _refundRules.push({ hours: 48, percent: 100, note: '' });
-  renderRefundRules();
-}
-
-async function loadPaymentSettings() {
+// ── LINE USERS ──
+async function loadLineUsers() {
   try {
-    const res = await fetch('/admin/api/site-content', { headers: H });
-    const data = await res.json();
-    const cfg = data.payment_config ? JSON.parse(data.payment_config) : {};
-
-    // 啟用狀態
-    ['cash','linepay','ecpay','creditcard'].forEach(m => {
-      const el = document.getElementById('pay-' + m + '-enabled');
-      if (el) {
-        el.checked = !!(cfg[m] && cfg[m].enabled);
-        onPayToggle(m);
-      }
-    });
-
-    // 各欄位填值
-    Object.entries(PAY_FIELDS).forEach(([method, fields]) => {
-      Object.entries(fields).forEach(([key, elId]) => {
-        const el = document.getElementById(elId);
-        if (el && cfg[method] && cfg[method][key] !== undefined) {
-          el.value = cfg[method][key];
-        }
-      });
-    });
-
-    // 信用卡 provider radio
-    const ccProvider = cfg.creditcard?.provider || 'stripe';
-    const ccRadio = document.querySelector(`input[name="creditcard-provider"][value="${ccProvider}"]`);
-    if (ccRadio) ccRadio.checked = true;
-
-    // 付款規則
-    ['timing','timeout-action','timeout-hours','invoice-type','checkout-note'].forEach(k => {
-      const el = document.getElementById('pay-' + k);
-      if (el && cfg.rules && cfg.rules[k] !== undefined) el.value = cfg.rules[k];
-    });
-
-    // 退款規則
-    if (cfg.refund_rules && cfg.refund_rules.length) {
-      _refundRules = cfg.refund_rules;
-    } else {
-      _refundRules = JSON.parse(JSON.stringify(DEFAULT_REFUND_RULES));
+    const res = await fetch('/admin/api/line-users', { headers: H });
+    const users = await res.json();
+    const tbody = document.getElementById('lineuser-tbody');
+    if (!tbody) return;
+    if (!users.length) {
+      tbody.innerHTML = '<tr><td colspan="6" style="text-align:center;padding:30px;color:var(--ink-60);">尚無 LINE 用戶</td></tr>';
+      return;
     }
-    renderRefundRules();
-
-  } catch(e) { console.error('loadPaymentSettings:', e); }
+    tbody.innerHTML = users.map(u => `
+      <tr>
+        <td><code style="font-size:11px;color:var(--ink-60);">${u.line_user_id.slice(0,20)}...</code></td>
+        <td>${u.display_name || '—'}</td>
+        <td>${u.phone || '—'}</td>
+        <td>
+          <span class="badge ${u.is_admin ? 'badge-gold' : 'badge-gray'}">${u.is_admin ? '✓ 管理員' : '一般用戶'}</span>
+        </td>
+        <td style="color:var(--ink-60);font-size:13px;">${u.created_at || '—'}</td>
+        <td>
+          <button class="btn btn-outline btn-sm" onclick="toggleLineAdmin('${u.line_user_id}')">
+            ${u.is_admin ? '取消管理員' : '設為管理員'}
+          </button>
+        </td>
+      </tr>`).join('');
+  } catch(e) { console.error(e); }
 }
 
-async function savePaymentSettings() {
-  const cfg = { rules: {}, refund_rules: _refundRules };
+async function toggleLineAdmin(uid) {
+  const res = await fetch(`/admin/api/line-users/${uid}/admin`, { method: 'POST', headers: H });
+  if (res.ok) { toast('已更新'); loadLineUsers(); }
+  else toast('操作失敗', 'error');
+}
 
-  // 各付款方式
-  ['cash','linepay','ecpay','creditcard'].forEach(m => {
-    const enabled = document.getElementById('pay-' + m + '-enabled')?.checked || false;
-    cfg[m] = { enabled };
-    if (PAY_FIELDS[m]) {
-      Object.entries(PAY_FIELDS[m]).forEach(([key, elId]) => {
-        const el = document.getElementById(elId);
-        if (el) cfg[m][key] = el.value;
-      });
-    }
-  });
-
-  // 信用卡 provider
-  const ccProviderEl = document.querySelector('input[name="creditcard-provider"]:checked');
-  if (ccProviderEl) cfg.creditcard.provider = ccProviderEl.value;
-
-  // 付款規則
-  ['timing','timeout-action','timeout-hours','invoice-type','checkout-note'].forEach(k => {
-    const el = document.getElementById('pay-' + k);
-    if (el) cfg.rules[k] = el.value;
-  });
-
+async function sendBroadcast() {
+  const msg = document.getElementById('broadcast-msg').value.trim();
+  const admOnly = document.getElementById('broadcast-admin-only').checked;
+  if (!msg) { toast('請填寫訊息內容', 'error'); return; }
+  const status = document.getElementById('broadcast-status');
+  status.style.display = 'block'; status.textContent = '發送中...';
   try {
-    const res = await fetch('/admin/api/site-content', {
+    const res = await fetch('/admin/api/line-broadcast', {
       method: 'POST', headers: { ...H, 'Content-Type': 'application/json' },
-      body: JSON.stringify({ payment_config: JSON.stringify(cfg) })
+      body: JSON.stringify({ message: msg, admins_only: admOnly })
     });
+    const data = await res.json();
     if (res.ok) {
-      toast('付款設定已儲存', 'success');
+      status.textContent = `✓ 已發送給 ${data.sent} 位用戶`;
+      toast('廣播已發送');
+      document.getElementById('broadcast-msg').value = '';
     } else {
-      toast('儲存失敗', 'error');
+      status.textContent = data.error || '發送失敗';
+      toast('發送失敗', 'error');
     }
-  } catch(e) { toast('儲存失敗：' + e.message, 'error'); }
+  } catch(e) { status.textContent = '發送失敗'; toast('發送失敗', 'error'); }
 }
 
-// ── CURRENT USER & PERMISSION CONTROL ──
-let _myPerms = [];  // 全域儲存當前用戶權限
-
+// ── CURRENT USER ──
+let _myPerms = [];
 async function loadCurrentUser() {
   try {
     const res = await fetch('/admin/api/me', {headers:H});
@@ -3128,7 +2584,6 @@ async function loadCurrentUser() {
       _myPerms = u.permissions || [];
       const el = document.getElementById('currentUserInfo');
       if (el) el.innerHTML = `<span style="color:rgba(255,255,255,0.8);">&#128100; ${u.display_name||u.username}</span> <span style="color:var(--gold);font-size:11px;">${roleLabel(u.role)}</span>`;
-      // 根據權限控制側邊欄顯示
       applyPermissions(_myPerms);
     }
     // 本次 & 上次登入時間
@@ -3146,7 +2601,6 @@ async function loadCurrentUser() {
 }
 
 function applyPermissions(perms) {
-  // page id → 導航 onclick 字串對應
   const PAGE_NAV_MAP = {
     'dashboard':  "showPage('dashboard'",
     'bookings':   "showPage('bookings'",
@@ -3179,53 +2633,21 @@ function applyPermissions(perms) {
   }
 }
 
-// ── HELPERS ──
-function fmtSegments(b) {
-  if (b.segments) {
-    try {
-      const segs = typeof b.segments === 'string' ? JSON.parse(b.segments) : b.segments;
-      if (segs && segs.length > 1) return segs.map(s => `${s.start}–${s.end}`).join('<br>');
-      if (segs && segs.length === 1) return `${segs[0].start} – ${segs[0].end}`;
-    } catch(e) {}
-  }
-  return `${b.start_time} – ${b.end_time}`;
-}
-
-function badgeHtml(status) {
-  const map = {confirmed: ['badge-green','已確認'], cancelled: ['badge-red','已取消'], completed: ['badge-gold','已完成']};
-  const [cls, txt] = map[status] || ['badge-gray', status];
-  return `<span class="badge ${cls}">${txt}</span>`;
-}
-
-// ── REAL-TIME CLOCK ──
+// ── CLOCK ──
 function startDashClock() {
   const weekDays = ['日','一','二','三','四','五','六'];
   function tick() {
-    const tw = new Date(Date.now() + 8 * 3600 * 1000); // UTC+8
-    const hh = String(tw.getUTCHours()).padStart(2,'0');
-    const mm = String(tw.getUTCMinutes()).padStart(2,'0');
-    const ss = String(tw.getUTCSeconds()).padStart(2,'0');
-    const dateStr = tw.getUTCFullYear() + '/' +
-      String(tw.getUTCMonth()+1).padStart(2,'0') + '/' +
-      String(tw.getUTCDate()).padStart(2,'0') +
-      ' 週' + weekDays[tw.getUTCDay()];
-    const c = document.getElementById('dash-clock');
-    const d = document.getElementById('dash-date-display');
-    if (c) c.textContent = hh + ':' + mm + ':' + ss;
-    if (d) d.textContent = dateStr;
+    const tw = new Date(Date.now() + 8 * 3600 * 1000);
+    const hh=String(tw.getUTCHours()).padStart(2,'0'), mm=String(tw.getUTCMinutes()).padStart(2,'0'), ss=String(tw.getUTCSeconds()).padStart(2,'0');
+    const c=document.getElementById('dash-clock'), d=document.getElementById('dash-date-display');
+    if(c) c.textContent=hh+':'+mm+':'+ss;
+    if(d) d.textContent=tw.getUTCFullYear()+'/'+(tw.getUTCMonth()+1+'').padStart(2,'0')+'/'+(tw.getUTCDate()+'').padStart(2,'0')+' 週'+weekDays[tw.getUTCDay()];
   }
-  tick();
-  setInterval(tick, 1000);
+  tick(); setInterval(tick, 1000);
 }
 
-// 每 60 秒自動刷新統計（只在儀表板頁時）
 function startStatsAutoRefresh() {
-  setInterval(function() {
-    if (document.getElementById('page-dashboard') &&
-        document.getElementById('page-dashboard').classList.contains('active')) {
-      loadStats();
-    }
-  }, 60000);
+  setInterval(() => { if (document.getElementById('page-dashboard')?.classList.contains('active')) loadStats(); }, 60000);
 }
 
 // ── INIT ──

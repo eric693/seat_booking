@@ -747,7 +747,7 @@ header {
 
 .sum-val {
   font-size: 14px;
-  color: var(--ink);
+  color: var(--teal);
   font-weight: 500;
   text-align: right;
 }
@@ -755,7 +755,7 @@ header {
 .sum-val.empty { color: var(--ink-20); font-style: italic; font-weight: 400; }
 
 .sum-total {
-  background: var(--ink);
+  background: var(--teal);  
   margin: 8px -24px -20px;
   padding: 16px 24px;
   display: flex;
@@ -2134,7 +2134,7 @@ function showSuccess(booking, isMulti) {
     document.getElementById('successModal').classList.add('active');
     return;
   }
-  
+
   const rows = [
     ['預約編號', booking.booking_number],
     ['會議室', booking.room_name],

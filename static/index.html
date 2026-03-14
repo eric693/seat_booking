@@ -1548,7 +1548,8 @@ async function selectDate(ds, el) {
       }
     });
 
-    // 若有 open_periods，把不在開放時段的 slot 加入封鎖
+    // 若有 open_periods，把不在開放時段的 slot 加入封鎖，並記錄到 timeConfigBlockedSlots
+    timeConfigBlockedSlots = new Set();
     if (_openPeriods.length > 0) {
       for (let i = 0; i < SLOT_COUNT; i++) {
         const slotStart = slotToTime(i);
@@ -1556,10 +1557,13 @@ async function selectDate(ds, el) {
         const inOpen = _openPeriods.some(p =>
           slotStart >= p.start && slotEnd <= p.end
         );
-        if (!inOpen) blockedSlots.add(i);
+        if (!inOpen) {
+          blockedSlots.add(i);
+          timeConfigBlockedSlots.add(i);
+        }
       }
     }
-  } catch(e2) { bookedSlots = []; blockedSlots = new Set(); _openPeriods = []; }
+  } catch(e2) { bookedSlots = []; blockedSlots = new Set(); _openPeriods = []; timeConfigBlockedSlots = new Set(); }
 
   selectedSlots.clear();
 
@@ -1587,10 +1591,11 @@ function timeToSlot(t) {
   return (h * 60 + m - SLOT_START_HOUR * 60) / 30;
 }
 
-let selectedSlots     = new Set();
-let blockedSlots      = new Set();
-let adminBlockedSlots = new Set();
-let _openPeriods      = [];  // 來自 time_config 的開放時段
+let selectedSlots         = new Set();
+let blockedSlots          = new Set();
+let adminBlockedSlots     = new Set();
+let timeConfigBlockedSlots = new Set();  // time_config 非開放時段
+let _openPeriods          = [];  // 來自 time_config 的開放時段
 
 let dragStart  = -1;
 let dragEnd    = -1;
@@ -1603,12 +1608,31 @@ let selEnd   = -1;
 function buildTimeGrid() {
   // 若有 time_config 的 open_periods，用它來分組；否則用預設三段
   let periods;
+  // 永遠使用預設三段分組渲染所有 28 個格子
+  // open_periods 已在 selectDate 時把非開放格子加入 blockedSlots
+  // 若有 time_config，用自訂時段名稱作為分組標籤；否則用預設
   if (_openPeriods.length > 0) {
-    periods = _openPeriods.map(p => {
+    // 以 open_periods 定義分組，但仍渲染全部時間（包含封鎖格）
+    // 先建立 slot → period label 的對應
+    const slotLabel = {};
+    _openPeriods.forEach(p => {
       const from = Math.max(0, timeToSlot(p.start));
       const to   = Math.min(SLOT_COUNT - 1, timeToSlot(p.end) - 1);
-      return { label: p.label, from, to };
+      for (let i = from; i <= to; i++) slotLabel[i] = p.label;
     });
+    // 將 28 個 slot 依標籤分組（未在 open_periods 的歸為「非開放」）
+    const groups = [];
+    let cur = null;
+    for (let i = 0; i < SLOT_COUNT; i++) {
+      const lbl = slotLabel[i] || '非開放時段';
+      if (!cur || cur.label !== lbl) {
+        cur = { label: lbl, from: i, to: i };
+        groups.push(cur);
+      } else {
+        cur.to = i;
+      }
+    }
+    periods = groups;
   } else {
     periods = [
       { label: '上午 Morning',   from: 0,  to: 7  },
@@ -1628,7 +1652,7 @@ function buildTimeGrid() {
       html += `
         <div class="time-row">
           <div class="time-axis">${axisLabel}</div>
-          <div class="ts ${adminBlockedSlots.has(i) ? 'ts-admin-blocked' : (isBlocked ? 'ts-booked' : '')}"
+          <div class="ts ${timeConfigBlockedSlots.has(i) ? 'ts-admin-blocked' : (adminBlockedSlots.has(i) ? 'ts-admin-blocked' : (isBlocked ? 'ts-booked' : ''))}"
                data-slot="${i}"
                ${isBlocked ? '' : `
                  onmousedown="tsMouseDown(event,${i})"
@@ -1636,7 +1660,7 @@ function buildTimeGrid() {
                  ontouchstart="tsTouchStart(event,${i})"
                  ontouchmove="tsTouchMove(event)"
                `}
-          >${adminBlockedSlots.has(i) ? '無開放' : (isBlocked ? '已預約' : '')}</div>
+          >${timeConfigBlockedSlots.has(i) ? '無開放' : (adminBlockedSlots.has(i) ? '無開放' : (isBlocked ? '已預約' : ''))}</div>
           <div class="time-axis" style="text-align:left;padding-left:8px;padding-right:0;">${endT}</div>
         </div>`;
     }

@@ -1724,6 +1724,7 @@ def room_availability(room_id):
     return jsonify({
         'booked_slots': get_booked_slots(room_id, date),
         'open_periods': _get_open_periods(room, date),
+        'has_time_config': bool(room.time_config),
     })
 
 

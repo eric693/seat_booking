@@ -1553,7 +1553,7 @@ async function selectDate(ds, el) {
 
     // 若有 open_periods，把不在開放時段的 slot 加入封鎖，並記錄到 timeConfigBlockedSlots
     timeConfigBlockedSlots = new Set();
-    if (_openPeriods.length > 0) {
+    if (hasTimeConfig) {
       for (let i = 0; i < SLOT_COUNT; i++) {
         const slotStart = slotToTime(i);
         const slotEnd   = slotToTime(i + 1);
@@ -1614,7 +1614,7 @@ function buildTimeGrid() {
   // 永遠使用預設三段分組渲染所有 28 個格子
   // open_periods 已在 selectDate 時把非開放格子加入 blockedSlots
   // 若有 time_config，用自訂時段名稱作為分組標籤；否則用預設
-  if (_openPeriods.length > 0) {
+  if (data.has_time_config) {
     // 以 open_periods 定義分組，但仍渲染全部時間（包含封鎖格）
     // 先建立 slot → period label 的對應
     const slotLabel = {};

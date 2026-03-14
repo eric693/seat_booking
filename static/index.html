@@ -113,7 +113,7 @@ header {
   position: relative;
   z-index: 1;
   display: grid;
-  grid-template-columns: 1fr 380px;
+  grid-template-columns: 1fr;
   gap: 60px;
   align-items: center;
 }
@@ -175,39 +175,6 @@ header {
   background: var(--gold);
   flex-shrink: 0;
 }
-
-.hero-card {
-  background: rgba(255,255,255,0.05);
-  border: 1px solid rgba(255,255,255,0.1);
-  border-radius: 8px;
-  padding: 28px;
-  backdrop-filter: blur(10px);
-}
-
-.hero-card h3 {
-  font-family: 'DM Serif Display', serif;
-  font-size: 18px;
-  color: var(--gold);
-  margin-bottom: 16px;
-}
-
-.stat-list {
-  display: flex;
-  flex-direction: column;
-  gap: 12px;
-}
-
-.stat-row {
-  display: flex;
-  justify-content: space-between;
-  font-size: 14px;
-  color: rgba(255,255,255,0.7);
-  padding-bottom: 10px;
-  border-bottom: 1px solid rgba(255,255,255,0.06);
-}
-
-.stat-row:last-child { border-bottom: none; padding-bottom: 0; }
-.stat-val { color: var(--white); font-weight: 600; }
 
 /* ── MAIN LAYOUT ── */
 .page-wrapper {
@@ -980,8 +947,7 @@ footer {
 @media (max-width: 1024px) {
   .hero-inner, .page-wrapper { grid-template-columns: 1fr; }
   .sidebar { position: static; }
-  .hero-card { display: none; }
-}
+  }
 
 @media (max-width: 700px) {
   .rooms-grid { grid-template-columns: 1fr; }
@@ -1024,17 +990,10 @@ footer {
       <p class="hero-desc" id="hero-desc">提供多種類型會議室，彈性時段預約，滿足各種商務需求。</p>
       <div class="hero-meta">
         <div class="meta-row"><div class="meta-dot"></div><span id="meta-hours">週一至週五 08:00 – 22:00</span></div>
-        <div class="meta-row"><div class="meta-dot"></div><span id="meta-email">booking@example.com</span></div>
+        <div class="meta-row"><div class="meta-dot"></div><span id="meta-email"><a href="/cdn-cgi/l/email-protection" class="__cf_email__" data-cfemail="ed8f82828684838aad88958c809d8188c38e8280">[email&#160;protected]</a></span></div>
       </div>
     </div>
-    <div class="hero-card">
-      <h3>今日概況</h3>
-      <div class="stat-list" id="hero-stats">
-        <div class="stat-row"><span>可用會議室</span><span class="stat-val" id="stat-rooms">—</span></div>
-        <div class="stat-row"><span>今日預約</span><span class="stat-val" id="stat-today">—</span></div>
-        <div class="stat-row"><span>最快可預約</span><span class="stat-val">立即</span></div>
-      </div>
-    </div>
+
   </div>
 </section>
 
@@ -1204,7 +1163,7 @@ footer {
 @keyframes pls { 0%,100%{opacity:1} 50%{opacity:0.3} }
 </style>
 
-<script>
+<script data-cfasync="false" src="/cdn-cgi/scripts/5c5dd728/cloudflare-static/email-decode.min.js"></script><script>
 const API = '';
 const LIFF_ID = '2009193434-BpOSKuw9';
 
@@ -1333,7 +1292,6 @@ async function loadRooms() {
   try {
     const res = await fetch(`${API}/api/rooms`);
     const rooms = await res.json();
-    document.getElementById('stat-rooms').textContent = rooms.length;
 
     const grid = document.getElementById('roomsGrid');
     grid.innerHTML = rooms.map(r => {
@@ -2110,26 +2068,9 @@ document.addEventListener('DOMContentLoaded', function() {
   loadContent();
   loadRooms();
   renderCal();
-  loadHeroStats();
+
 });
 
-async function loadHeroStats() {
-  try {
-    const today = new Date().toISOString().slice(0, 10);
-    const roomsRes = await fetch(`${API}/api/rooms`);
-    const rooms = await roomsRes.json();
-    document.getElementById('stat-rooms').textContent = rooms.length;
-    let todayCount = 0;
-    await Promise.all(rooms.map(async r => {
-      try {
-        const res = await fetch(`${API}/api/rooms/${r.id}/availability?date=${today}`);
-        const d = await res.json();
-        todayCount += (d.booked_slots || []).length;
-      } catch(e) {}
-    }));
-    document.getElementById('stat-today').textContent = todayCount;
-  } catch(e) {}
-}
 </script>
 </body>
 </html>

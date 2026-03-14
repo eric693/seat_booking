@@ -635,6 +635,17 @@ input[list]::-webkit-calendar-picker-indicator { display: none !important; }
   transition: width 0.3s;
 }
 
+/* ── Photo Sort ── */
+.photo-sort-item {
+  position: relative;
+  width: 120px;
+  flex-shrink: 0;
+  cursor: grab;
+  transition: opacity .2s, transform .2s;
+}
+.photo-sort-item:active { cursor: grabbing; }
+.photo-sort-item.drag-over { outline: 2px dashed var(--teal); border-radius: 8px; }
+
 /* ── TOAST ── */
 .toast {
   position: fixed;
@@ -2110,46 +2121,147 @@ async function loadPhotos() {
     allRooms = await res.json();
     const ICONS = {'腦力激盪':'BS','洽談室':'MT','簡報廳':'PR','視訊會議':'VC','行政套房':'EX','培訓教室':'TR'};
     document.getElementById('photoRoomList').innerHTML = allRooms.map(r => {
-      const icon = ICONS[r.room_type] || 'MR';
-      const photos = r.photos || (r.photo_url ? [r.photo_url] : []);
+      const icon     = ICONS[r.room_type] || 'MR';
+      const photos   = r.photos ? (typeof r.photos === 'string' ? JSON.parse(r.photos) : r.photos) : (r.photo_url ? [r.photo_url] : []);
       const coverIdx = r.cover_index || 0;
       const canUpload = photos.length < 5;
-      const photoGrid = photos.length > 0
-        ? `<div style="display:flex;flex-wrap:wrap;gap:10px;margin-bottom:12px;" id="photo-grid-${r.id}">
-            ${photos.map((url, i) => `
-              <div style="position:relative;width:120px;flex-shrink:0;">
-                <img src="${url}" style="width:120px;height:90px;object-fit:cover;border-radius:8px;border:2px solid ${i===coverIdx?'var(--gold)':'var(--border)'};display:block;">
-                ${i===coverIdx ? '<div style="position:absolute;top:4px;left:4px;background:var(--gold);color:#1a1a1a;font-size:10px;font-weight:700;padding:2px 6px;border-radius:4px;">主封面</div>' : ''}
-                <div style="display:flex;gap:4px;margin-top:4px;">
-                  ${i!==coverIdx ? `<button class="btn btn-outline btn-sm" style="flex:1;font-size:11px;padding:3px;" onclick="setCover(${r.id},${i})">設為封面</button>` : '<div style="flex:1;text-align:center;font-size:11px;color:var(--gold);">✓ 封面</div>'}
-                  <button class="btn btn-sm" style="background:#c44b3a;color:#fff;border:none;font-size:11px;padding:3px 8px;border-radius:4px;cursor:pointer;" onclick="deletePhoto(${r.id},${i})">✕</button>
-                  <button class="btn btn-sm" style="background:var(--teal);color:#fff;border:none;font-size:11px;padding:3px 7px;border-radius:4px;cursor:pointer;width:100%;margin-top:2px;" onclick="openCropForExisting(${r.id},${i})">✂ 調整範圍</button>
-                </div>
-              </div>`).join('')}
+      const photoGridHtml = photos.length > 0
+        ? `<div id="photo-grid-${r.id}" style="display:flex;flex-wrap:wrap;gap:10px;margin-bottom:8px;"
+               ondragover="photoDragOver(event)" ondrop="photoDrop(event,${r.id})">
+            ${renderPhotoItems(photos, coverIdx, r.id)}
+          </div>
+          <div style="display:flex;align-items:center;gap:10px;margin-bottom:12px;flex-wrap:wrap;">
+            <span style="font-size:12px;color:var(--ink-60);">⠿ 拖曳照片可調整順序，數字為顯示序號</span>
+            <button class="btn btn-sm" id="save-order-btn-${r.id}" onclick="savePhotoOrder(${r.id})"
+              style="display:none;background:var(--teal);color:#fff;border:none;border-radius:4px;padding:5px 14px;cursor:pointer;font-size:12px;">
+              💾 儲存排序
+            </button>
+            <span id="save-order-hint-${r.id}" style="font-size:12px;color:var(--gold);display:none;"></span>
           </div>`
         : `<div style="color:var(--ink-60);font-size:13px;margin-bottom:12px;">尚未上傳照片</div>`;
       return `
       <div class="card" style="margin-bottom:20px;">
         <div class="card-head">
-          <div style="display:flex;align-items:center;gap:12px;">
-            <div><div class="card-title">${r.name}</div><div style="font-size:12px;color:var(--ink-60);">${r.room_type} · ${r.floor||'F—'} · ${photos.length}/5 張</div></div>
+          <div>
+            <div class="card-title">${r.name}</div>
+            <div style="font-size:12px;color:var(--ink-60);">${r.room_type} · ${r.floor||'F—'} · ${photos.length}/5 張 · 拖曳數字可排序</div>
           </div>
           <span class="badge ${r.is_active?'badge-green':'badge-gray'}">${r.is_active?'啟用中':'已停用'}</span>
         </div>
         <div class="card-body">
-          ${photoGrid}
-          ${canUpload ? `
-          <div class="photo-upload-area" style="position:relative;" id="drop-${r.id}"
-            ondragover="dragover(event,${r.id})" ondragleave="dragleave(event,${r.id})" ondrop="handleDrop(event,${r.id})">
-            <input type="file" accept="image/*" onchange="uploadRoomPhoto(event,${r.id})" style="position:absolute;inset:0;opacity:0;cursor:pointer;">
-            <div class="photo-upload-icon">&#43;</div>
-            <div class="photo-upload-text"><strong>新增照片</strong>（還可上傳 ${5-photos.length} 張）<br><small>JPG、PNG、GIF、WEBP，最大 16MB</small></div>
-            <div class="upload-progress" id="prog-${r.id}"><div class="upload-progress-bar" id="progbar-${r.id}" style="width:0%"></div></div>
-          </div>` : `<div style="color:var(--ink-60);font-size:13px;text-align:center;padding:12px;">已達上限（5 張），請先刪除舊照片再上傳</div>`}
+          ${photoGridHtml}
+          ${canUpload
+            ? `<div class="photo-upload-area" style="position:relative;" id="drop-${r.id}"
+                ondragover="dragover(event,${r.id})" ondragleave="dragleave(event,${r.id})" ondrop="handleDrop(event,${r.id})">
+                <input type="file" accept="image/*" onchange="uploadRoomPhoto(event,${r.id})" style="position:absolute;inset:0;opacity:0;cursor:pointer;">
+                <div class="photo-upload-icon">&#43;</div>
+                <div class="photo-upload-text"><strong>新增照片</strong>（還可上傳 ${5-photos.length} 張）<br><small>JPG、PNG、GIF、WEBP，最大 16MB</small></div>
+                <div class="upload-progress" id="prog-${r.id}"><div class="upload-progress-bar" id="progbar-${r.id}" style="width:0%"></div></div>
+              </div>`
+            : `<div style="color:var(--ink-60);font-size:13px;text-align:center;padding:12px;">已達上限（5 張），請先刪除舊照片再上傳</div>`
+          }
         </div>
       </div>`;
     }).join('');
   } catch(e) { console.error(e); }
+}
+
+function renderPhotoItems(photos, coverIdx, roomId) {
+  return photos.map((url, i) => `
+    <div class="photo-sort-item" draggable="true" data-idx="${i}" data-rid="${roomId}"
+      ondragstart="photoDragStart(event,${roomId},${i})" ondragend="photoDragEnd(event)">
+      <div style="position:absolute;top:4px;left:4px;z-index:10;width:22px;height:22px;border-radius:50%;
+        background:${i===coverIdx?'var(--gold)':'rgba(0,0,0,0.55)'};color:#fff;font-size:12px;font-weight:700;
+        display:flex;align-items:center;justify-content:center;box-shadow:0 1px 4px rgba(0,0,0,.3);
+        user-select:none;pointer-events:none;">${i+1}</div>
+      <img src="${url}" draggable="false"
+        style="width:120px;height:90px;object-fit:cover;border-radius:8px;
+               border:2px solid ${i===coverIdx?'var(--gold)':'var(--border)'};display:block;
+               user-select:none;pointer-events:none;">
+      ${i===coverIdx?`<div style="position:absolute;bottom:26px;left:0;right:0;text-align:center;
+        background:var(--gold);color:#1a1a1a;font-size:10px;font-weight:700;padding:1px 4px;pointer-events:none;">封面</div>`:''}
+      <div style="display:flex;gap:4px;margin-top:4px;">
+        ${i!==coverIdx
+          ?`<button class="btn btn-outline btn-sm" style="flex:1;font-size:11px;padding:3px;" onclick="setCover(${roomId},${i})">設封面</button>`
+          :`<div style="flex:1;text-align:center;font-size:11px;color:var(--gold);line-height:2;">✓ 封面</div>`}
+        <button class="btn btn-sm" style="background:#c44b3a;color:#fff;border:none;font-size:11px;padding:3px 8px;border-radius:4px;cursor:pointer;"
+          onclick="deletePhoto(${roomId},${i})">✕</button>
+      </div>
+      <button class="btn btn-sm" style="background:var(--teal);color:#fff;border:none;font-size:11px;padding:3px 7px;border-radius:4px;cursor:pointer;width:100%;margin-top:2px;"
+        onclick="openCropForExisting(${roomId},${i})">✂ 調整範圍</button>
+    </div>`).join('');
+}
+
+let _pdDragRoomId = null, _pdDragFromIdx = null;
+
+function photoDragStart(e, roomId, fromIdx) {
+  e.dataTransfer.effectAllowed = 'move';
+  e.dataTransfer.setData('text/plain', JSON.stringify({ roomId, fromIdx }));
+  e.currentTarget.style.opacity = '0.4';
+  e.currentTarget.style.transform = 'scale(0.95)';
+  _pdDragRoomId = roomId; _pdDragFromIdx = fromIdx;
+}
+
+function photoDragEnd(e) {
+  e.currentTarget.style.opacity = '';
+  e.currentTarget.style.transform = '';
+  document.querySelectorAll('.photo-sort-item').forEach(el => el.classList.remove('drag-over'));
+}
+
+function photoDragOver(e) {
+  e.preventDefault();
+  e.dataTransfer.dropEffect = 'move';
+  const item = e.target.closest('.photo-sort-item');
+  document.querySelectorAll('.photo-sort-item').forEach(el => el.classList.remove('drag-over'));
+  if (item) item.classList.add('drag-over');
+}
+
+function photoDrop(e, roomId) {
+  e.preventDefault();
+  document.querySelectorAll('.photo-sort-item').forEach(el => el.classList.remove('drag-over'));
+  let payload;
+  try { payload = JSON.parse(e.dataTransfer.getData('text/plain')); } catch { return; }
+  if (payload.roomId !== roomId) return;
+  const toItem = e.target.closest('.photo-sort-item');
+  if (!toItem) return;
+  const toIdx = parseInt(toItem.dataset.idx), fromIdx = payload.fromIdx;
+  if (fromIdx === toIdx) return;
+  const room = allRooms.find(r => r.id === roomId); if (!room) return;
+  const photos = room.photos ? (typeof room.photos === 'string' ? JSON.parse(room.photos) : [...room.photos]) : (room.photo_url ? [room.photo_url] : []);
+  const newPhotos = [...photos];
+  const [moved] = newPhotos.splice(fromIdx, 1);
+  newPhotos.splice(toIdx, 0, moved);
+  const coverUrl = photos[room.cover_index || 0] || '';
+  const newCover = newPhotos.indexOf(coverUrl);
+  room.photos = JSON.stringify(newPhotos);
+  room.cover_index = newCover >= 0 ? newCover : 0;
+  const btn = document.getElementById(`save-order-btn-${roomId}`);
+  const hint = document.getElementById(`save-order-hint-${roomId}`);
+  if (btn) btn.style.display = '';
+  if (hint) { hint.style.display = ''; hint.textContent = '✎ 排序已變更，記得儲存'; }
+  const grid = document.getElementById(`photo-grid-${roomId}`);
+  if (grid) grid.innerHTML = renderPhotoItems(newPhotos, room.cover_index, roomId);
+}
+
+async function savePhotoOrder(roomId) {
+  const room = allRooms.find(r => r.id === roomId); if (!room) return;
+  const photos = room.photos ? (typeof room.photos === 'string' ? JSON.parse(room.photos) : room.photos) : [];
+  const btn = document.getElementById(`save-order-btn-${roomId}`);
+  const hint = document.getElementById(`save-order-hint-${roomId}`);
+  if (btn) { btn.textContent = '儲存中...'; btn.disabled = true; }
+  try {
+    const res = await fetch(`/admin/api/rooms/${roomId}/photos/reorder`, {
+      method: 'PUT', headers: { ...H, 'Content-Type': 'application/json' },
+      body: JSON.stringify({ order: photos }),
+    });
+    const data = await res.json();
+    if (res.ok) {
+      toast('照片排序已儲存 ✓', 'success');
+      if (hint) hint.textContent = '✓ 已儲存';
+      if (btn) btn.style.display = 'none';
+      setTimeout(() => loadPhotos(), 600);
+    } else { toast(data.error || '儲存失敗', 'error'); if (btn) { btn.textContent = '💾 儲存排序'; btn.disabled = false; } }
+  } catch(e2) { toast('儲存失敗', 'error'); if (btn) { btn.textContent = '💾 儲存排序'; btn.disabled = false; } }
 }
 
 function dragover(e, id) { e.preventDefault(); document.getElementById(`drop-${id}`).classList.add('dragover'); }

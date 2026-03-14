@@ -2831,6 +2831,26 @@ def admin_set_cover_photo(rid):
     db.session.commit()
     return jsonify({'success': True, 'cover_index': idx})
 
+@app.route('/admin/api/rooms/<int:rid>/photos/reorder', methods=['PUT'])
+def admin_reorder_photos(rid):
+    """重新排列照片順序（傳入新的 URL 陣列）"""
+    err = check_admin()
+    if err: return err
+    r = Room.query.get_or_404(rid)
+    data = request.get_json()
+    new_order = data.get('order', [])
+    photos = r.get_photos()
+    if len(new_order) != len(photos):
+        return jsonify({'error': '照片數量不符'}), 400
+    old_cover_url = photos[r.cover_index or 0] if photos else ''
+    r.photos = json.dumps(new_order, ensure_ascii=False)
+    if old_cover_url and old_cover_url in new_order:
+        r.cover_index = new_order.index(old_cover_url)
+    else:
+        r.cover_index = 0
+    r.photo_url = new_order[r.cover_index] if new_order else ''
+    db.session.commit()
+    return jsonify({'success': True, 'photos': new_order, 'cover_index': r.cover_index})
 @app.route('/admin/api/site-logo', methods=['POST'])
 def admin_upload_logo():
     """上傳 Logo 圖片，儲存至 SiteContent"""

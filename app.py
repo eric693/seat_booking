@@ -1671,7 +1671,10 @@ def get_site_content():
 
 @app.route('/api/rooms')
 def get_rooms():
-    return jsonify([r.to_dict() for r in Room.query.filter_by(is_active=True).all()])
+    rooms = Room.query.filter_by(is_active=True).order_by(
+        Room.sort_order.asc(), Room.created_at.asc()
+    ).all()
+    return jsonify([r.to_dict() for r in rooms])
 
 
 @app.route('/api/rooms/<int:room_id>/availability')

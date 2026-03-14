@@ -1860,19 +1860,18 @@ function showSelectionBar() {
   const minH = state.minHours || 1;
   let shortSeg = null;
   if (state.segments) {
-    for (const s of state.segments) {
-      const segDurH = (toMin(s.end) - toMin(s.start)) / 60;
-      if (segDurH < minH) { shortSeg = s; break; }
+    const totalMinCheck = state.segments.reduce((acc, s) => acc + toMin(s.end) - toMin(s.start), 0);
+    const totalHCheck   = totalMinCheck / 60;
+    if (totalHCheck < minH) {
+      // 用 shortSeg 借來顯示警示
+      shortSeg = { start: state.segments[0].start, end: state.segments[state.segments.length-1].end, _total: totalMinCheck };
     }
   }
   if (shortSeg) {
-    const shortMin = toMin(shortSeg.end) - toMin(shortSeg.start);
-    const shortStr = shortMin >= 60
-      ? Math.floor(shortMin/60) + ' 小時' + (shortMin%60 ? ' ' + shortMin%60 + ' 分鐘' : '')
-      : shortMin + ' 分鐘';
+    const shortMin = shortSeg._total || (toMin(shortSeg.end) - toMin(shortSeg.start));
+    const shortStr = shortMin >= 60 ? Math.floor(shortMin/60) + ' 小時' + (shortMin%60 ? ' ' + shortMin%60 + ' 分鐘' : '') : shortMin + ' 分鐘';
     document.getElementById('conflictText').textContent =
-      `⚠ 時段 ${shortSeg.start}–${shortSeg.end} 只有 ${shortStr}，` +
-      `此會議室每段最少需預約 ${minH} 小時，送出時將被擋回。`;
+      `目前共選 ${shortStr}，此會議室總時數最少需 ${minH} 小時，請繼續加選時段。`;
     conflictEl.style.background = '#fffbe6';
     conflictEl.style.borderColor = '#f0c040';
     conflictEl.style.color = '#7a5c00';
@@ -2014,22 +2013,15 @@ async function submitBooking() {
   // ★ 逐段驗證最低預約時數（前台守門，避免送出後才被後端擋回）
   const minH = state.minHours || 1;
   if (minH > 0) {
-    for (const seg of segs) {
-      const segDurMin = toMin(seg.end) - toMin(seg.start);
-      const segDurH   = segDurMin / 60;
-      if (segDurH < minH) {
-        const shortStr = segDurMin >= 60
-          ? Math.floor(segDurMin/60) + ' 小時' + (segDurMin%60 ? ' ' + segDurMin%60 + ' 分鐘' : '')
-          : segDurMin + ' 分鐘';
-        const minDisp = minH === Math.floor(minH) ? minH : minH;
-        alert(
-          `預約失敗\n\n` +
-          `時段 ${seg.start}–${seg.end} 只有 ${shortStr}，\n` +
-          `此會議室每段最少需預約 ${minDisp} 小時。\n\n` +
-          `請重新選擇時段。`
-        );
-        return; // 阻止送出
-      }
+    const totalMin = segs.reduce((acc, s) => acc + toMin(s.end) - toMin(s.start), 0);
+    const totalH   = totalMin / 60;
+    if (totalH < minH) {
+      const totalStr = totalMin >= 60
+        ? Math.floor(totalMin/60) + ' 小時' + (totalMin%60 ? ' ' + totalMin%60 + ' 分鐘' : '')
+        : totalMin + ' 分鐘';
+      const minDisp = minH === Math.floor(minH) ? minH : minH;
+      alert(`預約失敗\n\n總時數只有 ${totalStr}，\n此會議室最少需預約 ${minDisp} 小時。\n\n請重新選擇時段。`);
+      return;
     }
   }
 

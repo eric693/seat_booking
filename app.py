@@ -1769,12 +1769,9 @@ def create_booking():
                 return h * 60 + mn
             # 驗證每段都符合最低預約時數
             min_h = float(room.min_hours or 1.0)
-            if min_h > 0:
-                for seg in segments:
-                    seg_dur_h = (_m(seg['end']) - _m(seg['start'])) / 60.0
-                    if seg_dur_h < min_h:
-                        min_disp = int(min_h) if min_h == int(min_h) else min_h
-                        return jsonify({'error': f'此會議室每次最少預約 {min_disp} 小時，時段 {seg["start"]}–{seg["end"]} 只有 {round(seg_dur_h*60)} 分鐘'}), 400
+            if min_h > 0 and dur < min_h:
+                min_disp = int(min_h) if min_h == int(min_h) else min_h
+                return jsonify({'error': f'此會議室每次最少預約 {min_disp} 小時，目前共選 {round(dur*60)} 分鐘'}), 400
             dur = sum((_m(s['end']) - _m(s['start'])) for s in segments) / 60
             start_time = segments[0]['start']
             end_time   = segments[-1]['end']

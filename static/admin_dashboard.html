@@ -1265,6 +1265,48 @@ input[list]::-webkit-calendar-picker-indicator { display: none !important; }
   </div>
 </div>
 
+<!-- Time Config Modal -->
+<div class="modal" id="timeConfigModal">
+  <div class="modal-box" style="max-width:780px;">
+    <div class="modal-title" id="tcModalTitle">時段設定</div>
+    <input type="hidden" id="tc-room-id">
+
+    <!-- 時段定義 -->
+    <div style="margin-bottom:20px;">
+      <div style="font-size:13px;font-weight:700;text-transform:uppercase;letter-spacing:.06em;color:var(--ink-60);margin-bottom:10px;">時段定義</div>
+      <div id="tc-periods" style="display:grid;gap:8px;"></div>
+      <button class="btn btn-outline btn-sm" style="margin-top:10px;" onclick="tcAddPeriod()">＋ 新增時段</button>
+    </div>
+
+    <!-- 每週開放規則 -->
+    <div style="margin-bottom:20px;">
+      <div style="font-size:13px;font-weight:700;text-transform:uppercase;letter-spacing:.06em;color:var(--ink-60);margin-bottom:10px;">每週開放規則</div>
+      <div style="overflow-x:auto;">
+        <table style="width:100%;border-collapse:collapse;font-size:13px;" id="tc-weekly-table">
+          <thead>
+            <tr id="tc-weekly-head">
+              <th style="padding:8px 12px;text-align:left;background:var(--paper);border:1px solid var(--border);width:80px;">星期</th>
+            </tr>
+          </thead>
+          <tbody id="tc-weekly-body"></tbody>
+        </table>
+      </div>
+    </div>
+
+    <!-- 日期例外 -->
+    <div style="margin-bottom:20px;">
+      <div style="font-size:13px;font-weight:700;text-transform:uppercase;letter-spacing:.06em;color:var(--ink-60);margin-bottom:10px;">日期例外設定 <span style="font-weight:400;font-size:11px;">（針對特定日期覆蓋每週規則）</span></div>
+      <div id="tc-overrides" style="display:grid;gap:8px;margin-bottom:8px;"></div>
+      <button class="btn btn-outline btn-sm" onclick="tcAddOverride()">＋ 新增例外日期</button>
+    </div>
+
+    <div class="modal-footer">
+      <button class="btn btn-outline" onclick="closeTimeConfig()">取消</button>
+      <button class="btn btn-primary" onclick="saveTimeConfig()">儲存時段設定</button>
+    </div>
+  </div>
+</div>
+
 <!-- Account Modal -->
 <div class="modal" id="accountModal">
   <div class="modal-box" style="max-width:560px;">
@@ -1552,7 +1594,8 @@ async function loadRoomsAdmin() {
           ${r.description ? `<div class="rac-desc">${r.description.length > 60 ? r.description.slice(0,60) + '…' : r.description}</div>` : ''}
           <div class="rac-actions">
             <button class="btn btn-outline btn-sm" onclick="editRoom(${r.id})" style="flex:1;">編輯</button>
-            <button class="btn btn-outline btn-sm" onclick="toggleRoomStatus(${r.id}, ${!r.is_active})" style="flex:1;">${r.is_active ? '停用' : '啟用'}</button>
+            <button class="btn btn-outline btn-sm" onclick="openTimeConfig(${r.id})" style="flex:1;" title="設定早午晚時段開放規則">時段設定</button>
+            <button class="btn btn-outline btn-sm" onclick="toggleRoomStatus(${r.id}, ${!r.is_active})">${r.is_active ? '停用' : '啟用'}</button>
           </div>
         </div>
       </div>`;
@@ -2221,6 +2264,218 @@ async function deleteBlockedSlot(id) {
   const res = await fetch(`/admin/api/blocked-slots/${id}`, { method:'DELETE', headers:H });
   if (res.ok) { toast('已刪除'); loadBlockedSlots(); }
   else toast('刪除失敗','error');
+}
+
+// ── TIME CONFIG ──────────────────────────────────────────────
+const TC_WEEKDAYS = [
+  { key: '1', label: '週一' }, { key: '2', label: '週二' },
+  { key: '3', label: '週三' }, { key: '4', label: '週四' },
+  { key: '5', label: '週五' }, { key: '6', label: '週六' },
+  { key: '0', label: '週日' },
+];
+let _tcConfig = null;  // 目前編輯中的 time_config
+
+function _tcDefault() {
+  return {
+    periods: [
+      { id: 'am',  label: '早上', start: '08:00', end: '12:00' },
+      { id: 'pm',  label: '下午', start: '13:00', end: '17:00' },
+      { id: 'eve', label: '晚上', start: '18:00', end: '22:00' },
+    ],
+    weekly: { '0':[], '1':['am','pm'], '2':['am','pm'], '3':['am','pm'], '4':['am','pm'], '5':['am','pm'], '6':[] },
+    overrides: [],
+  };
+}
+
+async function openTimeConfig(roomId) {
+  const room = allRooms.find(r => r.id === roomId);
+  if (!room) return;
+  document.getElementById('tc-room-id').value = roomId;
+  document.getElementById('tcModalTitle').textContent = `時段設定：${room.name}`;
+  try {
+    const cfg = room.time_config ? JSON.parse(room.time_config) : _tcDefault();
+    // 確保欄位完整
+    cfg.periods   = cfg.periods   || _tcDefault().periods;
+    cfg.weekly    = cfg.weekly    || _tcDefault().weekly;
+    cfg.overrides = cfg.overrides || [];
+    _tcConfig = cfg;
+  } catch(e) { _tcConfig = _tcDefault(); }
+  tcRenderAll();
+  document.getElementById('timeConfigModal').classList.add('show');
+}
+
+function closeTimeConfig() {
+  document.getElementById('timeConfigModal').classList.remove('show');
+  _tcConfig = null;
+}
+
+function tcRenderAll() {
+  tcRenderPeriods();
+  tcRenderWeekly();
+  tcRenderOverrides();
+}
+
+// ── 時段定義區 ──
+function tcRenderPeriods() {
+  const container = document.getElementById('tc-periods');
+  container.innerHTML = _tcConfig.periods.map((p, i) => `
+    <div style="display:grid;grid-template-columns:1fr 100px 100px auto;gap:8px;align-items:center;background:var(--paper);padding:10px 14px;border-radius:8px;border:1px solid var(--border);">
+      <div>
+        <div style="font-size:11px;color:var(--ink-60);margin-bottom:3px;">時段名稱</div>
+        <input class="finput" style="padding:6px 8px;font-size:13px;" value="${esc(p.label)}" oninput="_tcConfig.periods[${i}].label=this.value;tcRenderWeekly();tcRenderOverrides();">
+      </div>
+      <div>
+        <div style="font-size:11px;color:var(--ink-60);margin-bottom:3px;">開始</div>
+        <input class="finput" type="time" style="padding:6px 8px;font-size:13px;" value="${p.start}" onchange="_tcConfig.periods[${i}].start=this.value;">
+      </div>
+      <div>
+        <div style="font-size:11px;color:var(--ink-60);margin-bottom:3px;">結束</div>
+        <input class="finput" type="time" style="padding:6px 8px;font-size:13px;" value="${p.end}" onchange="_tcConfig.periods[${i}].end=this.value;">
+      </div>
+      <button class="btn btn-sm" style="background:#fee2e2;color:#b91c1c;border:none;padding:6px 10px;margin-top:16px;" onclick="tcDeletePeriod(${i})" ${_tcConfig.periods.length<=1?'disabled':''}>✕</button>
+    </div>`).join('');
+}
+
+function tcAddPeriod() {
+  const id = 'p' + Date.now();
+  _tcConfig.periods.push({ id, label: '新時段', start: '09:00', end: '11:00' });
+  // 每個 weekday 的 weekly 不自動加入
+  tcRenderAll();
+}
+
+function tcDeletePeriod(i) {
+  const pid = _tcConfig.periods[i].id;
+  _tcConfig.periods.splice(i, 1);
+  // 從 weekly 中移除
+  for (const k of Object.keys(_tcConfig.weekly)) {
+    _tcConfig.weekly[k] = (_tcConfig.weekly[k] || []).filter(id => id !== pid);
+  }
+  // 從 overrides 中移除
+  _tcConfig.overrides.forEach(ov => {
+    ov.open = (ov.open || []).filter(id => id !== pid);
+  });
+  tcRenderAll();
+}
+
+// ── 每週開放規則表格 ──
+function tcRenderWeekly() {
+  const thead = document.getElementById('tc-weekly-head');
+  const tbody = document.getElementById('tc-weekly-body');
+  const periods = _tcConfig.periods;
+
+  // 表頭
+  thead.innerHTML = `<th style="padding:8px 12px;text-align:left;background:var(--paper);border:1px solid var(--border);width:80px;">星期</th>` +
+    periods.map(p => `<th style="padding:8px 12px;text-align:center;background:var(--paper);border:1px solid var(--border);min-width:70px;font-size:12px;">${esc(p.label)}<br><span style="font-size:10px;font-weight:400;color:var(--ink-60);">${p.start}–${p.end}</span></th>`).join('') +
+    `<th style="padding:8px 12px;text-align:center;background:var(--paper);border:1px solid var(--border);width:80px;font-size:12px;">全開/全關</th>`;
+
+  // 表身
+  tbody.innerHTML = TC_WEEKDAYS.map(day => {
+    const openIds = _tcConfig.weekly[day.key] || [];
+    const allOpen = periods.every(p => openIds.includes(p.id));
+    const cells = periods.map(p => {
+      const checked = openIds.includes(p.id);
+      return `<td style="padding:8px;text-align:center;border:1px solid var(--border);${checked?'background:#f0faf5;':''}">
+        <input type="checkbox" ${checked?'checked':''} style="width:16px;height:16px;accent-color:var(--teal);cursor:pointer;"
+          onchange="tcTogglePeriod('${day.key}','${p.id}',this.checked)">
+      </td>`;
+    }).join('');
+    return `<tr>
+      <td style="padding:8px 12px;font-weight:600;font-size:13px;border:1px solid var(--border);background:var(--paper);white-space:nowrap;">${day.label}</td>
+      ${cells}
+      <td style="padding:8px;text-align:center;border:1px solid var(--border);">
+        <button class="btn btn-sm" style="font-size:11px;padding:3px 8px;background:${allOpen?'#fee2e2':'#f0faf5'};color:${allOpen?'#b91c1c':'var(--teal)'};border:1px solid ${allOpen?'#fca5a5':'#a7f3d0'};"
+          onclick="tcToggleDay('${day.key}',${allOpen?'false':'true'})">${allOpen?'全關':'全開'}</button>
+      </td>
+    </tr>`;
+  }).join('');
+}
+
+function tcTogglePeriod(dayKey, periodId, checked) {
+  const arr = _tcConfig.weekly[dayKey] || [];
+  if (checked && !arr.includes(periodId)) arr.push(periodId);
+  else if (!checked) { const idx = arr.indexOf(periodId); if(idx>=0) arr.splice(idx,1); }
+  _tcConfig.weekly[dayKey] = arr;
+  tcRenderWeekly();
+}
+
+function tcToggleDay(dayKey, allOpen) {
+  _tcConfig.weekly[dayKey] = allOpen ? _tcConfig.periods.map(p => p.id) : [];
+  tcRenderWeekly();
+}
+
+// ── 日期例外 ──
+function tcRenderOverrides() {
+  const container = document.getElementById('tc-overrides');
+  if (!_tcConfig.overrides.length) {
+    container.innerHTML = '<div style="font-size:13px;color:var(--ink-60);">尚未設定例外日期</div>';
+    return;
+  }
+  const sorted = [..._tcConfig.overrides].sort((a,b) => a.date.localeCompare(b.date));
+  container.innerHTML = sorted.map((ov, i) => {
+    const openIds = ov.open || [];
+    const allClosed = openIds.length === 0;
+    return `<div style="background:var(--paper);border:1px solid var(--border);border-radius:8px;padding:12px 14px;">
+      <div style="display:flex;align-items:center;gap:12px;flex-wrap:wrap;">
+        <div>
+          <div style="font-size:11px;color:var(--ink-60);margin-bottom:3px;">日期</div>
+          <input type="date" class="finput" style="padding:6px 8px;font-size:13px;width:160px;" value="${ov.date}"
+            onchange="_tcConfig.overrides[${i}].date=this.value;tcRenderOverrides();">
+        </div>
+        <div style="flex:1;">
+          <div style="font-size:11px;color:var(--ink-60);margin-bottom:6px;">開放時段</div>
+          <div style="display:flex;gap:8px;flex-wrap:wrap;align-items:center;">
+            ${_tcConfig.periods.map(p => {
+              const checked = openIds.includes(p.id);
+              return `<label style="display:flex;align-items:center;gap:5px;font-size:13px;cursor:pointer;padding:4px 10px;border-radius:20px;background:${checked?'var(--teal-light)':'#f0f0f0'};border:1px solid ${checked?'var(--teal)':'#ddd'};">
+                <input type="checkbox" ${checked?'checked':''} style="accent-color:var(--teal);" onchange="tcToggleOverridePeriod(${i},'${p.id}',this.checked)">
+                <span style="color:${checked?'var(--teal)':'#666'};font-weight:${checked?'600':'400'};">${esc(p.label)}</span>
+              </label>`;
+            }).join('')}
+            ${allClosed ? `<span style="font-size:12px;color:var(--red);font-weight:600;">整日關閉</span>` : ''}
+          </div>
+        </div>
+        <button class="btn btn-sm btn-danger" onclick="tcDeleteOverride(${i})" style="align-self:flex-end;">刪除</button>
+      </div>
+    </div>`;
+  }).join('');
+  // 同步回 _tcConfig（保持 sorted 順序）
+  sorted.forEach((ov, i) => { _tcConfig.overrides[i] = ov; });
+}
+
+function tcAddOverride() {
+  const today = new Date().toISOString().slice(0,10);
+  _tcConfig.overrides.push({ date: today, open: _tcConfig.periods.map(p => p.id) });
+  tcRenderOverrides();
+}
+
+function tcDeleteOverride(i) {
+  _tcConfig.overrides.splice(i, 1);
+  tcRenderOverrides();
+}
+
+function tcToggleOverridePeriod(overrideIdx, periodId, checked) {
+  const arr = _tcConfig.overrides[overrideIdx].open || [];
+  if (checked && !arr.includes(periodId)) arr.push(periodId);
+  else if (!checked) { const idx = arr.indexOf(periodId); if(idx>=0) arr.splice(idx,1); }
+  _tcConfig.overrides[overrideIdx].open = arr;
+  tcRenderOverrides();
+}
+
+async function saveTimeConfig() {
+  const roomId = document.getElementById('tc-room-id').value;
+  if (!roomId) return;
+  try {
+    const res = await fetch(`/admin/api/rooms/${roomId}`, {
+      method: 'PUT', headers: { ...H, 'Content-Type': 'application/json' },
+      body: JSON.stringify({ time_config: JSON.stringify(_tcConfig) })
+    });
+    if (res.ok) {
+      const room = allRooms.find(r => r.id == roomId);
+      if (room) room.time_config = JSON.stringify(_tcConfig);
+      toast('時段設定已儲存', 'success');
+      closeTimeConfig();
+    } else { toast('儲存失敗', 'error'); }
+  } catch(e) { toast('儲存失敗', 'error'); }
 }
 
 // ── PAYMENT SETTINGS ──

@@ -1535,6 +1535,10 @@ async function selectDate(ds, el) {
     bookedSlots = data.booked_slots || [];
     blockedSlots      = new Set();
     adminBlockedSlots = new Set();
+
+    // 處理時段設定：若有 open_periods，把「非開放時間」標記為封鎖
+    _openPeriods = data.open_periods || [];  // [{period_id, label, start, end}]
+
     bookedSlots.forEach(b => {
       const s = timeToSlot(b.start);
       const e = timeToSlot(b.end);
@@ -1543,7 +1547,19 @@ async function selectDate(ds, el) {
         if (b.blocked) adminBlockedSlots.add(i);
       }
     });
-  } catch(e2) { bookedSlots = []; blockedSlots = new Set(); }
+
+    // 若有 open_periods，把不在開放時段的 slot 加入封鎖
+    if (_openPeriods.length > 0) {
+      for (let i = 0; i < SLOT_COUNT; i++) {
+        const slotStart = slotToTime(i);
+        const slotEnd   = slotToTime(i + 1);
+        const inOpen = _openPeriods.some(p =>
+          slotStart >= p.start && slotEnd <= p.end
+        );
+        if (!inOpen) blockedSlots.add(i);
+      }
+    }
+  } catch(e2) { bookedSlots = []; blockedSlots = new Set(); _openPeriods = []; }
 
   selectedSlots.clear();
 
@@ -1574,6 +1590,7 @@ function timeToSlot(t) {
 let selectedSlots     = new Set();
 let blockedSlots      = new Set();
 let adminBlockedSlots = new Set();
+let _openPeriods      = [];  // 來自 time_config 的開放時段
 
 let dragStart  = -1;
 let dragEnd    = -1;
@@ -1584,11 +1601,21 @@ let selStart = -1;
 let selEnd   = -1;
 
 function buildTimeGrid() {
-  const periods = [
-    { label: '上午 Morning',   from: 0,  to: 7  },
-    { label: '下午 Afternoon', from: 8,  to: 19 },
-    { label: '晚間 Evening',   from: 20, to: 27 },
-  ];
+  // 若有 time_config 的 open_periods，用它來分組；否則用預設三段
+  let periods;
+  if (_openPeriods.length > 0) {
+    periods = _openPeriods.map(p => {
+      const from = Math.max(0, timeToSlot(p.start));
+      const to   = Math.min(SLOT_COUNT - 1, timeToSlot(p.end) - 1);
+      return { label: p.label, from, to };
+    });
+  } else {
+    periods = [
+      { label: '上午 Morning',   from: 0,  to: 7  },
+      { label: '下午 Afternoon', from: 8,  to: 19 },
+      { label: '晚間 Evening',   from: 20, to: 27 },
+    ];
+  }
 
   let html = '';
   periods.forEach(p => {

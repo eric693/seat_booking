@@ -1541,6 +1541,7 @@ async function selectDate(ds, el) {
 
     // 處理時段設定：若有 open_periods，把「非開放時間」標記為封鎖
     _openPeriods = data.open_periods || [];  // [{period_id, label, start, end}]
+    _hasTimeConfig = data.has_time_config || false;
 
     bookedSlots.forEach(b => {
       const s = timeToSlot(b.start);
@@ -1553,7 +1554,7 @@ async function selectDate(ds, el) {
 
     // 若有 open_periods，把不在開放時段的 slot 加入封鎖，並記錄到 timeConfigBlockedSlots
     timeConfigBlockedSlots = new Set();
-    if (hasTimeConfig) {
+    if (_hasTimeConfig) {
       for (let i = 0; i < SLOT_COUNT; i++) {
         const slotStart = slotToTime(i);
         const slotEnd   = slotToTime(i + 1);
@@ -1598,6 +1599,7 @@ let selectedSlots         = new Set();
 let blockedSlots          = new Set();
 let adminBlockedSlots     = new Set();
 let timeConfigBlockedSlots = new Set();  // time_config 非開放時段
+let _hasTimeConfig = false;
 let _openPeriods          = [];  // 來自 time_config 的開放時段
 
 let dragStart  = -1;
@@ -1614,7 +1616,7 @@ function buildTimeGrid() {
   // 永遠使用預設三段分組渲染所有 28 個格子
   // open_periods 已在 selectDate 時把非開放格子加入 blockedSlots
   // 若有 time_config，用自訂時段名稱作為分組標籤；否則用預設
-  if (data.has_time_config) {
+  if (_hasTimeConfig) {
     // 以 open_periods 定義分組，但仍渲染全部時間（包含封鎖格）
     // 先建立 slot → period label 的對應
     const slotLabel = {};

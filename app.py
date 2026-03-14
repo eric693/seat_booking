@@ -1758,39 +1758,41 @@ def create_booking():
         if not room:
             return jsonify({'error': '找不到此會議室'}), 404
 
+        def _m(t):
+            h, mn = map(int, t.split(':'))
+            return h * 60 + mn
+
         # 支援多段時段
-        segments = data.get('segments')  # [{"start":"08:30","end":"10:00"},...]
+        segments = data.get('segments')
         if segments and len(segments) > 0:
             ok, conflict = check_segments_availability(room.id, data['date'], segments)
             if not ok:
                 return jsonify({'error': f'時段 {conflict["start"]}–{conflict["end"]} 已被預約，請選擇其他時間'}), 400
-            def _m(t):
-                h, mn = map(int, t.split(':'))
-                return h * 60 + mn
-            # 驗證每段都符合最低預約時數
+
+            dur = sum((_m(s['end']) - _m(s['start'])) for s in segments) / 60
+
             min_h = float(room.min_hours or 1.0)
             if min_h > 0 and dur < min_h:
                 min_disp = int(min_h) if min_h == int(min_h) else min_h
-                return jsonify({'error': f'此會議室每次最少預約 {min_disp} 小時，目前共選 {round(dur*60)} 分鐘'}), 400
-            dur = sum((_m(s['end']) - _m(s['start'])) for s in segments) / 60
-            start_time = segments[0]['start']
-            end_time   = segments[-1]['end']
+                return jsonify({'error': f'此會議室最少需預約 {min_disp} 小時，目前共選 {round(dur*60)} 分鐘'}), 400
+
+            start_time    = segments[0]['start']
+            end_time      = segments[-1]['end']
             segments_json = _json.dumps(segments, ensure_ascii=False)
         else:
-            # 單段時段（向下相容）
             segments = None
             if not check_availability(room.id, data['date'], data['start_time'], data['end_time']):
                 return jsonify({'error': '此時段已被預約，請選擇其他時間'}), 400
-            def _m(t):
-                h, mn = map(int, t.split(':'))
-                return h * 60 + mn
+
             dur = (_m(data['end_time']) - _m(data['start_time'])) / 60
+
             min_h = float(room.min_hours or 1.0)
             if min_h > 0 and dur < min_h:
                 min_disp = int(min_h) if min_h == int(min_h) else min_h
                 return jsonify({'error': f'此會議室每次最少預約 {min_disp} 小時'}), 400
-            start_time = data['start_time']
-            end_time   = data['end_time']
+
+            start_time    = data['start_time']
+            end_time      = data['end_time']
             segments_json = None
 
         if not data.get('phone', '').strip():
@@ -1828,7 +1830,6 @@ def create_booking():
         db.session.commit()
         booking = Booking.query.get(booking.id)
 
-        # 通知（失敗不影響預約成立）
         try:
             if booking.line_user_id:
                 push_line(booking.line_user_id, [flex_booking_confirm(booking)])
@@ -1849,7 +1850,6 @@ def create_booking():
         print(f'[create_booking error] {type(e).__name__}: {e}')
         import traceback; traceback.print_exc()
         return jsonify({'error': f'預約失敗，請稍後再試（{type(e).__name__}）'}), 500
-
 @app.route('/api/bookings/check')
 def check_booking():
     number = request.args.get('number')

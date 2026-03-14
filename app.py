@@ -1239,7 +1239,8 @@ class Room(db.Model):
     cover_index = db.Column(db.Integer, default=0)  # 主封面為第幾張
     is_active   = db.Column(db.Boolean, default=True)
     floor       = db.Column(db.String(20))
-    min_hours   = db.Column(db.Float, default=1.0)   # 最低預約時數（0=不限）
+    min_hours   = db.Column(db.Float, default=1.0)   # 最低預約時數（0=不限)
+    sort_order  = db.Column(db.Integer, default=0)
     created_at  = db.Column(db.DateTime, default=tw_now)
 
     def get_photos(self):
@@ -1279,6 +1280,7 @@ class Room(db.Model):
             'cover_index': self.cover_index or 0,
             'is_active': self.is_active, 'floor': self.floor,
             'min_hours': float(self.min_hours or 1.0),
+            'sort_order': self.sort_order or 0,
         }
 
 
@@ -2838,7 +2840,7 @@ def admin_update_room(rid):
     room = Room.query.get_or_404(rid)
     d = request.get_json()
     for f in ['name','room_type','capacity','capacity_min','hourly_rate','min_hours','description',
-              'floor','photo_url','is_active']:
+            'floor','photo_url','is_active','sort_order']:
         if f in d:
             setattr(room, f, d[f])
     if 'amenities' in d:
@@ -3321,6 +3323,10 @@ with app.app_context():
                 conn.execute(db.text('ALTER TABLE rooms ADD COLUMN min_hours FLOAT DEFAULT 1.0'))
                 conn.commit()
                 print('[migrate] 新增 rooms.min_hours 欄位')
+            if 'sort_order' not in rm_cols:
+                conn.execute(db.text('ALTER TABLE rooms ADD COLUMN sort_order INTEGER DEFAULT 0'))
+                conn.commit()
+                print('[migrate] 新增 rooms.sort_order 欄位')
     except Exception as e:
         print(f'[migrate] 欄位檢查略過：{e}')
     try:

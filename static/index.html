@@ -146,7 +146,7 @@ header {
 }
 
 .hero-title em {
-  font-style: italic;
+  font-style: normal;
   color: var(--gold);
 }
 
@@ -707,19 +707,21 @@ header {
 .sidebar { position: sticky; top: 84px; }
 
 .summary-box {
-  background: var(--teal);
-  color: white;
-  border-radius: 8px;
+  background: var(--white);
+  color: var(--ink);
+  border-radius: 10px;
   overflow: hidden;
   margin-bottom: 16px;
+  border: 1px solid var(--border);
+  box-shadow: 0 2px 12px rgba(0,0,0,0.06);
 }
 
 .summary-head {
-  background: var(--gold);
+  background: var(--ink);
   padding: 18px 24px;
   font-family: 'DM Serif Display', serif;
   font-size: 18px;
-  color: var(--ink);
+  color: var(--white);
 }
 
 .summary-body { padding: 20px 24px; }
@@ -729,7 +731,7 @@ header {
   justify-content: space-between;
   align-items: flex-start;
   padding: 10px 0;
-  border-bottom: 1px solid rgba(255,255,255,0.08);
+  border-bottom: 1px solid var(--border);
   gap: 12px;
 }
 
@@ -739,21 +741,21 @@ header {
   font-size: 11px;
   text-transform: uppercase;
   letter-spacing: 0.08em;
-  color: rgba(255,255,255,0.5);
+  color: var(--ink-60);
   flex-shrink: 0;
 }
 
 .sum-val {
   font-size: 14px;
-  color: white;
+  color: var(--ink);
   font-weight: 500;
   text-align: right;
 }
 
-.sum-val.empty { color: rgba(255,255,255,0.3); font-style: italic; font-weight: 400; }
+.sum-val.empty { color: var(--ink-20); font-style: italic; font-weight: 400; }
 
 .sum-total {
-  background: rgba(255,255,255,0.06);
+  background: var(--ink);
   margin: 8px -24px -20px;
   padding: 16px 24px;
   display: flex;
@@ -1161,6 +1163,96 @@ footer {
 <footer>
   <div id="footerText">© 2026 會議室預約系統 · 版權所有</div>
 </footer>
+
+<!-- ── AI 助理聊天視窗 ── -->
+<div id="ai-chat-btn" onclick="toggleAiChat()" title="AI 預約助理" style="
+  position:fixed;bottom:28px;right:28px;z-index:999;
+  width:56px;height:56px;border-radius:50%;
+  background:var(--teal);color:#fff;
+  display:flex;align-items:center;justify-content:center;
+  box-shadow:0 4px 16px rgba(0,0,0,0.2);cursor:pointer;
+  transition:transform .2s,box-shadow .2s;
+  border:none;font-size:24px;
+" onmouseover="this.style.transform='scale(1.1)'" onmouseout="this.style.transform='scale(1)'">
+  <svg width="26" height="26" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+    <path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/>
+  </svg>
+  <span id="ai-chat-badge" style="position:absolute;top:-4px;right:-4px;width:18px;height:18px;border-radius:50%;background:#C44B3A;font-size:10px;font-weight:700;display:none;align-items:center;justify-content:center;border:2px solid #fff;">1</span>
+</div>
+
+<div id="ai-chat-panel" style="
+  position:fixed;bottom:96px;right:28px;z-index:998;
+  width:360px;max-width:calc(100vw - 32px);
+  background:#fff;border-radius:16px;
+  box-shadow:0 8px 40px rgba(0,0,0,0.15);
+  display:none;flex-direction:column;
+  overflow:hidden;
+  max-height:min(560px,calc(100vh - 120px));
+  border:1px solid var(--border);
+  animation:chatSlideIn .25s ease;
+">
+  <!-- Header -->
+  <div style="background:var(--teal);padding:16px 18px;display:flex;align-items:center;gap:12px;">
+    <div style="width:38px;height:38px;border-radius:50%;background:rgba(255,255,255,0.2);display:flex;align-items:center;justify-content:center;flex-shrink:0;">
+      <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="2"><circle cx="12" cy="8" r="4"/><path d="M4 20c0-4 3.6-7 8-7s8 3 8 7"/></svg>
+    </div>
+    <div style="flex:1;">
+      <div style="color:#fff;font-weight:700;font-size:15px;">預約助理</div>
+      <div style="color:rgba(255,255,255,0.75);font-size:12px;">線上即時回覆・歡迎詢問</div>
+    </div>
+    <button onclick="toggleAiChat()" style="background:none;border:none;color:rgba(255,255,255,0.8);cursor:pointer;font-size:20px;line-height:1;padding:4px;">&#215;</button>
+  </div>
+  <!-- Messages -->
+  <div id="ai-chat-messages" style="flex:1;overflow-y:auto;padding:16px;display:flex;flex-direction:column;gap:10px;min-height:200px;">
+    <!-- Welcome message -->
+    <div class="ai-msg ai-msg-bot">
+      <div class="ai-bubble ai-bubble-bot">
+        您好！我是預約助理，可以幫您了解空間資訊、預約方式，或查看各空間照片。有什麼可以幫您的嗎？
+      </div>
+    </div>
+  </div>
+  <!-- Quick replies -->
+  <div id="ai-quick-replies" style="padding:8px 12px;display:flex;gap:6px;flex-wrap:wrap;border-top:1px solid var(--border);">
+    <button class="ai-quick-btn" onclick="sendQuick('有哪些空間可以預約？')">查看空間</button>
+    <button class="ai-quick-btn" onclick="sendQuick('如何用LINE預約？')">LINE 預約</button>
+    <button class="ai-quick-btn" onclick="sendQuick('如何用網頁預約？')">網頁預約</button>
+    <button class="ai-quick-btn" onclick="sendQuick('費用怎麼計算？')">費用說明</button>
+  </div>
+  <!-- Input -->
+  <div style="padding:10px 12px;border-top:1px solid var(--border);display:flex;gap:8px;align-items:center;">
+    <input id="ai-chat-input" type="text" placeholder="輸入問題..." maxlength="200"
+      style="flex:1;border:1.5px solid var(--border);border-radius:20px;padding:8px 14px;font-size:14px;font-family:inherit;outline:none;transition:border-color .2s;"
+      onfocus="this.style.borderColor='var(--teal)'" onblur="this.style.borderColor='var(--border)'"
+      onkeydown="if(event.key==='Enter')sendAiChat()">
+    <button onclick="sendAiChat()" id="ai-send-btn" style="
+      width:36px;height:36px;border-radius:50%;background:var(--teal);border:none;
+      color:#fff;cursor:pointer;display:flex;align-items:center;justify-content:center;
+      flex-shrink:0;transition:background .2s;
+    " onmouseover="this.style.background='#1e5050'" onmouseout="this.style.background='var(--teal)'">
+      <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><line x1="22" y1="2" x2="11" y2="13"/><polygon points="22 2 15 22 11 13 2 9 22 2"/></svg>
+    </button>
+  </div>
+</div>
+
+<style>
+@keyframes chatSlideIn { from{opacity:0;transform:translateY(16px)} to{opacity:1;transform:translateY(0)} }
+.ai-msg { display:flex; }
+.ai-msg-bot { justify-content:flex-start; }
+.ai-msg-user { justify-content:flex-end; }
+.ai-bubble { max-width:85%;padding:10px 14px;border-radius:16px;font-size:14px;line-height:1.55;word-break:break-word; }
+.ai-bubble-bot { background:#f0f9f9;color:var(--ink);border-bottom-left-radius:4px; }
+.ai-bubble-user { background:var(--teal);color:#fff;border-bottom-right-radius:4px; }
+.ai-bubble img { width:100%;border-radius:8px;margin-top:6px;display:block; }
+.ai-bubble .room-card-mini { background:#fff;border:1px solid var(--border);border-radius:8px;overflow:hidden;margin-top:8px;cursor:pointer;transition:box-shadow .2s; }
+.ai-bubble .room-card-mini:hover { box-shadow:0 2px 12px rgba(0,0,0,0.1); }
+.ai-quick-btn { background:var(--teal-light);color:var(--teal);border:1px solid var(--border);border-radius:20px;padding:5px 12px;font-size:12px;cursor:pointer;font-family:inherit;font-weight:500;white-space:nowrap;transition:all .15s; }
+.ai-quick-btn:hover { background:var(--teal);color:#fff; }
+.ai-typing { display:flex;gap:4px;padding:12px 14px; }
+.ai-typing span { width:6px;height:6px;border-radius:50%;background:var(--teal);animation:typing .9s infinite; }
+.ai-typing span:nth-child(2){animation-delay:.2s}
+.ai-typing span:nth-child(3){animation-delay:.4s}
+@keyframes typing { 0%,100%{transform:translateY(0);opacity:.4} 50%{transform:translateY(-4px);opacity:1} }
+</style>
 
 <style>
 @keyframes pls { 0%,100%{opacity:1} 50%{opacity:0.3} }
@@ -1880,7 +1972,7 @@ async function submitBooking() {
           : segDurMin + ' 分鐘';
         const minDisp = minH === Math.floor(minH) ? minH : minH;
         alert(
-          `❌ 預約失敗\n\n` +
+          `預約失敗\n\n` +
           `時段 ${seg.start}–${seg.end} 只有 ${shortStr}，\n` +
           `此會議室每段最少需預約 ${minDisp} 小時。\n\n` +
           `請重新選擇時段。`
@@ -2065,7 +2157,190 @@ async function doQuery() {
   }
 }
 
-// ── Init ──
+// ── AI 預約助理 ──────────────────────────────────────────
+let _aiChatOpen = false;
+let _aiChatHistory = [];
+let _aiRoomsCache = [];
+
+function toggleAiChat() {
+  _aiChatOpen = !_aiChatOpen;
+  const panel = document.getElementById('ai-chat-panel');
+  const badge = document.getElementById('ai-chat-badge');
+  panel.style.display = _aiChatOpen ? 'flex' : 'none';
+  if (_aiChatOpen) {
+    badge.style.display = 'none';
+    document.getElementById('ai-chat-input').focus();
+  }
+}
+
+function sendQuick(text) {
+  document.getElementById('ai-chat-input').value = text;
+  sendAiChat();
+}
+
+function _appendMsg(role, html) {
+  const msgs = document.getElementById('ai-chat-messages');
+  const div = document.createElement('div');
+  div.className = `ai-msg ai-msg-${role === 'user' ? 'user' : 'bot'}`;
+  div.innerHTML = `<div class="ai-bubble ai-bubble-${role === 'user' ? 'user' : 'bot'}">${html}</div>`;
+  msgs.appendChild(div);
+  msgs.scrollTop = msgs.scrollHeight;
+  return div;
+}
+
+function _showTyping() {
+  const msgs = document.getElementById('ai-chat-messages');
+  const div = document.createElement('div');
+  div.className = 'ai-msg ai-msg-bot';
+  div.id = 'ai-typing-indicator';
+  div.innerHTML = '<div class="ai-bubble ai-bubble-bot ai-typing"><span></span><span></span><span></span></div>';
+  msgs.appendChild(div);
+  msgs.scrollTop = msgs.scrollHeight;
+}
+
+function _removeTyping() {
+  const el = document.getElementById('ai-typing-indicator');
+  if (el) el.remove();
+}
+
+function _roomsToContext(rooms) {
+  return rooms.map(r => {
+    const photos = (r.photos && r.photos.length) ? r.photos : (r.photo_url ? [r.photo_url] : []);
+    return `空間名稱：${r.name}
+類型：${r.room_type}
+容納人數：${r.capacity_label || r.capacity + '人'}
+樓層：${r.floor || '未標示'}
+每小時費率：NT$${r.hourly_rate}
+最低預約時數：${r.min_hours > 0 ? r.min_hours + '小時' : '不限'}
+描述：${r.description || '無'}
+設備：${(r.amenities || []).join('、') || '無'}
+照片數量：${photos.length}張`;
+  }).join('\n---\n');
+}
+
+function _buildRoomCard(room) {
+  const photos = (room.photos && room.photos.length) ? room.photos : (room.photo_url ? [room.photo_url] : []);
+  const photoHtml = photos.length > 0
+    ? `<img src="${photos[0]}" alt="${room.name}" style="width:100%;height:100px;object-fit:cover;">`
+    : `<div style="width:100%;height:60px;background:linear-gradient(135deg,#2A6B6B,#1a3333);display:flex;align-items:center;justify-content:center;color:rgba(255,255,255,0.4);font-size:24px;"><svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="rgba(255,255,255,0.35)" stroke-width="1.5"><path d="M3 21V7l9-5 9 5v14"/><path d="M9 21v-5h6v5"/><path d="M3 21h18"/></svg></div>`;
+  const morePhotos = photos.length > 1 ? `<span style="font-size:11px;color:var(--ink-60);">+${photos.length-1} 張照片</span>` : '';
+  return `<div class="room-card-mini" onclick="document.getElementById('section-booking')?.scrollIntoView({behavior:'smooth'})">
+    ${photoHtml}
+    <div style="padding:8px 10px;">
+      <div style="font-weight:600;font-size:13px;">${room.name}</div>
+      <div style="font-size:11px;color:var(--ink-60);margin-top:2px;">${room.room_type} · ${room.capacity_label || room.capacity+'人'} · NT$${room.hourly_rate}/hr ${morePhotos}</div>
+    </div>
+  </div>`;
+}
+
+async function sendAiChat() {
+  const input = document.getElementById('ai-chat-input');
+  const text = input.value.trim();
+  if (!text) return;
+  input.value = '';
+  document.getElementById('ai-send-btn').disabled = true;
+
+  // Show user message
+  _appendMsg('user', text);
+  _aiChatHistory.push({ role: 'user', content: text });
+
+  // Load rooms if not cached
+  if (!_aiRoomsCache.length) {
+    try {
+      const r = await fetch(`${API}/api/rooms`);
+      _aiRoomsCache = await r.json();
+    } catch(e) {}
+  }
+
+  // Site info
+  const siteTitle = document.getElementById('hero-title-el')?.textContent || '預約空間系統';
+  const phone = document.getElementById('contactPhone')?.textContent || '';
+  const hours = document.getElementById('serviceHours')?.textContent || '';
+  const liffUrl = `https://liff.line.me/${LIFF_ID}`;
+
+  // Build system prompt
+  const systemPrompt = `你是「${siteTitle}」的線上預約助理，說繁體中文，語氣親切自然。
+
+【你的任務】
+- 回答用戶關於空間預約的問題
+- 引導用戶使用兩種預約方式：
+  1. LINE 預約：加入 LINE 官方帳號，輸入「預約」即可開始
+  2. 網頁預約：直接在本網頁選擇空間→時段→填寫資料
+- 介紹空間資訊時可提及照片（用戶點選空間卡片可看更多）
+
+【目前可用空間資訊】
+${_buildRoomsForAI()}
+
+【聯絡資訊】
+服務時間：${hours}
+聯絡電話：${phone}
+LINE 預約網址：${liffUrl}
+網頁預約：直接在本頁面操作
+
+【回覆規則】
+- 回覆簡潔，100字以內為佳
+- 若問到特定空間，在回覆末尾加上 [SHOW_ROOM:空間名稱] 標記（例如：[SHOW_ROOM:精緻洽談室 A]）
+- 若問所有空間，加上 [SHOW_ALL_ROOMS]
+- 不要捏造資訊，只回答你確實知道的`;
+
+  _showTyping();
+
+  try {
+    const res = await fetch(`${API}/api/ai-chat`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        messages: _aiChatHistory,
+        system: systemPrompt
+      })
+    });
+    const data = await res.json();
+    _removeTyping();
+
+    if (!res.ok) throw new Error(data.error || '服務暫時無法使用');
+
+    let reply = data.reply || '抱歉，請稍後再試。';
+    _aiChatHistory.push({ role: 'assistant', content: reply });
+
+    // Check for room card markers
+    let roomCardsHtml = '';
+    const showAllMatch = reply.includes('[SHOW_ALL_ROOMS]');
+    const showRoomMatch = reply.match(/\[SHOW_ROOM:([^\]]+)\]/);
+
+    reply = reply.replace(/\[SHOW_ALL_ROOMS\]/g, '').replace(/\[SHOW_ROOM:[^\]]+\]/g, '').trim();
+
+    if (showAllMatch) {
+      roomCardsHtml = _aiRoomsCache.map(r => _buildRoomCard(r)).join('');
+    } else if (showRoomMatch) {
+      const roomName = showRoomMatch[1].trim();
+      const room = _aiRoomsCache.find(r => r.name.includes(roomName) || roomName.includes(r.name));
+      if (room) roomCardsHtml = _buildRoomCard(room);
+    }
+
+    const replyHtml = reply.replace(/\n/g, '<br>') + (roomCardsHtml ? `<div style="margin-top:8px;">${roomCardsHtml}</div>` : '');
+    _appendMsg('bot', replyHtml);
+
+  } catch(e) {
+    _removeTyping();
+    _appendMsg('bot', `${e.message || '服務暫時無法連線，請稍後再試。'}`);
+  }
+
+  document.getElementById('ai-send-btn').disabled = false;
+  input.focus();
+
+  // Show badge if chat closed
+  if (!_aiChatOpen) {
+    const badge = document.getElementById('ai-chat-badge');
+    badge.style.display = 'flex';
+  }
+}
+
+function _buildRoomsForAI() {
+  if (!_aiRoomsCache.length) return '（空間資料載入中）';
+  return _aiRoomsCache.map(r => `・${r.name}（${r.room_type}，${r.capacity_label || r.capacity+'人'}，NT$${r.hourly_rate}/hr）`).join('\n');
+}
+
+// ── INIT ──
 document.addEventListener('DOMContentLoaded', function() {
   initLiff();
   loadContent();

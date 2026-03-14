@@ -50,6 +50,7 @@ SITE_URL       = os.environ.get('SITE_URL', 'https://seat-booking-rlf2.onrender.
 LIFF_URL       = os.environ.get('LIFF_URL', 'https://liff.line.me/2009193434-BpOSKuw9')
 LIFF_ID        = os.environ.get('LIFF_ID', '')
 
+OPENAI_API_KEY = os.environ.get('OPENAI_API_KEY', '')
 # ── Email 通知（Gmail API OAuth2 優先，SendGrid 次之）──────
 SENDGRID_API_KEY     = os.environ.get('SENDGRID_API_KEY', '')
 RESEND_API_KEY       = os.environ.get('RESEND_API_KEY', '')
@@ -3384,7 +3385,58 @@ def admin_bulk_delete_blocked_slots():
 # ─────────────────────────────────────────────
 # Health Check（供 UptimeRobot / Render ping 用）
 # ─────────────────────────────────────────────
-
+@app.route('/api/ai-chat', methods=['POST'])
+def ai_chat():
+    """AI 預約助理 - 使用 OpenAI API"""
+    if not OPENAI_API_KEY:
+        return jsonify({'error': 'AI 助理尚未設定，請聯繫管理員。'}), 503
+ 
+    data = request.get_json()
+    messages = data.get('messages', [])
+    system_prompt = data.get('system', '')
+ 
+    # 限制 messages 長度，避免 token 過多
+    messages = messages[-10:]  # 最多保留最近 10 則
+ 
+    # 驗證格式
+    for m in messages:
+        if m.get('role') not in ('user', 'assistant'):
+            return jsonify({'error': '訊息格式錯誤'}), 400
+        if len(str(m.get('content', ''))) > 500:
+            return jsonify({'error': '訊息過長'}), 400
+ 
+    payload = {
+        'model': 'gpt-4o-mini',
+        'max_tokens': 400,
+        'temperature': 0.7,
+        'messages': [
+            {'role': 'system', 'content': system_prompt},
+            *messages
+        ]
+    }
+ 
+    try:
+        resp = http_requests.post(
+            'https://api.openai.com/v1/chat/completions',
+            headers={
+                'Authorization': f'Bearer {OPENAI_API_KEY}',
+                'Content-Type': 'application/json',
+            },
+            json=payload,
+            timeout=20
+        )
+        if resp.status_code != 200:
+            err = resp.json().get('error', {}).get('message', '服務暫時無法使用')
+            return jsonify({'error': err}), 502
+ 
+        reply = resp.json()['choices'][0]['message']['content'].strip()
+        return jsonify({'reply': reply})
+ 
+    except Exception as e:
+        print(f'[AI chat error] {e}')
+        return jsonify({'error': '連線逾時，請稍後再試'}), 503
+ 
+ 
 @app.route('/health')
 def health_check():
     return jsonify({'status': 'ok', 'time': datetime.now().strftime('%Y-%m-%d %H:%M:%S')}), 200

@@ -553,7 +553,7 @@ header {
   align-items: center;
   justify-content: center;
   font-size: 11px;
-  color: transparent; /* hide label by default */
+  color: transparent;
 }
 
 .ts:hover:not(.ts-booked):not(.ts-admin-blocked):not(.ts-selected) {
@@ -562,26 +562,22 @@ header {
   z-index: 1;
 }
 
-/* Selected state */
 .ts.ts-selected {
   background: var(--teal);
   border-color: #1e5050;
   color: white;
 }
 
-/* Selected range visual — connect adjacent */
 .ts.ts-selected + .ts.ts-selected {
   border-left: none;
   border-radius: 0;
 }
 
-/* Range start/end marks */
 .ts.ts-range-start { border-radius: 3px 0 0 3px; }
 .ts.ts-range-end   { border-radius: 0 3px 3px 0; }
 .ts.ts-range-start.ts-range-end { border-radius: 3px; }
 .ts.ts-range-mid   { border-radius: 0; border-left: none; border-right: none; }
 
-/* Booked state — striped, no pointer */
 .ts.ts-booked {
   background: repeating-linear-gradient(
     -45deg,
@@ -610,7 +606,6 @@ header {
   letter-spacing: 0.02em;
 }
 
-/* Conflict highlight */
 .ts.ts-conflict {
   background: #fff0ee;
   border-color: var(--red);
@@ -952,7 +947,6 @@ header {
 }
 .modal-close-btn:hover { background: var(--teal); }
 
-/* Query modal */
 .query-section {
   padding: 24px;
   background: var(--paper);
@@ -1030,7 +1024,7 @@ footer {
       <p class="hero-desc" id="hero-desc">提供多種類型會議室，彈性時段預約，滿足各種商務需求。</p>
       <div class="hero-meta">
         <div class="meta-row"><div class="meta-dot"></div><span id="meta-hours">週一至週五 08:00 – 22:00</span></div>
-        <div class="meta-row"><div class="meta-dot"></div><span id="meta-email"><a href="/cdn-cgi/l/email-protection" class="__cf_email__" data-cfemail="afcdc0c0c4c6c1c8efcad7cec2dfc3ca81ccc0c2">[email&#160;protected]</a></span></div>
+        <div class="meta-row"><div class="meta-dot"></div><span id="meta-email">booking@example.com</span></div>
       </div>
     </div>
     <div class="hero-card">
@@ -1075,7 +1069,7 @@ footer {
       <div class="time-grid-wrap" id="timeGridWrap" style="display:none;">
         <div class="time-grid-head">
           <div class="time-grid-label">選擇使用時段</div>
-          <div class="time-grid-hint">點擊或拖曳選取，再次點擊可取消；最短 60 分鐘</div>
+          <div class="time-grid-hint" id="timeGridHint">點擊或拖曳選取，再次點擊可取消；最短 60 分鐘</div>
         </div>
 
         <!-- Legend -->
@@ -1098,7 +1092,7 @@ footer {
           <button class="tsb-clear" onclick="clearTimeSelection()" title="清除選取">&times;</button>
         </div>
 
-        <!-- Conflict message -->
+        <!-- Conflict / warning message -->
         <div class="time-conflict-msg" id="timeConflictMsg">
           <span id="conflictText">此時段包含已預約時段，請重新選擇。</span>
         </div>
@@ -1210,20 +1204,19 @@ footer {
 @keyframes pls { 0%,100%{opacity:1} 50%{opacity:0.3} }
 </style>
 
-<script data-cfasync="false" src="/cdn-cgi/scripts/5c5dd728/cloudflare-static/email-decode.min.js"></script><script>
+<script>
 const API = '';
-const LIFF_ID = '2009193434-BpOSKuw9';  // LIFF App ID
+const LIFF_ID = '2009193434-BpOSKuw9';
 
 // ── LIFF 初始化 ──────────────────────────────────────────
-window._liffUserId    = '';
-window._liffProfile   = null;
+window._liffUserId  = '';
+window._liffProfile = null;
 
 async function initLiff() {
-  if (!LIFF_ID) return; // 未設定 LIFF ID 則跳過，不影響一般使用
+  if (!LIFF_ID) return;
   try {
     await liff.init({ liffId: LIFF_ID });
     if (!liff.isLoggedIn()) {
-      // 只有在 LIFF 瀏覽器內才自動登入，一般瀏覽器跳過
       if (liff.isInClient()) liff.login();
       return;
     }
@@ -1231,7 +1224,6 @@ async function initLiff() {
     window._liffUserId  = profile.userId;
     window._liffProfile = profile;
 
-    // 顯示使用者資訊列
     const bar = document.getElementById('liff-user-bar');
     if (bar) {
       document.getElementById('liff-avatar').src = profile.pictureUrl || '';
@@ -1239,14 +1231,12 @@ async function initLiff() {
       bar.style.display = 'flex';
     }
 
-    // 自動填入姓名（若尚未填寫）
     const nameEl = document.getElementById('fName');
     if (nameEl && !nameEl.value.trim()) {
       nameEl.value = profile.displayName || '';
       updateSummary();
     }
 
-    // 傳送 LINE User ID 給後端綁定
     try {
       await fetch(`${API}/api/line/bind-profile`, {
         method: 'POST',
@@ -1257,15 +1247,12 @@ async function initLiff() {
           picture_url:  profile.pictureUrl || '',
         })
       });
-    } catch(e) { /* 非關鍵，忽略 */ }
-
+    } catch(e) {}
   } catch(e) {
     console.warn('LIFF init failed:', e.message);
-    // 不影響一般預約流程
   }
 }
 
-// Escape single quotes for use in HTML attributes
 function esc(s) { return String(s).replace(/'/g, '&#39;').replace(/"/g, '&quot;'); }
 
 const state = {
@@ -1273,6 +1260,7 @@ const state = {
   roomId: null,
   roomRate: 0,
   roomType: '',
+  minHours: 1,      // ★ 新增：從 room card data-min-hours 讀取
   date: null,
   startTime: null,
   endTime: null,
@@ -1310,29 +1298,24 @@ async function loadContent() {
       document.title = c.site_title;
       document.getElementById('hdr-title').textContent = c.site_title;
     }
-    if (c.site_subtitle) document.getElementById('hero-title-el').innerHTML = c.site_subtitle.replace(/([^<]+)(<em>[^<]+<\/em>)/g, '$1$2') || document.getElementById('hero-title-el').innerHTML;
     if (c.site_description) document.getElementById('hero-desc').textContent = c.site_description;
     if (c.hero_badge) document.querySelector('#hero-badge').textContent = c.hero_badge;
     if (c.service_hours) document.getElementById('meta-hours').textContent = c.service_hours;
     if (c.contact_email) document.getElementById('meta-email').textContent = c.contact_email;
     if (c.contact_phone) document.getElementById('hdr-phone').textContent = c.contact_phone;
     if (c.footer_text) document.getElementById('footerText').textContent = c.footer_text;
-    // 步驟標題
     if (c.step1_title) document.getElementById('txt-step1-title').textContent = c.step1_title;
     if (c.step2_title) document.getElementById('txt-step2-title').textContent = c.step2_title;
     if (c.step3_title) document.getElementById('txt-step3-title').textContent = c.step3_title;
 
-    // notices
     const notices = ['notice_1','notice_2','notice_3','notice_4','notice_5'].map(k => c[k]).filter(Boolean);
     if (notices.length) {
       document.getElementById('noticeList').innerHTML = notices.map(n => `<li>${n}</li>`).join('');
     }
-    // logo
     if (c.logo_url) {
       const wrap = document.getElementById('header-logo-wrap');
       if (wrap) wrap.innerHTML = `<img src="${c.logo_url}" style="width:44px;height:44px;object-fit:contain;border-radius:6px;display:block;">`;
     }
-    // 動態表單欄位
     try {
       const fields = typeof c.form_fields === 'string' ? JSON.parse(c.form_fields) : c.form_fields;
       if (fields && fields.length) renderFormFields(fields);
@@ -1359,8 +1342,15 @@ async function loadRooms() {
       const photoHTML = r.photo_url
         ? `<div class="room-photo"><img src="${r.photo_url}" alt="${r.name}" onerror="this.parentElement.innerHTML='${icon}'"></div>`
         : `<div class="room-photo-placeholder">${icon}</div>`;
+      // ★ 加上 data-min-hours
       return `
-        <div class="room-card" data-id="${r.id}" data-name="${esc(r.name)}" data-rate="${r.hourly_rate}" data-type="${esc(r.room_type)}" onclick="selectRoom(this)">
+        <div class="room-card"
+          data-id="${r.id}"
+          data-name="${esc(r.name)}"
+          data-rate="${r.hourly_rate}"
+          data-type="${esc(r.room_type)}"
+          data-min-hours="${r.min_hours || 1}"
+          onclick="selectRoom(this)">
           <div class="selected-check">&#10003;</div>
           ${photoHTML}
           <div class="room-body">
@@ -1369,7 +1359,7 @@ async function loadRooms() {
             <div class="room-desc">${r.description || ''}</div>
             <div class="amenities-list">${amenHTML}</div>
             <div class="room-footer">
-              <div class="room-capacity">容納 <strong>${r.capacity_label || r.capacity + ' 人'}</strong> · ${r.floor || ''}</div>
+              <div class="room-capacity">容納 <strong>${r.capacity_label || r.capacity + ' 人'}</strong> · ${r.floor || ''}${r.min_hours && r.min_hours > 0 ? ' · 最少 ' + (r.min_hours === Math.floor(r.min_hours) ? r.min_hours : r.min_hours) + ' 小時' : ''}</div>
               <div class="room-rate">NT$ ${r.hourly_rate.toLocaleString()} <small>/ hr</small></div>
             </div>
           </div>
@@ -1381,19 +1371,23 @@ async function loadRooms() {
 }
 
 function selectRoom(el) {
-  const id   = parseInt(el.dataset.id);
-  const name = el.dataset.name;
-  const rate = parseFloat(el.dataset.rate);
-  const type = el.dataset.type;
+  const id       = parseInt(el.dataset.id);
+  const name     = el.dataset.name;
+  const rate     = parseFloat(el.dataset.rate);
+  const type     = el.dataset.type;
+  const minHours = parseFloat(el.dataset.minHours) || 1; // ★ 讀取最低時數
+
   document.querySelectorAll('.room-card').forEach(c => c.classList.remove('selected'));
   el.classList.add('selected');
-  state.roomId = id;
-  state.room = name;
+
+  state.roomId   = id;
+  state.room     = name;
   state.roomRate = rate;
   state.roomType = type;
-  state.date = null;
+  state.minHours = minHours; // ★ 存入 state
+  state.date     = null;
   state.startTime = null;
-  state.endTime = null;
+  state.endTime   = null;
   selStart = -1; selEnd = -1;
   blockedSlots = new Set();
 
@@ -1406,7 +1400,12 @@ function selectRoom(el) {
   document.getElementById('sum-time').textContent = '請選擇';
   document.getElementById('sum-time').classList.add('empty');
 
-  // Reset grid
+  // ★ 更新提示文字（反映最低時數）
+  const minDisp = minHours === Math.floor(minHours) ? minHours : minHours;
+  const minSlots = Math.ceil(minHours * 2); // 半小時一格
+  document.getElementById('timeGridHint').textContent =
+    `點擊或拖曳選取，再次點擊可取消；最少需選 ${minDisp} 小時（${minSlots} 格）`;
+
   document.getElementById('timeGridWrap').style.display = 'none';
   document.getElementById('timeGridBody').innerHTML = '';
   document.getElementById('tsbBar').style.display = 'none';
@@ -1477,12 +1476,10 @@ async function selectDate(ds, el) {
   document.getElementById('sum-time').textContent = '請選擇';
   document.getElementById('sum-time').classList.add('empty');
 
-  // Load booked slots from backend
   try {
     const res = await fetch(`${API}/api/rooms/${state.roomId}/availability?date=${ds}`);
     const data = await res.json();
     bookedSlots = data.booked_slots || [];
-    // 分開標記：封鎖時段 vs 已預約時段
     blockedSlots      = new Set();
     adminBlockedSlots = new Set();
     bookedSlots.forEach(b => {
@@ -1490,14 +1487,13 @@ async function selectDate(ds, el) {
       const e = timeToSlot(b.end);
       for (let i = s; i < e; i++) {
         blockedSlots.add(i);
-        if (b.blocked) adminBlockedSlots.add(i); // 管理員封鎖
+        if (b.blocked) adminBlockedSlots.add(i);
       }
     });
   } catch(e2) { bookedSlots = []; blockedSlots = new Set(); }
-  // 切換日期時清除舊選取
+
   selectedSlots.clear();
 
-  // Show grid
   document.getElementById('timeGridWrap').style.display = 'block';
   document.getElementById('tsbBar').style.display = 'none';
   document.getElementById('timeConflictMsg').style.display = 'none';
@@ -1505,20 +1501,10 @@ async function selectDate(ds, el) {
   updatePrice();
 }
 
-function renderBookedSlots() {
-  const container = document.getElementById('bookedSlotsList');
-  if (!container) return;
-  if (!bookedSlots.length) { container.style.display = 'none'; return; }
-  container.style.display = 'block';
-  container.innerHTML = '<div style="font-size:13px;font-weight:600;color:var(--ink-60);margin-bottom:8px;text-transform:uppercase;letter-spacing:0.06em;">已預約時段</div>' +
-    bookedSlots.map(function(b) { return '<div class="booked-slot-item">' + b.start + ' – ' + b.end + '</div>'; }).join('');
-}
-
 // ── Time Grid ──
-// All 28 half-hour slots: 08:00–22:00  (slot index 0 = "08:00–08:30", ..., 27 = "21:30–22:00")
 const SLOT_COUNT = 28;
-const SLOT_START_HOUR = 8; // 08:00
-const MIN_SLOTS = 2; // 最少 2 格 = 60 分鐘
+const SLOT_START_HOUR = 8;
+const MIN_SLOTS = 2; // 全域最小格數（60分鐘），各房間實際最小格數由 state.minHours 決定
 
 function slotToTime(idx) {
   const totalMin = SLOT_START_HOUR * 60 + idx * 30;
@@ -1532,18 +1518,15 @@ function timeToSlot(t) {
   return (h * 60 + m - SLOT_START_HOUR * 60) / 30;
 }
 
-// ── 多選模式：用 Set 紀錄哪些格子被選取 ──
-let selectedSlots = new Set(); // 使用者選取的時段
-let blockedSlots     = new Set(); // 不可選（已預約 + 封鎖合併）
-let adminBlockedSlots = new Set(); // 管理員封鎖時段（顯示「無開放」）
+let selectedSlots     = new Set();
+let blockedSlots      = new Set();
+let adminBlockedSlots = new Set();
 
-// 拖曳狀態
 let dragStart  = -1;
 let dragEnd    = -1;
 let isDragging = false;
-let dragMode   = 'add'; // 'add' or 'remove'
+let dragMode   = 'add';
 
-// 相容舊程式碼
 let selStart = -1;
 let selEnd   = -1;
 
@@ -1580,11 +1563,10 @@ function buildTimeGrid() {
   });
   document.getElementById('timeGridBody').innerHTML = html;
   renderSelected();
-  document.addEventListener('mouseup',  tsMouseUp,   { once: false });
-  document.addEventListener('touchend', tsTouchEnd,  { once: false });
+  document.addEventListener('mouseup',  tsMouseUp,  { once: false });
+  document.addEventListener('touchend', tsTouchEnd, { once: false });
 }
 
-// ── 渲染目前選取狀態 ──
 function renderSelected() {
   document.querySelectorAll('.ts').forEach(el => {
     const idx = parseInt(el.dataset.slot);
@@ -1592,7 +1574,6 @@ function renderSelected() {
     if (blockedSlots.has(idx)) return;
     if (selectedSlots.has(idx)) el.classList.add('ts-selected');
   });
-  // 加上連續邊框樣式
   document.querySelectorAll('.ts.ts-selected').forEach(el => {
     const idx = parseInt(el.dataset.slot);
     const prev = selectedSlots.has(idx - 1) && !blockedSlots.has(idx - 1);
@@ -1604,18 +1585,12 @@ function renderSelected() {
   });
 }
 
-// ── 拖曳預覽（拖動時即時顯示，還未 commit）──
 function renderDrag() {
   const lo = Math.min(dragStart, dragEnd);
   const hi = Math.max(dragStart, dragEnd);
-
-  // 先還原到 selectedSlots 狀態
   renderSelected();
-
-  // 疊加拖曳預覽
   for (let i = lo; i <= hi; i++) {
     if (blockedSlots.has(i)) {
-      // 碰到已預約 → 整段變 conflict
       document.querySelectorAll('.ts').forEach(el => {
         const idx2 = parseInt(el.dataset.slot);
         if (idx2 >= lo && idx2 <= hi && !blockedSlots.has(idx2))
@@ -1627,8 +1602,8 @@ function renderDrag() {
   for (let i = lo; i <= hi; i++) {
     const el = document.querySelector(`.ts[data-slot="${i}"]`);
     if (!el) continue;
-    if (dragMode === 'add')    el.classList.add('ts-selected');
-    else                       el.classList.remove('ts-selected');
+    if (dragMode === 'add') el.classList.add('ts-selected');
+    else                    el.classList.remove('ts-selected');
   }
 }
 
@@ -1638,7 +1613,6 @@ function tsMouseDown(e, idx) {
   isDragging = true;
   dragStart  = idx;
   dragEnd    = idx;
-  // 如果點的格子已選，進入「取消模式」
   dragMode = selectedSlots.has(idx) ? 'remove' : 'add';
   renderDrag();
 }
@@ -1682,22 +1656,22 @@ function tsTouchEnd() {
   commitDrag();
 }
 
-// ── 確認這次拖曳操作 ──
 function commitDrag() {
   const lo = Math.min(dragStart, dragEnd);
   const hi = Math.max(dragStart, dragEnd);
 
-  // 有已預約的格子在範圍內 → 不允許
   for (let i = lo; i <= hi; i++) {
     if (blockedSlots.has(i)) {
+      document.getElementById('conflictText').textContent = '此時段包含已預約時段，請重新選擇。';
+      document.getElementById('timeConflictMsg').style.background = '#fff3f3';
+      document.getElementById('timeConflictMsg').style.borderColor = '#ffcdd2';
+      document.getElementById('timeConflictMsg').style.color = 'var(--red)';
       document.getElementById('timeConflictMsg').style.display = 'block';
-      renderSelected(); // 還原
+      renderSelected();
       return;
     }
   }
-  document.getElementById('timeConflictMsg').style.display = 'none';
 
-  // 加入或移除
   for (let i = lo; i <= hi; i++) {
     if (dragMode === 'add') selectedSlots.add(i);
     else                    selectedSlots.delete(i);
@@ -1708,13 +1682,9 @@ function commitDrag() {
   commitSelection();
 }
 
-// ── 確保最短 60 分鐘（2 格）── 
-// 若目前選取總格數不足，提示（不自動延伸，因為是多選不連續）
 function applyMinDuration() {
+  // 確保連續段落的最短選取至少 2 格（60分鐘）
   if (selectedSlots.size > 0 && selectedSlots.size < MIN_SLOTS) {
-    // 找出最後一個選取的格子，嘗試往後延伸
-    const slots = [...selectedSlots].sort((a,b) => a-b);
-    const last = slots[slots.length - 1];
     while (selectedSlots.size < MIN_SLOTS) {
       const next = [...selectedSlots].sort((a,b) => a-b)[selectedSlots.size - 1] + 1;
       if (next > 27 || blockedSlots.has(next)) break;
@@ -1723,14 +1693,13 @@ function applyMinDuration() {
   }
 }
 
-// ── 從 selectedSlots 計算 startTime / endTime 給 API ──
-// 連續時段：取最小到最大；不連續：取整個範圍（API 用 check_availability）
 function commitSelection() {
   if (selectedSlots.size === 0) {
     selStart = -1; selEnd = -1;
     state.startTime = null; state.endTime = null;
     state.segments  = [];
     document.getElementById('tsbBar').style.display = 'none';
+    document.getElementById('timeConflictMsg').style.display = 'none';
     updatePrice(); updateSumTime();
     return;
   }
@@ -1762,6 +1731,7 @@ function showSelectionBar() {
   if (selectedSlots.size === 0) return;
   const bar = document.getElementById('tsbBar');
   bar.style.display = 'flex';
+
   const hasMultiSeg = state.segments && state.segments.length > 1;
   if (hasMultiSeg) {
     document.getElementById('tsbTime').innerHTML =
@@ -1773,12 +1743,39 @@ function showSelectionBar() {
     const endT   = slotToTime(slots[slots.length-1] + 1);
     document.getElementById('tsbTime').textContent = `${startT} – ${endT}`;
   }
+
   const dur = selectedSlots.size * 0.5;
   let durLbl;
   if (dur < 1) durLbl = Math.round(dur*60) + ' 分鐘';
   else if (dur === Math.floor(dur)) durLbl = dur + ' 小時';
   else { const h = Math.floor(dur); durLbl = h + ' 小時 ' + Math.round((dur-h)*60) + ' 分鐘'; }
   document.getElementById('tsbDur').textContent = durLbl;
+
+  // ★ 即時逐段驗證最低時數，選取時就給警示
+  const conflictEl = document.getElementById('timeConflictMsg');
+  const minH = state.minHours || 1;
+  let shortSeg = null;
+  if (state.segments) {
+    for (const s of state.segments) {
+      const segDurH = (toMin(s.end) - toMin(s.start)) / 60;
+      if (segDurH < minH) { shortSeg = s; break; }
+    }
+  }
+  if (shortSeg) {
+    const shortMin = toMin(shortSeg.end) - toMin(shortSeg.start);
+    const shortStr = shortMin >= 60
+      ? Math.floor(shortMin/60) + ' 小時' + (shortMin%60 ? ' ' + shortMin%60 + ' 分鐘' : '')
+      : shortMin + ' 分鐘';
+    document.getElementById('conflictText').textContent =
+      `⚠ 時段 ${shortSeg.start}–${shortSeg.end} 只有 ${shortStr}，` +
+      `此會議室每段最少需預約 ${minH} 小時，送出時將被擋回。`;
+    conflictEl.style.background = '#fffbe6';
+    conflictEl.style.borderColor = '#f0c040';
+    conflictEl.style.color = '#7a5c00';
+    conflictEl.style.display = 'block';
+  } else {
+    conflictEl.style.display = 'none';
+  }
 }
 
 function clearTimeSelection() {
@@ -1827,15 +1824,13 @@ function updateSummary() {
 
 function updatePrice() {
   if (state.segments && state.segments.length > 0 && state.roomRate) {
-    // 用所有 segments 的總時長計算
     const totalMin = state.segments.reduce((acc, s) => acc + toMin(s.end) - toMin(s.start), 0);
     const dur = totalMin / 60;
     state.price = Math.round(dur * state.roomRate);
     let durText;
     if (dur < 1) { durText = Math.round(dur * 60) + ' 分鐘'; }
     else if (dur === Math.floor(dur)) { durText = dur + ' 小時'; }
-    else { const h = Math.floor(dur); const m = Math.round((dur - h) * 60);
-           durText = h + ' 小時 ' + m + ' 分鐘'; }
+    else { const h = Math.floor(dur); const m = Math.round((dur - h) * 60); durText = h + ' 小時 ' + m + ' 分鐘'; }
     document.getElementById('sum-dur').textContent = durText;
     document.getElementById('sum-price').textContent = formatMoney(state.price);
   } else if (state.startTime && state.endTime && state.roomRate) {
@@ -1844,8 +1839,7 @@ function updatePrice() {
     let durText;
     if (dur < 1) { durText = Math.round(dur * 60) + ' 分鐘'; }
     else if (dur === Math.floor(dur)) { durText = dur + ' 小時'; }
-    else { const h = Math.floor(dur); const m = Math.round((dur - h) * 60);
-           durText = h + ' 小時 ' + m + ' 分鐘'; }
+    else { const h = Math.floor(dur); const m = Math.round((dur - h) * 60); durText = h + ' 小時 ' + m + ' 分鐘'; }
     document.getElementById('sum-dur').textContent = durText;
     document.getElementById('sum-price').textContent = formatMoney(state.price);
   } else {
@@ -1854,7 +1848,6 @@ function updatePrice() {
   }
 }
 
-// ── Submit ──
 // ── 動態表單欄位 ──
 let _formFields = [];
 
@@ -1900,6 +1893,7 @@ function validateFormFields() {
   return true;
 }
 
+// ── Submit ──
 async function submitBooking() {
   if (!state.roomId) { alert('請選擇會議室'); return; }
   if (!state.date)   { alert('請選擇日期'); return; }
@@ -1912,12 +1906,37 @@ async function submitBooking() {
   if (!validateFormFields()) return;
 
   const segs = state.segments || [];
+
+  // ★ 逐段驗證最低預約時數（前台守門，避免送出後才被後端擋回）
+  const minH = state.minHours || 1;
+  if (minH > 0) {
+    for (const seg of segs) {
+      const segDurMin = toMin(seg.end) - toMin(seg.start);
+      const segDurH   = segDurMin / 60;
+      if (segDurH < minH) {
+        const shortStr = segDurMin >= 60
+          ? Math.floor(segDurMin/60) + ' 小時' + (segDurMin%60 ? ' ' + segDurMin%60 + ' 分鐘' : '')
+          : segDurMin + ' 分鐘';
+        const minDisp = minH === Math.floor(minH) ? minH : minH;
+        alert(
+          `❌ 預約失敗\n\n` +
+          `時段 ${seg.start}–${seg.end} 只有 ${shortStr}，\n` +
+          `此會議室每段最少需預約 ${minDisp} 小時。\n\n` +
+          `請重新選擇時段。`
+        );
+        return; // 阻止送出
+      }
+    }
+  }
+
   const hasMultiSeg = segs.length > 1;
 
   // 不連續時段：確認拆單
   if (hasMultiSeg) {
     const segLines = segs.map(s => "• " + s.start + "–" + s.end).join("\n");
-    const confirmMsg = "您選擇了 " + segs.length + " 個不連續時段，系統將自動建立 " + segs.length + " 筆獨立訂單：\n\n" + segLines + "\n\n確定送出嗎？";
+    const confirmMsg =
+      "您選擇了 " + segs.length + " 個不連續時段，系統將自動建立 " + segs.length + " 筆獨立訂單：\n\n" +
+      segLines + "\n\n確定送出嗎？";
     if (!confirm(confirmMsg)) return;
   }
 
@@ -1943,7 +1962,6 @@ async function submitBooking() {
 
   try {
     if (!hasMultiSeg) {
-      // 單段 or 連續段：一筆訂單
       const res = await fetch(API + "/api/book", {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
@@ -1961,7 +1979,6 @@ async function submitBooking() {
         alert(data.error || '預約失敗，請重試');
       }
     } else {
-      // 不連續時段：每段各自送一筆訂單
       const results = [];
       const errors  = [];
       for (let i = 0; i < segs.length; i++) {
@@ -2009,9 +2026,10 @@ function showMultiSuccess(bookings, errors) {
   first._multi_info = "共 " + bookings.length + " 筆訂單：\n" + segList + errMsg;
   showSuccess(first, true);
 }
+
 function showSuccess(booking, isMulti) {
   const rows = [
-    ['預約編號', booking.booking_number + (booking._multi_info ? '' : '')],
+    ['預約編號', booking.booking_number],
     ['會議室', booking.room_name],
     ['日期', booking.date],
     ['時段', (function() {
@@ -2019,10 +2037,8 @@ function showSuccess(booking, isMulti) {
         try {
           const segs = typeof booking.segments === 'string'
             ? JSON.parse(booking.segments) : booking.segments;
-          if (segs && segs.length > 1)
-            return segs.map(s => `${s.start}–${s.end}`).join('、');
-          if (segs && segs.length === 1)
-            return `${segs[0].start} – ${segs[0].end}`;
+          if (segs && segs.length > 1) return segs.map(s => `${s.start}–${s.end}`).join('、');
+          if (segs && segs.length === 1) return `${segs[0].start} – ${segs[0].end}`;
         } catch(e) {}
       }
       return `${booking.start_time} – ${booking.end_time}`;
@@ -2100,11 +2116,9 @@ document.addEventListener('DOMContentLoaded', function() {
 async function loadHeroStats() {
   try {
     const today = new Date().toISOString().slice(0, 10);
-    // Get today's bookings count from availability across all rooms
     const roomsRes = await fetch(`${API}/api/rooms`);
     const rooms = await roomsRes.json();
     document.getElementById('stat-rooms').textContent = rooms.length;
-    // Count today bookings (sum booked slots across all rooms for today)
     let todayCount = 0;
     await Promise.all(rooms.map(async r => {
       try {

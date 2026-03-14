@@ -2135,6 +2135,17 @@ function showMultiSuccess(bookings, errors) {
 }
 
 function showSuccess(booking, isMulti) {
+  if (isMulti && booking._multi_info) {
+    document.getElementById('confirmTable').innerHTML =
+      booking._multi_info.split('\n').map(function(line) {
+        if (!line.trim()) return '';
+        var weight = line.startsWith('•') ? '600' : '400';
+        var color  = line.startsWith('⚠') ? 'var(--red)' : 'var(--ink)';
+        return '<div class="ct-row"><span class="ct-val" style="width:100%;text-align:left;font-weight:' + weight + ';color:' + color + ';">' + line + '</span></div>';
+      }).join('');
+    document.getElementById('successModal').classList.add('active');
+    return;
+  }
   const rows = [
     ['預約編號', booking.booking_number],
     ['會議室', booking.room_name],

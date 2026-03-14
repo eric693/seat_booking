@@ -2088,6 +2088,7 @@ async function submitBooking() {
             start_time: seg.start,
             end_time: seg.end,
             segments: [seg],
+            total_hours: segs.reduce((acc, s) => acc + (toMin(s.end) - toMin(s.start)), 0) / 60, 
           })
         });
         const data = await res.json();

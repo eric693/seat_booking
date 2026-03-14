@@ -1771,10 +1771,13 @@ def create_booking():
 
             dur = sum((_m(s['end']) - _m(s['start'])) for s in segments) / 60
 
+            # 用 total_hours（前台傳來的拆單總時數）或當段 dur 取較大值
+            total_hours = float(data.get('total_hours') or dur)
+
             min_h = float(room.min_hours or 1.0)
-            if min_h > 0 and dur < min_h:
+            if min_h > 0 and total_hours < min_h:
                 min_disp = int(min_h) if min_h == int(min_h) else min_h
-                return jsonify({'error': f'此會議室最少需預約 {min_disp} 小時，目前共選 {round(dur*60)} 分鐘'}), 400
+                return jsonify({'error': f'此會議室最少需預約 {min_disp} 小時，目前共選 {round(total_hours*60)} 分鐘'}), 400
 
             start_time    = segments[0]['start']
             end_time      = segments[-1]['end']

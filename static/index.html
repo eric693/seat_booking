@@ -2125,6 +2125,16 @@ function showMultiSuccess(bookings, errors) {
 }
 
 function showSuccess(booking, isMulti) {
+  // 多筆時顯示所有訂單摘要
+  if (isMulti && booking._multi_info) {
+    document.getElementById('confirmTable').innerHTML =
+      booking._multi_info.split('\n').map(line =>
+        line ? `<div class="ct-row"><span class="ct-val" style="width:100%;text-align:left;">${line}</span></div>` : ''
+      ).join('');
+    document.getElementById('successModal').classList.add('active');
+    return;
+  }
+  
   const rows = [
     ['預約編號', booking.booking_number],
     ['會議室', booking.room_name],

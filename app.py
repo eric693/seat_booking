@@ -1681,56 +1681,39 @@ def get_rooms():
     return jsonify([r.to_dict() for r in rooms])
 
 def _get_open_periods(room, date_str: str) -> list:
-    """
-    根據 room.time_config 計算指定日期開放的時段列表。
-    回傳格式：[{'start': '08:00', 'end': '12:00', 'label': '早上', 'period_id': 'am'}, ...]
-    若 time_config 未設定，回傳空列表（代表全天開放，由前台預設處理）
-    """
     import json as _j
     from datetime import datetime as _dt
- 
     if not room.time_config:
-        return []  # 沒有設定 → 全天開放
- 
+        return []
     try:
         cfg = _j.loads(room.time_config)
     except Exception:
         return []
- 
     periods_def = {p['id']: p for p in cfg.get('periods', [])}
- 
-    # 優先查 date_overrides
     overrides = cfg.get('overrides', [])
     override_entry = next((ov for ov in overrides if ov.get('date') == date_str), None)
- 
     if override_entry is not None:
         open_ids = override_entry.get('open', [])
     else:
-        # 依星期幾查 weekly
         try:
-            weekday = str(_dt.strptime(date_str, '%Y-%m-%d').weekday())
-            # Python weekday: 0=Mon...6=Sun；time_config 用 1=Mon...0=Sun
             py_to_tc = {'0':'1','1':'2','2':'3','3':'4','4':'5','5':'6','6':'0'}
+            weekday = str(_dt.strptime(date_str, '%Y-%m-%d').weekday())
             tc_key = py_to_tc.get(weekday, weekday)
             open_ids = cfg.get('weekly', {}).get(tc_key, [])
         except Exception:
             return []
- 
     result = []
     for pid in open_ids:
         p = periods_def.get(pid)
         if p:
             result.append({
                 'period_id': pid,
-                'label':     p.get('label', pid),
-                'start':     p.get('start', '08:00'),
-                'end':       p.get('end', '22:00'),
+                'label': p.get('label', pid),
+                'start': p.get('start', '08:00'),
+                'end':   p.get('end',   '22:00'),
             })
- 
-    # 依開始時間排序
     result.sort(key=lambda x: x['start'])
     return result
- 
 
 @app.route('/api/rooms/<int:room_id>/availability')
 def room_availability(room_id):
@@ -1738,14 +1721,9 @@ def room_availability(room_id):
     if not date:
         return jsonify({'error': 'Missing date'}), 400
     room = Room.query.get_or_404(room_id)
-    booked_slots = get_booked_slots(room_id, date)
-
-    # 計算此房間在此日期的開放時段
-    open_periods = _get_open_periods(room, date)
-
     return jsonify({
-        'booked_slots': booked_slots,
-        'open_periods': open_periods,    # [{start, end, label}]
+        'booked_slots': get_booked_slots(room_id, date),
+        'open_periods': _get_open_periods(room, date),
     })
 
 

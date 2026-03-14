@@ -2537,9 +2537,12 @@ async function loadLineUsers() {
         </td>
         <td style="color:var(--ink-60);font-size:13px;">${u.created_at || '—'}</td>
         <td>
-          <button class="btn btn-outline btn-sm" onclick="toggleLineAdmin('${u.line_user_id}')">
-            ${u.is_admin ? '取消管理員' : '設為管理員'}
-          </button>
+          <div style="display:flex;gap:6px;">
+            <button class="btn btn-outline btn-sm" onclick="toggleLineAdmin('${u.line_user_id}')">
+              ${u.is_admin ? '取消管理員' : '設為管理員'}
+            </button>
+            <button class="btn btn-danger btn-sm" onclick="deleteLineUser('${u.line_user_id}', '${(u.display_name||'此用戶').replace(/'/g,"\\'")}')">刪除</button>
+          </div>
         </td>
       </tr>`).join('');
   } catch(e) { console.error(e); }
@@ -2549,6 +2552,13 @@ async function toggleLineAdmin(uid) {
   const res = await fetch(`/admin/api/line-users/${uid}/admin`, { method: 'POST', headers: H });
   if (res.ok) { toast('已更新'); loadLineUsers(); }
   else toast('操作失敗', 'error');
+}
+
+async function deleteLineUser(uid, displayName) {
+  if (!confirm(`確定要刪除「${displayName}」的 LINE 用戶紀錄？\n\n刪除後該用戶需重新加入才能使用 LINE 預約功能。`)) return;
+  const res = await fetch(`/admin/api/line-users/${uid}`, { method: 'DELETE', headers: H });
+  if (res.ok) { toast('已刪除 LINE 用戶'); loadLineUsers(); }
+  else { const d = await res.json(); toast(d.error || '刪除失敗', 'error'); }
 }
 
 async function sendBroadcast() {

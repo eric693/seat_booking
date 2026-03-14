@@ -2454,6 +2454,99 @@ def _handle_booking_flow(uid: str, rtok: str, text: str, lu):
     return False  # 不在流程中
 
 
+_line_ai_sessions = {}   # { line_user_id: [{'role':..., 'content':...}, ...] }
+ 
+def _get_ai_system_prompt():
+    """建立 AI 系統提示，包含空間與預約資訊"""
+    try:
+        rooms = Room.query.filter_by(is_active=True).order_by(
+            Room.sort_order.asc(), Room.created_at.asc()
+        ).all()
+        rooms_info = '\n'.join([
+            f'・{r.name}（{r.room_type}，{r.capacity}人，NT${r.hourly_rate}/hr'
+            + (f'，最少{r.min_hours}小時' if r.min_hours > 0 else '')
+            + (f'，{r.floor}' if r.floor else '')
+            + f'）\n  {r.description or ""}' 
+            for r in rooms
+        ])
+    except Exception:
+        rooms_info = '（空間資料暫時無法取得）'
+ 
+    site_url = SiteContent.get('site_url', 'https://seat-booking-rlf2.onrender.com')
+    liff_url  = os.environ.get('LIFF_URL', 'https://liff.line.me/2009193434-BpOSKuw9')
+    service_hours = SiteContent.get('service_hours', '')
+    contact_phone = SiteContent.get('contact_phone', '')
+ 
+    return f"""你是預約空間的 LINE 官方帳號助理，請用繁體中文、親切口語的方式回覆。
+ 
+【你能做的事】
+- 介紹各個空間、說明費用、協助了解預約流程
+- 回答使用者問題
+ 
+【預約方式】
+1. LINE 預約：在此對話直接輸入「預約」即可開始預約流程
+2. 網頁預約：{site_url}（可查看空間照片、選擇時段）
+3. LINE LIFF：{liff_url}
+ 
+【目前可預約空間】
+{rooms_info}
+ 
+【服務資訊】
+服務時間：{service_hours}
+聯絡電話：{contact_phone}
+ 
+【回覆規則】
+- 簡潔親切，每則回覆 150 字以內
+- 若使用者想預約，請告訴他輸入「預約」開始
+- 若使用者想看照片，請引導到網頁：{site_url}
+- 不要捏造不存在的資訊
+- 無法回答的問題請說「請來電 {contact_phone} 詢問」"""
+ 
+ 
+def _line_ai_reply(uid: str, text: str) -> str:
+    """呼叫 OpenAI，回傳給 LINE 的文字回覆"""
+    if not OPENAI_API_KEY:
+        return ''   # 沒設定就不用 AI，走原本流程
+ 
+    # 取得或初始化對話記憶（最多保留 6 則）
+    history = _line_ai_sessions.get(uid, [])
+    history.append({'role': 'user', 'content': text})
+    if len(history) > 12:
+        history = history[-12:]
+ 
+    try:
+        resp = http_requests.post(
+            'https://api.openai.com/v1/chat/completions',
+            headers={
+                'Authorization': f'Bearer {OPENAI_API_KEY}',
+                'Content-Type': 'application/json',
+            },
+            json={
+                'model': 'gpt-4o-mini',
+                'max_tokens': 300,
+                'temperature': 0.6,
+                'messages': [
+                    {'role': 'system', 'content': _get_ai_system_prompt()},
+                    *history
+                ]
+            },
+            timeout=15
+        )
+        if resp.status_code != 200:
+            print(f'[LINE AI] OpenAI error {resp.status_code}: {resp.text[:200]}')
+            return ''
+ 
+        reply = resp.json()['choices'][0]['message']['content'].strip()
+        history.append({'role': 'assistant', 'content': reply})
+        _line_ai_sessions[uid] = history
+        return reply
+ 
+    except Exception as e:
+        print(f'[LINE AI] Exception: {e}')
+        return ''
+ 
+ 
+
 def _handle_line_text(uid, rtok, text):
     lower = text.lower()
     lu = upsert_line_user(uid)
@@ -2591,8 +2684,12 @@ def _handle_line_text(uid, rtok, text):
         reply_line(rtok, [flex_bind_success(phone)])
         return
 
-    # ── 未識別指令 → 引導到主選單 ──
-    reply_line(rtok, [flex_main_menu()])
+    # 未識別指令 → 交給 AI 回覆
+    ai_reply = _line_ai_reply(uid, text)
+    if ai_reply:
+        reply_line(rtok, [{'type': 'text', 'text': ai_reply}])
+    else:
+        reply_line(rtok, [flex_main_menu()])
 
 
 # ─────────────────────────────────────────────
@@ -2999,6 +3096,15 @@ def admin_toggle_line_admin(uid):
     db.session.commit()
     return jsonify(lu.to_dict())
 
+@app.route('/admin/api/line-users/<uid>', methods=['DELETE'])
+def admin_delete_line_user(uid):
+    err = check_admin()
+    if err: return err
+    lu = LineUser.query.filter_by(line_user_id=uid).first_or_404()
+    db.session.delete(lu)
+    db.session.commit()
+    return jsonify({'success': True})
+ 
 @app.route('/admin/api/line-broadcast', methods=['POST'])
 def admin_broadcast():
     """廣播文字訊息給所有（或僅管理員）LINE 使用者"""

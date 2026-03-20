@@ -2547,16 +2547,37 @@ def _get_ai_system_prompt():
 - 若使用者想看照片，請引導到網頁：{site_url}
 - 不要捏造不存在的資訊
 - 無法回答的問題請說「請來電 {contact_phone} 詢問」"""
- 
+
+_CHAT_WHITELIST = {
+    'hi', 'hello', 'hey', '你好', '嗨', '哈囉', '哈喽',
+    '早', '早安', '午安', '晚安', '晚上好',
+    '謝謝', '感謝', '好的', '好', 'ok', 'okay', '了解', '收到',
+    '哈哈', '😊', '👍', '🙏', '呵呵',
+    '?', '？', '！', '!',
+}
+
 def _detect_booking_intent(text: str) -> bool:
     """
     用 OpenAI 快速判斷用戶訊息是否含有預約意圖。
     回傳 True = 有預約意圖，False = 只是一般聊天。
-    使用 gpt-4o-mini，temperature=0 確保判斷穩定。
-    沒有設定 OPENAI_API_KEY 時永遠回傳 False。
+ 
+    防呆設計：
+    1. 白名單短路：問候語、單字回覆直接回 False，不呼叫 API
+    2. 太短的訊息（≤2字）直接回 False
+    3. 沒有設定 OPENAI_API_KEY 永遠回 False
     """
     if not OPENAI_API_KEY:
         return False
+ 
+    # 白名單短路（不分大小寫）
+    stripped = text.strip().lower()
+    if stripped in _CHAT_WHITELIST:
+        return False
+ 
+    # 太短的訊息不做意圖偵測（≤2個字元，幾乎不可能是預約意圖）
+    if len(stripped) <= 2:
+        return False
+ 
     try:
         resp = http_requests.post(
             'https://api.openai.com/v1/chat/completions',
@@ -2572,17 +2593,37 @@ def _detect_booking_intent(text: str) -> bool:
                     {
                         'role': 'system',
                         'content': (
-                            '你是意圖分類器。'
-                            '判斷用戶訊息是否表達「想要預約/訂房間/訂會議室/安排場地」等預約意圖。'
-                            '只能回答 YES 或 NO，不得有其他文字。'
-                            '以下屬於 YES：我想訂會議室、幫我預約、想租空間、有空檔嗎、可以訂3號嗎、我要借場地。'
-                            '以下屬於 NO：費用多少、幾點可以用、有什麼設備、你好、謝謝、幾樓。'
+                            '你是意圖分類器，只能回答 YES 或 NO，不得有其他文字。\n'
+                            '\n'
+                            '判斷標準：用戶訊息是否「明確表達想要預約/訂房間/訂會議室/租場地」。\n'
+                            '必須是「想要採取預約行動」才算 YES，單純詢問資訊、問候、閒聊都是 NO。\n'
+                            '\n'
+                            '=== YES 範例（明確想預約）===\n'
+                            '・我想訂會議室\n'
+                            '・幫我預約明天下午\n'
+                            '・想租一個空間\n'
+                            '・可以幫我訂3號嗎\n'
+                            '・我要借場地辦活動\n'
+                            '・想預訂洽談室\n'
+                            '・能不能幫我安排一個會議室\n'
+                            '\n'
+                            '=== NO 範例（詢問資訊或閒聊）===\n'
+                            '・Hi / 你好 / 哈囉\n'
+                            '・費用多少\n'
+                            '・幾點可以使用\n'
+                            '・有哪些設備\n'
+                            '・容納幾人\n'
+                            '・在幾樓\n'
+                            '・謝謝\n'
+                            '・好的\n'
+                            '・我想了解一下會議室\n'         # 問資訊，不是要預約
+                            '・你們有什麼房間\n'             # 詢問，不是要預約
                         )
                     },
                     {'role': 'user', 'content': text}
                 ]
             },
-            timeout=8   # 意圖判斷要快，設短一點
+            timeout=8
         )
         if resp.status_code != 200:
             return False

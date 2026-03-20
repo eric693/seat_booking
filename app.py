@@ -2548,13 +2548,56 @@ def _get_ai_system_prompt():
 - 不要捏造不存在的資訊
 - 無法回答的問題請說「請來電 {contact_phone} 詢問」"""
  
- 
+def _detect_booking_intent(text: str) -> bool:
+    """
+    用 OpenAI 快速判斷用戶訊息是否含有預約意圖。
+    回傳 True = 有預約意圖，False = 只是一般聊天。
+    使用 gpt-4o-mini，temperature=0 確保判斷穩定。
+    沒有設定 OPENAI_API_KEY 時永遠回傳 False。
+    """
+    if not OPENAI_API_KEY:
+        return False
+    try:
+        resp = http_requests.post(
+            'https://api.openai.com/v1/chat/completions',
+            headers={
+                'Authorization': f'Bearer {OPENAI_API_KEY}',
+                'Content-Type': 'application/json',
+            },
+            json={
+                'model': 'gpt-4o-mini',
+                'max_tokens': 5,        # 只需回答 YES 或 NO
+                'temperature': 0,
+                'messages': [
+                    {
+                        'role': 'system',
+                        'content': (
+                            '你是意圖分類器。'
+                            '判斷用戶訊息是否表達「想要預約/訂房間/訂會議室/安排場地」等預約意圖。'
+                            '只能回答 YES 或 NO，不得有其他文字。'
+                            '以下屬於 YES：我想訂會議室、幫我預約、想租空間、有空檔嗎、可以訂3號嗎、我要借場地。'
+                            '以下屬於 NO：費用多少、幾點可以用、有什麼設備、你好、謝謝、幾樓。'
+                        )
+                    },
+                    {'role': 'user', 'content': text}
+                ]
+            },
+            timeout=8   # 意圖判斷要快，設短一點
+        )
+        if resp.status_code != 200:
+            return False
+        answer = resp.json()['choices'][0]['message']['content'].strip().upper()
+        return answer.startswith('YES')
+    except Exception as e:
+        print(f'[Intent detection error] {e}')
+        return False
+
 def _line_ai_reply(uid: str, text: str) -> str:
     """呼叫 OpenAI，回傳給 LINE 的文字回覆"""
     if not OPENAI_API_KEY:
         return ''   # 沒設定就不用 AI，走原本流程
  
-    # 取得或初始化對話記憶（最多保留 6 則）
+    # 取得或初始化對話記憶（最多保留 12 則）
     history = _line_ai_sessions.get(uid, [])
     history.append({'role': 'user', 'content': text})
     if len(history) > 12:
@@ -2592,20 +2635,21 @@ def _line_ai_reply(uid: str, text: str) -> str:
         return ''
  
  
+ 
 
 def _handle_line_text(uid, rtok, text):
     lower = text.lower()
     lu = upsert_line_user(uid)
-
+ 
     # ── 預約對話流程攔截（最高優先）──
     if _handle_booking_flow(uid, rtok, text, lu):
         return
-
+ 
     # ── 說明 / 主選單 ──
     if lower in ('說明', 'help', '指令', '?', '？', '選單', 'menu'):
         reply_line(rtok, [flex_main_menu()])
         return
-
+ 
     # ── 查詢預約編號 ──
     if lower.startswith('查詢'):
         number = text[2:].strip().upper()
@@ -2622,14 +2666,12 @@ def _handle_line_text(uid, rtok, text):
         else:
             reply_line(rtok, [flex_booking_confirm(b)])
         return
-
+ 
     # ── 我的預約 ──
     if lower in ('我的預約', '預約紀錄'):
-        # 優先用 line_user_id 查，再 fallback 到綁定手機號碼
         q_uid   = Booking.query.filter_by(line_user_id=uid)
         q_phone = (Booking.query.filter_by(customer_phone=lu.phone)
                    if lu and lu.phone else None)
-        # 合併兩個來源（去重）
         seen, bs = set(), []
         for b in (q_uid.order_by(Booking.created_at.desc()).limit(10).all()):
             if b.id not in seen:
@@ -2638,7 +2680,6 @@ def _handle_line_text(uid, rtok, text):
             for b in q_phone.order_by(Booking.created_at.desc()).limit(10).all():
                 if b.id not in seen:
                     seen.add(b.id); bs.append(b)
-        # 取最新 3 筆
         bs = sorted(bs, key=lambda b: b.created_at or b.id, reverse=True)[:3]
         if not bs:
             hint = '前往網站預約，或在 LINE 輸入「預約」開始。'
@@ -2648,7 +2689,7 @@ def _handle_line_text(uid, rtok, text):
         else:
             reply_line(rtok, [flex_booking_confirm(b) for b in bs])
         return
-
+ 
     # ── 時段查詢 ──
     if lower.startswith('時段'):
         import re as _re
@@ -2674,8 +2715,8 @@ def _handle_line_text(uid, rtok, text):
             rooms_data.append({'name': room.name, 'slots': slots})
         reply_line(rtok, [flex_timeslot(date_str, rooms_data)])
         return
-
-    # ── 取消特定預約：取消預約 MR2026XXXXXX ──
+ 
+    # ── 取消特定預約 ──
     if lower.startswith('取消預約 '):
         number = text[5:].strip().upper()
         b = Booking.query.filter_by(booking_number=number).first()
@@ -2684,20 +2725,14 @@ def _handle_line_text(uid, rtok, text):
                 f'找不到預約編號 {number}',
                 '請確認編號是否正確')])
             return
-        # 確認是本人的預約（by line_user_id 或綁定手機）
         is_owner = (b.line_user_id == uid or
                     (lu and lu.phone and b.customer_phone == lu.phone))
         if not is_owner:
-            reply_line(rtok, [flex_not_found(
-                '無法取消此預約',
-                '只能取消您自己的預約')])
+            reply_line(rtok, [flex_not_found('無法取消此預約', '只能取消您自己的預約')])
             return
         if b.status == 'cancelled':
-            reply_line(rtok, [flex_not_found(
-                '此預約已取消',
-                '如有疑問請聯繫管理員')])
+            reply_line(rtok, [flex_not_found('此預約已取消', '如有疑問請聯繫管理員')])
             return
-        # 時間限制：距使用不足 2 小時
         from datetime import datetime as _dt
         try:
             booking_dt = _dt.strptime(f"{b.date} {b.start_time}", '%Y-%m-%d %H:%M')
@@ -2714,7 +2749,7 @@ def _handle_line_text(uid, rtok, text):
         for aid in admin_line_ids():
             push_line(aid, [flex_admin_notify(b)])
         return
-
+ 
     # ── 綁定手機 ──
     if lower.startswith('綁定'):
         phone = text[2:].strip().replace('-', '').replace(' ', '')
@@ -2729,14 +2764,34 @@ def _handle_line_text(uid, rtok, text):
         db.session.commit()
         reply_line(rtok, [flex_bind_success(phone)])
         return
-
-    # 未識別指令 → 交給 AI 回覆
+ 
+    # ════════════════════════════════════════════
+    # ── 未識別指令：先判斷預約意圖，再走 AI 聊天 ──
+    # ════════════════════════════════════════════
+ 
+    # 1. 用 AI 偵測是否有預約意圖
+    if _detect_booking_intent(text):
+        # 有意圖 → 直接啟動預約流程（等同用戶輸入「預約」）
+        rooms = Room.query.filter_by(is_active=True).all()
+        if not rooms:
+            reply_line(rtok, [flex_not_found('目前沒有可用的會議室', '請稍後再試')])
+            return
+        _clear_sess(lu)
+        _save_sess(lu, {'step': 'select_room'})
+        # 先給一句自然的銜接語，再顯示選房間 Flex
+        reply_line(rtok, [
+            {'type': 'text', 'text': '好的，為您開始預約流程，請先選擇會議室 😊'},
+            flex_select_room(rooms)
+        ])
+        return
+ 
+    # 2. 無預約意圖 → 走 AI 一般聊天
     ai_reply = _line_ai_reply(uid, text)
     if ai_reply:
         reply_line(rtok, [{'type': 'text', 'text': ai_reply}])
     else:
+        # AI 未設定或呼叫失敗時的兜底
         reply_line(rtok, [flex_main_menu()])
-
 
 # ─────────────────────────────────────────────
 # Admin Login

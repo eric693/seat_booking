@@ -2555,28 +2555,43 @@ _CHAT_WHITELIST = {
     '哈哈', '😊', '👍', '🙏', '呵呵',
     '?', '？', '！', '!',
 }
+ 
+# 訊息中含有這些詞，代表明確「不想現在預約」，直接回 False
+_DENY_KEYWORDS = (
+    '還沒要', '先不', '不用預約', '不想預約', '不要預約',
+    '先問', '先詢問', '先了解', '再決定', '考慮看看',
+    '只是問問', '只是詢問', '只是想知道',
+)
 
 def _detect_booking_intent(text: str) -> bool:
     """
     用 OpenAI 快速判斷用戶訊息是否含有預約意圖。
     回傳 True = 有預約意圖，False = 只是一般聊天。
  
-    防呆設計：
-    1. 白名單短路：問候語、單字回覆直接回 False，不呼叫 API
-    2. 太短的訊息（≤2字）直接回 False
-    3. 沒有設定 OPENAI_API_KEY 永遠回 False
+    防呆設計（依序檢查）：
+    1. 白名單短路：問候語直接回 False
+    2. 長度限制：≤2 字元直接回 False
+    3. 否定關鍵字：含有「還沒要」「先問」等詞直接回 False
+    4. 呼叫 OpenAI 判斷
+    5. 沒有設定 OPENAI_API_KEY 永遠回 False
     """
     if not OPENAI_API_KEY:
         return False
  
-    # 白名單短路（不分大小寫）
     stripped = text.strip().lower()
+ 
+    # 第一層：白名單短路
     if stripped in _CHAT_WHITELIST:
         return False
  
-    # 太短的訊息不做意圖偵測（≤2個字元，幾乎不可能是預約意圖）
+    # 第二層：太短的訊息
     if len(stripped) <= 2:
         return False
+ 
+    # 第三層：明確否定預約的關鍵字
+    for kw in _DENY_KEYWORDS:
+        if kw in text:
+            return False
  
     try:
         resp = http_requests.post(
@@ -2587,7 +2602,7 @@ def _detect_booking_intent(text: str) -> bool:
             },
             json={
                 'model': 'gpt-4o-mini',
-                'max_tokens': 5,        # 只需回答 YES 或 NO
+                'max_tokens': 5,
                 'temperature': 0,
                 'messages': [
                     {
@@ -2595,29 +2610,29 @@ def _detect_booking_intent(text: str) -> bool:
                         'content': (
                             '你是意圖分類器，只能回答 YES 或 NO，不得有其他文字。\n'
                             '\n'
-                            '判斷標準：用戶訊息是否「明確表達想要預約/訂房間/訂會議室/租場地」。\n'
-                            '必須是「想要採取預約行動」才算 YES，單純詢問資訊、問候、閒聊都是 NO。\n'
+                            '判斷標準：用戶訊息是否「明確表達想要立刻預約/訂房間/訂會議室/租場地」。\n'
+                            '必須是「想要採取預約行動」才算 YES。\n'
+                            '單純詢問資訊、問候、閒聊、表示還不確定、說明自己只是想問問，都是 NO。\n'
                             '\n'
-                            '=== YES 範例（明確想預約）===\n'
+                            '=== YES（明確想立刻預約）===\n'
                             '・我想訂會議室\n'
                             '・幫我預約明天下午\n'
                             '・想租一個空間\n'
                             '・可以幫我訂3號嗎\n'
                             '・我要借場地辦活動\n'
                             '・想預訂洽談室\n'
-                            '・能不能幫我安排一個會議室\n'
                             '\n'
-                            '=== NO 範例（詢問資訊或閒聊）===\n'
+                            '=== NO（詢問、閒聊、或明確說還不要預約）===\n'
                             '・Hi / 你好 / 哈囉\n'
                             '・費用多少\n'
                             '・幾點可以使用\n'
                             '・有哪些設備\n'
-                            '・容納幾人\n'
-                            '・在幾樓\n'
-                            '・謝謝\n'
-                            '・好的\n'
-                            '・我想了解一下會議室\n'         # 問資訊，不是要預約
-                            '・你們有什麼房間\n'             # 詢問，不是要預約
+                            '・我想了解一下會議室\n'
+                            '・你們有什麼房間\n'
+                            '・還沒要預約，需要先詢問事情再決定\n'  # ← 明確否定
+                            '・先問一下再說\n'
+                            '・考慮看看\n'
+                            '・只是想問問\n'
                         )
                     },
                     {'role': 'user', 'content': text}
@@ -2632,7 +2647,6 @@ def _detect_booking_intent(text: str) -> bool:
     except Exception as e:
         print(f'[Intent detection error] {e}')
         return False
-
 def _line_ai_reply(uid: str, text: str) -> str:
     """呼叫 OpenAI，回傳給 LINE 的文字回覆"""
     if not OPENAI_API_KEY:

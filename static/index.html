@@ -2862,15 +2862,20 @@ async function doRegister() {
     const data = await res.json();
     if (res.ok) {
       _pendingMemberId = data.member_id;
-      if (data.needs_phone_verify) {
+      // Email 優先：有 email 就顯示 Email 驗證提示
+      if (data.needs_email_verify) {
+        document.getElementById('auth-success-title').textContent = '請驗證 Email';
+        document.getElementById('auth-success-msg').textContent =
+          '驗證信已發送至 ' + email + '，請查收信箱並點擊「驗證 Email」連結，完成後即可登入。';
+        switchAuthTab('auth-success');
+      } else if (data.needs_phone_verify) {
+        // 只有手機沒有 email 才顯示手機驗證
         switchAuthTab('phone-verify');
       } else {
-        // Email only: show success
         document.getElementById('auth-success-title').textContent = '註冊成功！';
-        document.getElementById('auth-success-msg').textContent =
-          '已發送驗證信至 ' + email + '，請查收並點擊連結完成驗證後登入。';
+        document.getElementById('auth-success-msg').textContent = '帳號已建立，請登入。';
         switchAuthTab('auth-success');
-        setTimeout(closeAuthModal, 4000);
+        setTimeout(closeAuthModal, 3000);
       }
     } else {
       errEl.textContent = data.error || '註冊失敗';

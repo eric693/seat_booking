@@ -2992,19 +2992,54 @@ def _handle_line_text(uid, rtok, text):
             push_line(aid, [flex_admin_notify(b)])
         return
 
-    # ── 綁定手機 ──
+    # ── 綁定手機 / Email ──
     if lower.startswith('綁定'):
-        phone = text[2:].strip().replace('-', '').replace(' ', '')
-        if not phone.isdigit() or len(phone) < 8:
+        identifier = text[2:].strip().replace('-', '').replace(' ', '')
+        
+        # 判斷是 Email 還是手機
+        import re as _re
+        is_email = bool(_re.match(r'^[^\s@]+@[^\s@]+\.[^\s@]+$', identifier))
+        is_phone = identifier.isdigit() and len(identifier) >= 8
+
+        if not is_email and not is_phone:
             reply_line(rtok, [flex_not_found(
-                '手機號碼格式不正確',
-                '請輸入：綁定 0912345678')])
+                '格式不正確',
+                '請輸入手機號碼或 Email\n例：綁定 0912345678\n例：綁定 your@email.com')])
             return
-        lu.phone = phone
-        Booking.query.filter_by(customer_phone=phone, line_user_id=None).update(
-            {'line_user_id': uid})
+
+        # 查找對應會員
+        if is_email:
+            member = Member.query.filter_by(email=identifier.lower()).first()
+        else:
+            member = Member.query.filter_by(phone=identifier).first()
+
+        if not member:
+            reply_line(rtok, [flex_not_found(
+                '找不到對應的會員帳號',
+                '請確認您已在網站完成註冊，並輸入正確的手機號碼或 Email。')])
+            return
+
+        if not member.is_verified_email and member.email:
+            reply_line(rtok, [{'type': 'text', 'text':
+                '此帳號尚未完成 Email 驗證，請先至信箱完成驗證後再綁定。'}])
+            return
+
+        if member.is_blocked:
+            reply_line(rtok, [{'type': 'text', 'text':
+                '此帳號已被停用，無法綁定。'}])
+            return
+
+        # 更新綁定
+        member.line_user_id = uid
+        if is_phone:
+            lu.phone = identifier
+            # 同步更新相關預約
+            Booking.query.filter_by(customer_phone=identifier, line_user_id=None).update(
+                {'line_user_id': uid})
         db.session.commit()
-        reply_line(rtok, [flex_bind_success(phone)])
+
+        display = identifier if is_email else identifier
+        reply_line(rtok, [flex_bind_success(display)])
         return
 
     # ════════════════════════════════════════════

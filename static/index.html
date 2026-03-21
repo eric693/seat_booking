@@ -2272,11 +2272,7 @@ function validateFormFields() {
 async function submitBooking() {
   // ── 登入驗證：未登入則阻擋並跳出登入視窗 ──
   if (!_currentMember) {
-    const modal = document.getElementById('auth-modal');
-    if (modal) {
-      modal.style.display = 'flex';
-      openAuthModal('login');
-    }
+    openAuthModal('login');
     // 顯示提示訊息
     const errEl = document.getElementById('booking-error-msg');
     if (errEl) {
@@ -3151,11 +3147,8 @@ function checkResetPasswordToken() {
   if (token && path === '/reset-password') {
     _resetToken = token;
     // Open auth modal and show reset password panel
-    const modal = document.getElementById('auth-modal');
-    if (modal) {
-      modal.style.display = 'flex';
-      switchAuthTab('reset-password');
-    }
+    openAuthModal();
+    switchAuthTab('reset-password');
   }
 }
 

@@ -2446,11 +2446,54 @@ def _handle_booking_flow(uid: str, rtok: str, text: str, lu):
 
     # ── Step 0：開始預約 → 顯示會議室列表（任何時候輸入「預約」都重置流程）──
     if text in ('預約', '開始預約', '我要預約'):
+
+        # ★ 會員驗證：檢查 LINE 用戶是否已綁定會員帳號
+        member = None
+        if lu.phone:
+            member = Member.query.filter_by(phone=lu.phone).first()
+        if not member:
+            member = Member.query.filter_by(line_user_id=uid).first()
+
+        if not member:
+            reply_line(rtok, [{
+                'type': 'flex', 'altText': '請先完成會員註冊',
+                'contents': {
+                    'type': 'bubble', 'size': 'kilo',
+                    'header': _header_box('需要先註冊會員', bg='#B8965A'),
+                    'body': {
+                        'type': 'box', 'layout': 'vertical',
+                        'backgroundColor': _C['bg'], 'paddingAll': '16px', 'spacing': 'md',
+                        'contents': [
+                            {'type': 'text', 'text': '請先至網站完成會員註冊並驗證 Email，才能使用預約功能。',
+                             'size': 'sm', 'color': _C['ink'], 'wrap': True},
+                            {'type': 'text', 'text': '已有帳號？請至網站登入後，系統將自動綁定您的 LINE。',
+                             'size': 'xs', 'color': _C['ink60'], 'wrap': True},
+                        ]
+                    },
+                    'footer': {
+                        'type': 'box', 'layout': 'vertical',
+                        'backgroundColor': _C['bg'], 'paddingAll': '12px',
+                        'contents': [_btn('前往網站註冊 / 登入', 'uri', SITE_URL)]
+                    }
+                }
+            }])
+            return True
+
+        if not member.is_verified_email and member.email:
+            reply_line(rtok, [{'type': 'text', 'text':
+                '您的帳號尚未完成 Email 驗證，請先至信箱點擊驗證連結，完成驗證後才能預約。'}])
+            return True
+
+        if member.is_blocked:
+            reply_line(rtok, [{'type': 'text', 'text':
+                '您的帳號已被停用，無法進行預約。如有疑問請聯繫管理員。'}])
+            return True
+
         rooms = Room.query.filter_by(is_active=True).all()
         if not rooms:
             reply_line(rtok, [flex_not_found('目前沒有可用的會議室', '請稍後再試')])
             return True
-        _clear_sess(lu)                          # 清除舊流程（不管在哪步）
+        _clear_sess(lu)
         _save_sess(lu, {'step': 'select_room'})
         reply_line(rtok, [flex_select_room(rooms)])
         return True
@@ -2622,6 +2665,12 @@ def _handle_booking_flow(uid: str, rtok: str, text: str, lu):
         lu.phone = sess['phone']
         db.session.commit()
         booking = Booking.query.get(booking.id)
+        # ★ 同步更新會員的 line_user_id
+        member = Member.query.filter_by(phone=sess['phone']).first()
+        if member and not member.line_user_id:
+            member.line_user_id = uid
+            db.session.commit()
+            
         _clear_sess(lu)
 
         # 通知

@@ -1368,16 +1368,16 @@ footer {
     <div class="auth-panel" id="panel-reset-password">
       <h2 style="font-family:'DM Serif Display',serif;font-size:26px;margin-bottom:4px;">重設密碼</h2>
       <p style="font-size:13px;color:var(--ink-60);margin-bottom:24px;">請輸入您的新密碼</p>
-      <div class="finput-group">
-        <label class="finput-label">新密碼 <span style="color:var(--red);">*</span> <span style="color:var(--ink-60);font-weight:400;font-size:12px;">至少 6 碼</span></label>
+      <div class="fgroup" style="margin-bottom:14px;">
+        <label style="font-size:13px;font-weight:500;">新密碼 <span style="color:var(--red);">*</span> <span style="font-size:11px;color:var(--ink-60);font-weight:400;">至少 6 碼</span></label>
         <input class="finput" type="password" id="reset-pw-input" placeholder="輸入新密碼">
       </div>
-      <div class="finput-group">
-        <label class="finput-label">確認新密碼 <span style="color:var(--red);">*</span></label>
+      <div class="fgroup" style="margin-bottom:14px;">
+        <label style="font-size:13px;font-weight:500;">確認新密碼 <span style="color:var(--red);">*</span></label>
         <input class="finput" type="password" id="reset-pw-confirm" placeholder="再次輸入新密碼">
       </div>
-      <div id="reset-pw-msg" style="display:none;font-size:13px;margin-bottom:12px;padding:10px 14px;border-radius:8px;"></div>
-      <button class="book-btn" style="width:100%;margin:4px 0 0;" onclick="submitResetPassword()">確認重設密碼</button>
+      <div id="reset-pw-msg" style="display:none;font-size:13px;margin-bottom:12px;padding:10px;background:#fff3f3;color:var(--red);border-radius:6px;"></div>
+      <button class="book-btn" style="margin:0;" onclick="submitResetPassword()">確認重設密碼</button>
     </div>
 
     <button onclick="closeAuthModal()" style="position:absolute;top:16px;right:20px;background:none;border:none;font-size:22px;color:var(--ink-60);cursor:pointer;">×</button>

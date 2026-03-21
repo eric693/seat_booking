@@ -710,6 +710,9 @@ input[list]::-webkit-calendar-picker-indicator { display: none !important; }
     <div class="nav-item" onclick="showPage('lineusers',this)">
       <span class="nav-icon"><svg width="16" height="16" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M8 2C5.2 2 3 4 3 6.5c0 1.5.7 2.8 1.8 3.7L4 13l3-1.5c.3.1.7.1 1 .1 2.8 0 5-2 5-4.5S10.8 2 8 2z"/></svg></span> LINE 用戶
     </div>
+    <div class="nav-item" onclick="showPage('lineqa',this)">
+      <span class="nav-icon"><svg width="16" height="16" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M8 2C5.2 2 3 4 3 6.5c0 1.5.7 2.8 1.8 3.7L4 13l3-1.5c.3.1.7.1 1 .1 2.8 0 5-2 5-4.5S10.8 2 8 2z"/><path d="M6 6.5h4M6 8.5h2.5" stroke-linecap="round"/></svg></span> LINE 問答設定
+    </div>
     <div class="nav-section">金流</div>
     <div class="nav-item" onclick="showPage('payment',this)">
       <span class="nav-icon"><svg width="16" height="16" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><rect x="1" y="3" width="14" height="10" rx="1.5"/><path d="M1 7h14"/><circle cx="4.5" cy="11" r="1" fill="currentColor" stroke="none"/></svg></span> 付款設定
@@ -1028,6 +1031,49 @@ input[list]::-webkit-calendar-picker-indicator { display: none !important; }
             </div>
             <div id="broadcast-status" style="font-size:13px;color:var(--teal);display:none;"></div>
           </div>
+        </div>
+      </div>
+    </div>
+
+
+    <!-- ── LINE Q&A ── -->
+    <div class="page" id="page-lineqa">
+      <div class="card" style="margin-bottom:20px;">
+        <div class="card-head">
+          <div class="card-title">新增 Q&A 自動回覆</div>
+        </div>
+        <div class="card-body">
+          <div style="display:grid;grid-template-columns:1fr 1fr;gap:12px;margin-bottom:12px;">
+            <div>
+              <label style="font-size:12px;color:var(--ink-60);display:block;margin-bottom:4px;">關鍵字 <span style="color:var(--ink-40);font-size:11px;">（多個關鍵字用逗號分隔，如：費用,多少錢,價格）</span></label>
+              <input type="text" class="finput" id="qa-keywords" placeholder="例：費用,價格,多少錢" style="padding:8px;">
+            </div>
+            <div>
+              <label style="font-size:12px;color:var(--ink-60);display:block;margin-bottom:4px;">優先順序 <span style="color:var(--ink-40);font-size:11px;">（數字越小越優先）</span></label>
+              <input type="number" class="finput" id="qa-order" value="10" min="1" style="padding:8px;">
+            </div>
+          </div>
+          <div style="margin-bottom:12px;">
+            <label style="font-size:12px;color:var(--ink-60);display:block;margin-bottom:4px;">回覆內容</label>
+            <textarea class="finput" id="qa-reply" rows="4" placeholder="輸入 LINE 自動回覆的文字內容..." style="padding:8px;resize:vertical;width:100%;"></textarea>
+          </div>
+          <div style="display:flex;align-items:center;gap:12px;">
+            <button class="btn btn-primary" onclick="addLineQA()">+ 新增</button>
+            <span id="qa-add-status" style="font-size:13px;color:var(--teal);display:none;"></span>
+          </div>
+        </div>
+      </div>
+      <div class="card">
+        <div class="card-head">
+          <div class="card-title">Q&A 列表</div>
+          <div style="display:flex;gap:8px;align-items:center;">
+            <span style="font-size:12px;color:var(--ink-60);">共 <span id="qa-count">0</span> 筆</span>
+            <button class="btn btn-outline btn-sm" onclick="loadLineQA()">重新整理</button>
+          </div>
+        </div>
+        <div class="card-body">
+          <p style="font-size:13px;color:var(--ink-60);margin-bottom:16px;">當 LINE 用戶訊息包含關鍵字時，系統會優先回覆設定的內容，不會交給 AI 處理。</p>
+          <div id="qa-list"><div style="text-align:center;padding:40px;color:var(--ink-60);">載入中...</div></div>
         </div>
       </div>
     </div>
@@ -1371,6 +1417,7 @@ function showPage(id, navEl) {
     case 'blocked':   loadBlockedSlots(); loadTimeConfigRoomBtns(); break;
     case 'accounts':  loadAccounts(); break;
     case 'lineusers':  loadLineUsers(); break;
+    case 'lineqa':     loadLineQA(); break;
     case 'payment':   loadPaymentSettings(); break;
     case 'logs':      loadLoginLogs(); break;
   }
@@ -2589,7 +2636,7 @@ const ALL_PAGES = [
   {id:'dashboard',label:'儀表板'},{id:'bookings',label:'預約管理'},
   {id:'rooms',label:'會議室管理'},{id:'content',label:'文字內容'},
   {id:'photos',label:'照片管理'},{id:'formfields',label:'表單欄位'},
-  {id:'blocked',label:'封鎖時段'},{id:'payment',label:'付款設定'},
+  {id:'blocked',label:'封鎖時段'},{id:'lineqa',label:'LINE問答'},{id:'payment',label:'付款設定'},
   {id:'accounts',label:'帳號管理'},{id:'logs',label:'登入紀錄'}
 ];
 
@@ -2797,6 +2844,116 @@ function badgeHtml(status) {
 }
 
 // ── LINE USERS ──
+
+// ── LINE Q&A ──────────────────────────────────────────
+async function loadLineQA() {
+  const list = document.getElementById('qa-list');
+  try {
+    const res = await fetch('/admin/api/line-qa', { headers: H });
+    const items = await res.json();
+    document.getElementById('qa-count').textContent = items.length;
+    if (!items.length) {
+      list.innerHTML = '<div style="text-align:center;padding:40px;color:var(--ink-60);">尚未設定任何 Q&A</div>';
+      return;
+    }
+    list.innerHTML = items.map(q => `
+      <div style="border:1px solid var(--border);border-radius:8px;padding:16px;margin-bottom:12px;background:var(--paper);">
+        <div style="display:flex;align-items:flex-start;justify-content:space-between;gap:12px;">
+          <div style="flex:1;">
+            <div style="display:flex;align-items:center;gap:8px;margin-bottom:8px;flex-wrap:wrap;">
+              ${q.keywords.split(',').map(k => `<span style="background:var(--teal-light);color:var(--teal);border-radius:20px;padding:2px 10px;font-size:12px;font-weight:600;">${k.trim()}</span>`).join('')}
+              <span style="font-size:11px;color:var(--ink-60);margin-left:4px;">優先度 ${q.sort_order}</span>
+              <span style="font-size:11px;padding:2px 8px;border-radius:10px;background:${q.is_active?'#e8f5e9':'#fce4ec'};color:${q.is_active?'#2e7d32':'#c62828'};">
+                ${q.is_active ? '啟用中' : '已停用'}
+              </span>
+            </div>
+            <div style="font-size:14px;color:var(--ink);white-space:pre-wrap;line-height:1.6;background:#fff;border-radius:6px;padding:10px 14px;border:1px solid var(--border);">${q.reply}</div>
+          </div>
+          <div style="display:flex;flex-direction:column;gap:6px;flex-shrink:0;">
+            <button class="btn btn-outline btn-sm" onclick="editLineQA(${q.id}, this)" style="white-space:nowrap;">編輯</button>
+            <button class="btn btn-outline btn-sm" onclick="toggleLineQA(${q.id}, ${q.is_active})" style="white-space:nowrap;">
+              ${q.is_active ? '停用' : '啟用'}
+            </button>
+            <button class="btn btn-sm" onclick="deleteLineQA(${q.id})" style="background:#fff0ee;color:var(--red);border:1px solid #ffcdd2;white-space:nowrap;">刪除</button>
+          </div>
+        </div>
+      </div>
+    `).join('');
+  } catch(e) {
+    list.innerHTML = '<div style="color:var(--red);padding:20px;">載入失敗</div>';
+  }
+}
+
+async function addLineQA() {
+  const keywords = document.getElementById('qa-keywords').value.trim();
+  const reply    = document.getElementById('qa-reply').value.trim();
+  const order    = parseInt(document.getElementById('qa-order').value) || 10;
+  const status   = document.getElementById('qa-add-status');
+  if (!keywords) { toast('請填寫關鍵字', 'error'); return; }
+  if (!reply)    { toast('請填寫回覆內容', 'error'); return; }
+  const res = await fetch('/admin/api/line-qa', {
+    method: 'POST', headers: { ...H, 'Content-Type': 'application/json' },
+    body: JSON.stringify({ keywords, reply, sort_order: order })
+  });
+  if (res.ok) {
+    toast('Q&A 已新增', 'success');
+    document.getElementById('qa-keywords').value = '';
+    document.getElementById('qa-reply').value = '';
+    document.getElementById('qa-order').value = '10';
+    loadLineQA();
+  } else {
+    toast('新增失敗', 'error');
+  }
+}
+
+async function toggleLineQA(id, currentActive) {
+  const res = await fetch(`/admin/api/line-qa/${id}`, {
+    method: 'PUT', headers: { ...H, 'Content-Type': 'application/json' },
+    body: JSON.stringify({ is_active: !currentActive })
+  });
+  if (res.ok) { toast(currentActive ? '已停用' : '已啟用'); loadLineQA(); }
+}
+
+async function deleteLineQA(id) {
+  if (!confirm('確定刪除此 Q&A？')) return;
+  const res = await fetch(`/admin/api/line-qa/${id}`, { method: 'DELETE', headers: H });
+  if (res.ok) { toast('已刪除'); loadLineQA(); }
+}
+
+function editLineQA(id, btn) {
+  const card = btn.closest('div[style*="border:1px solid"]');
+  const replyEl = card.querySelector('div[style*="white-space:pre-wrap"]');
+  const keywordEls = card.querySelectorAll('span[style*="teal-light"]');
+  const keywords = [...keywordEls].map(e => e.textContent.trim()).join(',');
+  const reply = replyEl.textContent;
+  document.getElementById('qa-keywords').value = keywords;
+  document.getElementById('qa-reply').value = reply;
+  document.getElementById('qa-keywords').focus();
+  // Change add button to update
+  const addBtn = document.querySelector('button[onclick="addLineQA()"]');
+  addBtn.textContent = '儲存修改';
+  addBtn.onclick = async () => {
+    const newKeywords = document.getElementById('qa-keywords').value.trim();
+    const newReply    = document.getElementById('qa-reply').value.trim();
+    const newOrder    = parseInt(document.getElementById('qa-order').value) || 10;
+    if (!newKeywords || !newReply) { toast('請填寫關鍵字與回覆', 'error'); return; }
+    const res = await fetch(`/admin/api/line-qa/${id}`, {
+      method: 'PUT', headers: { ...H, 'Content-Type': 'application/json' },
+      body: JSON.stringify({ keywords: newKeywords, reply: newReply, sort_order: newOrder })
+    });
+    if (res.ok) {
+      toast('已更新', 'success');
+      addBtn.textContent = '+ 新增';
+      addBtn.onclick = addLineQA;
+      document.getElementById('qa-keywords').value = '';
+      document.getElementById('qa-reply').value = '';
+      document.getElementById('qa-order').value = '10';
+      loadLineQA();
+    }
+  };
+  card.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
+}
+
 async function loadLineUsers() {
   try {
     const res = await fetch('/admin/api/line-users', { headers: H });

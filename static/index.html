@@ -1364,6 +1364,22 @@ footer {
       </div>
     </div>
 
+    <!-- Reset Password Panel -->
+    <div class="auth-panel" id="panel-reset-password">
+      <h2 style="font-family:'DM Serif Display',serif;font-size:26px;margin-bottom:6px;">重設密碼</h2>
+      <p style="font-size:13px;color:var(--ink-60);margin-bottom:24px;">請輸入您的新密碼</p>
+      <div class="finput-group">
+        <label class="finput-label">新密碼 <span style="color:var(--red)">*</span> <span style="color:var(--ink-60);font-weight:400;">至少 6 碼</span></label>
+        <input class="finput" type="password" id="reset-pw-input" placeholder="輸入新密碼">
+      </div>
+      <div class="finput-group">
+        <label class="finput-label">確認新密碼 <span style="color:var(--red)">*</span></label>
+        <input class="finput" type="password" id="reset-pw-confirm" placeholder="再次輸入新密碼">
+      </div>
+      <div id="reset-pw-msg" style="display:none;font-size:13px;margin-bottom:12px;padding:10px;border-radius:6px;"></div>
+      <button class="btn btn-primary" style="width:100%;padding:14px;" onclick="submitResetPassword()">確認重設密碼</button>
+    </div>
+
     <button onclick="closeAuthModal()" style="position:absolute;top:16px;right:20px;background:none;border:none;font-size:22px;color:var(--ink-60);cursor:pointer;">×</button>
   </div>
 </div>
@@ -2772,7 +2788,7 @@ function toggleMemberDropdown() {
 }
 
 function switchAuthTab(tab) {
-  ['login','register','forgot','phone-verify','auth-success'].forEach(t => {
+  ['login','register','forgot','phone-verify','auth-success','reset-password'].forEach(t => {
     document.getElementById(`panel-${t}`)?.classList.remove('active');
     if (document.getElementById(`tab-${t}`)) {
       document.getElementById(`tab-${t}`).classList.remove('active');
@@ -3087,6 +3103,57 @@ function stopChatPolling() {
   if (_chatPollTimer) { clearInterval(_chatPollTimer); _chatPollTimer = null; }
 }
 
+// ── RESET PASSWORD ──────────────────────────────────────
+let _resetToken = null;
+
+async function submitResetPassword() {
+  const pw  = document.getElementById('reset-pw-input').value.trim();
+  const pw2 = document.getElementById('reset-pw-confirm').value.trim();
+  const msg = document.getElementById('reset-pw-msg');
+  msg.style.display = 'none';
+
+  if (!pw || pw.length < 6) {
+    msg.textContent = '密碼至少 6 碼'; msg.style.background='#fff0ee'; msg.style.color='var(--red)'; msg.style.display='block'; return;
+  }
+  if (pw !== pw2) {
+    msg.textContent = '兩次密碼不一致'; msg.style.background='#fff0ee'; msg.style.color='var(--red)'; msg.style.display='block'; return;
+  }
+  try {
+    const res = await fetch(`${API}/api/members/reset-password`, {
+      method: 'POST', headers: {'Content-Type':'application/json'},
+      body: JSON.stringify({ token: _resetToken, password: pw })
+    });
+    const data = await res.json();
+    if (data.success) {
+      // Clear token from URL
+      window.history.replaceState({}, '', '/');
+      // Show success
+      document.getElementById('auth-success-title').textContent = '密碼重設成功！';
+      document.getElementById('auth-success-msg').textContent = '密碼已更新，請使用新密碼登入。';
+      switchAuthTab('auth-success');
+    } else {
+      msg.textContent = data.error || '重設失敗'; msg.style.background='#fff0ee'; msg.style.color='var(--red)'; msg.style.display='block';
+    }
+  } catch(e) {
+    msg.textContent = '連線失敗，請稍後再試'; msg.style.background='#fff0ee'; msg.style.color='var(--red)'; msg.style.display='block';
+  }
+}
+
+function checkResetPasswordToken() {
+  const params = new URLSearchParams(window.location.search);
+  const token = params.get('token');
+  const path  = window.location.pathname;
+  if (token && path === '/reset-password') {
+    _resetToken = token;
+    // Open auth modal and show reset password panel
+    const modal = document.getElementById('auth-modal');
+    if (modal) {
+      modal.style.display = 'flex';
+      switchAuthTab('reset-password');
+    }
+  }
+}
+
 // ── INIT ──
 document.addEventListener('DOMContentLoaded', function() {
   initLiff();
@@ -3095,6 +3162,7 @@ document.addEventListener('DOMContentLoaded', function() {
   renderCal();
   initMemberSession();
   initChatSession();
+  checkResetPasswordToken();
 });
 
 </script>

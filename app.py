@@ -1783,6 +1783,10 @@ def admin_login_page():
 def dashboard():
     return send_from_directory('static', 'admin_dashboard.html')
 
+@app.route('/reset-password')      
+def reset_password_page():
+    return send_from_directory('static', 'index.html')
+
 @app.route('/static/uploads/<filename>')
 def uploaded_file(filename):
     return send_from_directory(UPLOAD_FOLDER, filename)

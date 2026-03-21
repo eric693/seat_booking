@@ -713,6 +713,10 @@ input[list]::-webkit-calendar-picker-indicator { display: none !important; }
     <div class="nav-item" onclick="showPage('members',this)">
       <span class="nav-icon"><svg width="16" height="16" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><circle cx="5" cy="5" r="2.5"/><path d="M1 14c0-2.8 2.2-5 5-5"/><circle cx="11.5" cy="7" r="2"/><path d="M9 14c0-1.7 1.1-3 2.5-3s2.5 1.3 2.5 3"/><path d="M14 10l-1 1-2-2" stroke-linecap="round" stroke-linejoin="round"/></svg></span> 會員管理
     </div>
+    <div class="nav-item" onclick="showPage('chat',this)" id="nav-chat">
+      <span class="nav-icon"><svg width="16" height="16" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M14 2H2a1 1 0 00-1 1v8a1 1 0 001 1h3l2 2 2-2h5a1 1 0 001-1V3a1 1 0 00-1-1z"/><path d="M5 6h6M5 9h4"/></svg></span> 聊天記錄
+      <span id="chat-unread-badge" style="display:none;background:var(--red);color:#fff;border-radius:10px;font-size:10px;font-weight:700;padding:1px 6px;margin-left:4px;"></span>
+    </div>
     <div class="nav-item" onclick="showPage('lineqa',this)">
       <span class="nav-icon"><svg width="16" height="16" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M8 2C5.2 2 3 4 3 6.5c0 1.5.7 2.8 1.8 3.7L4 13l3-1.5c.3.1.7.1 1 .1 2.8 0 5-2 5-4.5S10.8 2 8 2z"/><path d="M6 6.5h4M6 8.5h2.5" stroke-linecap="round"/></svg></span> LINE 問答設定
     </div>
@@ -1092,6 +1096,76 @@ input[list]::-webkit-calendar-picker-indicator { display: none !important; }
       </div>
     </div>
 
+
+
+    <!-- ── CHAT ── -->
+    <div class="page" id="page-chat">
+      <div style="display:grid;grid-template-columns:320px 1fr;gap:20px;height:calc(100vh - 140px);">
+
+        <!-- Session List -->
+        <div class="card" style="display:flex;flex-direction:column;overflow:hidden;">
+          <div class="card-head" style="flex-shrink:0;">
+            <div class="card-title">對話列表</div>
+            <div style="display:flex;gap:6px;">
+              <button class="btn btn-outline btn-sm" id="chat-filter-active" onclick="setChatFilter('active')" style="background:var(--teal);color:#fff;">進行中</button>
+              <button class="btn btn-outline btn-sm" id="chat-filter-resolved" onclick="setChatFilter('resolved')">已結束</button>
+              <button class="btn btn-outline btn-sm" onclick="loadChatSessions()">↻</button>
+            </div>
+          </div>
+          <div id="chat-session-list" style="flex:1;overflow-y:auto;padding:12px;display:flex;flex-direction:column;gap:8px;">
+            <div style="text-align:center;padding:40px;color:var(--ink-60);">載入中...</div>
+          </div>
+        </div>
+
+        <!-- Chat Window -->
+        <div class="card" style="display:flex;flex-direction:column;overflow:hidden;" id="chat-window">
+          <!-- Placeholder -->
+          <div id="chat-placeholder" style="flex:1;display:flex;align-items:center;justify-content:center;flex-direction:column;gap:12px;color:var(--ink-60);">
+            <svg width="48" height="48" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1" opacity="0.3"><path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/></svg>
+            <p style="font-size:14px;">請選擇左側對話</p>
+          </div>
+
+          <!-- Active chat -->
+          <div id="chat-active" style="display:none;flex-direction:column;height:100%;">
+            <!-- Header -->
+            <div class="card-head" style="flex-shrink:0;border-bottom:1px solid var(--border);">
+              <div>
+                <div class="card-title" id="chat-visitor-name">訪客</div>
+                <div style="font-size:12px;color:var(--ink-60);" id="chat-session-info">—</div>
+              </div>
+              <div style="display:flex;gap:8px;align-items:center;">
+                <div id="chat-mode-indicator" style="display:flex;align-items:center;gap:6px;font-size:12px;padding:4px 12px;border-radius:20px;border:1px solid var(--border);">
+                  <span id="chat-mode-dot" style="width:8px;height:8px;border-radius:50%;background:var(--teal);display:inline-block;"></span>
+                  <span id="chat-mode-text">AI 回覆中</span>
+                </div>
+                <button class="btn btn-outline btn-sm" id="chat-toggle-btn" onclick="toggleChatMode()">切換真人</button>
+                <button class="btn btn-outline btn-sm" onclick="resolveChat()" style="color:var(--ink-60);">結束對話</button>
+              </div>
+            </div>
+
+            <!-- Messages -->
+            <div id="chat-messages" style="flex:1;overflow-y:auto;padding:16px;display:flex;flex-direction:column;gap:10px;">
+            </div>
+
+            <!-- Human reply input (shown only in human mode) -->
+            <div id="chat-reply-bar" style="display:none;padding:12px 16px;border-top:1px solid var(--border);background:#f9f9f9;">
+              <div style="background:var(--gold-light);border:1px solid var(--gold);border-radius:6px;padding:8px 12px;margin-bottom:10px;font-size:12px;color:var(--gold);">
+                ⚡ 真人客服模式：AI 已暫停，由您直接回覆用戶
+              </div>
+              <div style="display:flex;gap:8px;">
+                <textarea id="chat-reply-input" rows="2" placeholder="輸入回覆訊息..."
+                  style="flex:1;border:1.5px solid var(--border);border-radius:8px;padding:10px 12px;font-size:14px;font-family:inherit;resize:none;outline:none;transition:border-color .2s;"
+                  onfocus="this.style.borderColor='var(--teal)'" onblur="this.style.borderColor='var(--border)'"
+                  onkeydown="if(event.ctrlKey&&event.key==='Enter')sendAdminReply()"></textarea>
+                <button class="btn btn-primary" onclick="sendAdminReply()" style="align-self:flex-end;padding:10px 20px;">
+                  送出<br><span style="font-size:10px;opacity:0.7;">Ctrl+Enter</span>
+                </button>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
 
     <!-- ── LINE Q&A ── -->
     <div class="page" id="page-lineqa">
@@ -1475,6 +1549,7 @@ function showPage(id, navEl) {
     case 'accounts':  loadAccounts(); break;
     case 'lineusers':  loadLineUsers(); break;
     case 'members':    loadMembers(); break;
+    case 'chat':       loadChatSessions(); break;
     case 'lineqa':     loadLineQA(); break;
     case 'payment':   loadPaymentSettings(); break;
     case 'logs':      loadLoginLogs(); break;
@@ -2694,7 +2769,7 @@ const ALL_PAGES = [
   {id:'dashboard',label:'儀表板'},{id:'bookings',label:'預約管理'},
   {id:'rooms',label:'會議室管理'},{id:'content',label:'文字內容'},
   {id:'photos',label:'照片管理'},{id:'formfields',label:'表單欄位'},
-  {id:'blocked',label:'封鎖時段'},{id:'lineqa',label:'LINE問答'},{id:'members',label:'會員管理'},{id:'payment',label:'付款設定'},
+  {id:'blocked',label:'封鎖時段'},{id:'lineqa',label:'LINE問答'},{id:'members',label:'會員管理'},{id:'chat',label:'聊天記錄'},{id:'payment',label:'付款設定'},
   {id:'accounts',label:'帳號管理'},{id:'logs',label:'登入紀錄'}
 ];
 
@@ -2903,6 +2978,217 @@ function badgeHtml(status) {
 
 // ── LINE USERS ──
 
+
+
+// ── CHAT MANAGEMENT ──────────────────────────────────────────
+let _chatFilter = 'active';
+let _activeChatSessionId = null;
+let _activeChatIsHuman = false;
+let _chatPollInterval = null;
+let _lastMsgId = 0;
+
+function setChatFilter(f) {
+  _chatFilter = f;
+  document.getElementById('chat-filter-active').style.background   = f==='active'   ? 'var(--teal)' : '';
+  document.getElementById('chat-filter-active').style.color        = f==='active'   ? '#fff' : '';
+  document.getElementById('chat-filter-resolved').style.background = f==='resolved' ? 'var(--teal)' : '';
+  document.getElementById('chat-filter-resolved').style.color      = f==='resolved' ? '#fff' : '';
+  loadChatSessions();
+}
+
+async function loadChatSessions() {
+  const list = document.getElementById('chat-session-list');
+  try {
+    const res = await fetch(`/admin/api/chat/sessions?show=${_chatFilter}`, { headers: H });
+    const sessions = await res.json();
+
+    // Update unread badge
+    const badge = document.getElementById('chat-unread-badge');
+    const activeCount = sessions.filter(s => !s.is_resolved && s.is_human_mode).length;
+    if (badge) {
+      badge.textContent = activeCount;
+      badge.style.display = activeCount > 0 ? 'inline-block' : 'none';
+    }
+
+    if (!sessions.length) {
+      list.innerHTML = '<div style="text-align:center;padding:40px;color:var(--ink-60);font-size:13px;">' +
+        (_chatFilter==='active' ? '目前沒有進行中的對話' : '沒有已結束的對話') + '</div>';
+      return;
+    }
+
+    list.innerHTML = sessions.map(s => {
+      const isActive = _activeChatSessionId === s.id;
+      const modeTag = s.is_human_mode
+        ? '<span style="font-size:10px;background:#fff3cd;color:#856404;border-radius:8px;padding:1px 6px;font-weight:600;">真人</span>'
+        : '<span style="font-size:10px;background:var(--teal-light);color:var(--teal);border-radius:8px;padding:1px 6px;font-weight:600;">AI</span>';
+      return `
+        <div onclick="openChatSession(${s.id})"
+          style="padding:12px;border-radius:8px;cursor:pointer;border:1.5px solid ${isActive?'var(--teal)':'var(--border)'};
+                 background:${isActive?'var(--teal-light)':'#fff'};transition:all .15s;">
+          <div style="display:flex;align-items:center;justify-content:space-between;gap:8px;margin-bottom:4px;">
+            <div style="font-weight:600;font-size:14px;">${s.visitor_name}</div>
+            ${modeTag}
+          </div>
+          <div style="font-size:12px;color:var(--ink-60);overflow:hidden;text-overflow:ellipsis;white-space:nowrap;">
+            ${s.last_message || '（無訊息）'}
+          </div>
+          <div style="font-size:11px;color:var(--ink-60);margin-top:4px;">${s.updated_at}</div>
+        </div>`;
+    }).join('');
+  } catch(e) {
+    list.innerHTML = '<div style="color:var(--red);padding:20px;text-align:center;font-size:13px;">載入失敗</div>';
+  }
+}
+
+async function openChatSession(sid) {
+  _activeChatSessionId = sid;
+  _lastMsgId = 0;
+  if (_chatPollInterval) clearInterval(_chatPollInterval);
+
+  document.getElementById('chat-placeholder').style.display = 'none';
+  document.getElementById('chat-active').style.display = 'flex';
+  document.getElementById('chat-messages').innerHTML = '<div style="text-align:center;padding:20px;color:var(--ink-60);font-size:13px;">載入中...</div>';
+
+  await refreshChatMessages();
+  loadChatSessions();
+
+  // Poll every 3s for new messages
+  _chatPollInterval = setInterval(refreshChatMessages, 3000);
+}
+
+async function refreshChatMessages() {
+  if (!_activeChatSessionId) return;
+  try {
+    const res = await fetch(`/admin/api/chat/sessions/${_activeChatSessionId}/messages`, { headers: H });
+    const data = await res.json();
+    const s = data.session;
+    _activeChatIsHuman = s.is_human_mode;
+
+    // Update header
+    document.getElementById('chat-visitor-name').textContent = s.visitor_name;
+    document.getElementById('chat-session-info').textContent =
+      `${s.message_count} 則訊息 · ${s.updated_at}`;
+
+    // Update mode UI
+    const dot  = document.getElementById('chat-mode-dot');
+    const txt  = document.getElementById('chat-mode-text');
+    const btn  = document.getElementById('chat-toggle-btn');
+    const bar  = document.getElementById('chat-reply-bar');
+    if (s.is_human_mode) {
+      dot.style.background = 'var(--gold)';
+      txt.textContent = '真人回覆中';
+      btn.textContent = '切換 AI';
+      btn.style.background = 'var(--gold-light)';
+      btn.style.color = 'var(--gold)';
+      bar.style.display = 'block';
+    } else {
+      dot.style.background = 'var(--teal)';
+      txt.textContent = 'AI 回覆中';
+      btn.textContent = '切換真人';
+      btn.style.background = '';
+      btn.style.color = '';
+      bar.style.display = 'none';
+    }
+
+    // Render messages
+    const msgs = data.messages;
+    if (msgs.length === 0) {
+      document.getElementById('chat-messages').innerHTML =
+        '<div style="text-align:center;padding:40px;color:var(--ink-60);font-size:13px;">尚無訊息</div>';
+      return;
+    }
+
+    const container = document.getElementById('chat-messages');
+    const wasAtBottom = container.scrollHeight - container.scrollTop - container.clientHeight < 60;
+
+    container.innerHTML = msgs.map(m => {
+      const isUser = m.role === 'user';
+      const isHuman = m.role === 'human';
+      const label = isHuman ? '客服' : (isUser ? '' : 'AI');
+      const bg = isUser ? 'var(--paper)' : (isHuman ? '#e8f4f4' : '#f0f0f0');
+      const align = isUser ? 'flex-start' : 'flex-end';
+      const labelHtml = !isUser ? `<div style="font-size:10px;color:var(--ink-60);margin-bottom:3px;text-align:right;">
+        ${isHuman ? '🧑 客服' : '🤖 AI'}</div>` : '';
+      return `
+        <div style="display:flex;flex-direction:column;align-items:${align};max-width:80%;align-self:${align};">
+          ${labelHtml}
+          <div style="background:${bg};border-radius:12px;padding:10px 14px;font-size:14px;line-height:1.55;
+               border-bottom-${isUser?'left':'right'}-radius:3px;word-break:break-word;">
+            ${m.content.replace(/\n/g,'<br>')}
+          </div>
+          <div style="font-size:11px;color:var(--ink-60);margin-top:3px;">${m.created_at}</div>
+        </div>`;
+    }).join('');
+
+    if (wasAtBottom || _lastMsgId === 0) {
+      container.scrollTop = container.scrollHeight;
+    }
+    _lastMsgId = msgs[msgs.length-1]?.id || 0;
+  } catch(e) {}
+}
+
+async function toggleChatMode() {
+  if (!_activeChatSessionId) return;
+  const res = await fetch(`/admin/api/chat/sessions/${_activeChatSessionId}/mode`, {
+    method: 'POST',
+    headers: { ...H, 'Content-Type': 'application/json' },
+    body: JSON.stringify({ is_human_mode: !_activeChatIsHuman })
+  });
+  if (res.ok) {
+    await refreshChatMessages();
+    loadChatSessions();
+    toast(_activeChatIsHuman ? '已切換為 AI 回覆' : '已切換為真人回覆模式', 'success');
+  }
+}
+
+async function sendAdminReply() {
+  const input = document.getElementById('chat-reply-input');
+  const content = input.value.trim();
+  if (!content || !_activeChatSessionId) return;
+  const btn = document.querySelector('#chat-reply-bar .btn-primary');
+  btn.disabled = true;
+  try {
+    const res = await fetch(`/admin/api/chat/sessions/${_activeChatSessionId}/reply`, {
+      method: 'POST',
+      headers: { ...H, 'Content-Type': 'application/json' },
+      body: JSON.stringify({ content })
+    });
+    if (res.ok) {
+      input.value = '';
+      await refreshChatMessages();
+    } else {
+      toast('送出失敗', 'error');
+    }
+  } catch(e) {
+    toast('連線失敗', 'error');
+  } finally {
+    btn.disabled = false;
+    input.focus();
+  }
+}
+
+async function resolveChat() {
+  if (!_activeChatSessionId) return;
+  if (!confirm('確定結束此對話？')) return;
+  const res = await fetch(`/admin/api/chat/sessions/${_activeChatSessionId}/resolve`, {
+    method: 'POST', headers: H
+  });
+  if (res.ok) {
+    if (_chatPollInterval) clearInterval(_chatPollInterval);
+    _activeChatSessionId = null;
+    document.getElementById('chat-placeholder').style.display = 'flex';
+    document.getElementById('chat-active').style.display = 'none';
+    toast('對話已結束');
+    loadChatSessions();
+  }
+}
+
+// Auto-refresh session list every 15s when on chat page
+setInterval(() => {
+  if (document.getElementById('page-chat')?.classList.contains('active')) {
+    loadChatSessions();
+  }
+}, 15000);
 
 // ── MEMBERS ──────────────────────────────────────────
 async function loadMembers() {

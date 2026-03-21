@@ -11,44 +11,125 @@ import secrets
 from werkzeug.security import generate_password_hash, check_password_hash
 import random
 
-class Member(db.Model):
-    __tablename__ = 'members'
-    id                    = db.Column(db.Integer, primary_key=True)
-    name                  = db.Column(db.String(50), nullable=False)
-    phone                 = db.Column(db.String(20), unique=True)
-    email                 = db.Column(db.String(100), unique=True)
-    password_hash         = db.Column(db.String(256))
-    is_verified_email     = db.Column(db.Boolean, default=False)
-    is_verified_phone     = db.Column(db.Boolean, default=False)
-    is_blocked            = db.Column(db.Boolean, default=False)
-    block_reason          = db.Column(db.String(200), default='')
-    email_verify_token    = db.Column(db.String(100))
-    phone_verify_code     = db.Column(db.String(6))
-    phone_code_expires    = db.Column(db.DateTime)
-    reset_token           = db.Column(db.String(100))
-    reset_token_expires   = db.Column(db.DateTime)
-    line_user_id          = db.Column(db.String(100))
-    created_at            = db.Column(db.DateTime, default=tw_now)
-    last_login            = db.Column(db.DateTime)
 
-    def set_password(self, pw):
-        self.password_hash = generate_password_hash(pw)
+# ─────────────────────────────────────────────
+# Chat API (Public)
+# ─────────────────────────────────────────────
 
-    def check_password(self, pw):
-        return check_password_hash(self.password_hash, pw)
+@app.route('/api/chat/session', methods=['POST'])
+def chat_create_session():
+    d = request.get_json() or {}
+    key = d.get('session_key', '')
+    if not key:
+        return jsonify({'error': 'missing session_key'}), 400
+    s = ChatSession.query.filter_by(session_key=key).first()
+    if not s:
+        s = ChatSession(session_key=key, visitor_name=d.get('visitor_name','訪客'))
+        db.session.add(s)
+        db.session.commit()
+    return jsonify({'session_id': s.id, 'is_human_mode': s.is_human_mode})
 
-    def to_dict(self):
-        return {
-            'id': self.id, 'name': self.name,
-            'phone': self.phone, 'email': self.email,
-            'is_verified_email': self.is_verified_email,
-            'is_verified_phone': self.is_verified_phone,
-            'is_blocked': self.is_blocked,
-            'block_reason': self.block_reason or '',
-            'created_at': self.created_at.strftime('%Y-%m-%d %H:%M') if self.created_at else '',
-            'last_login': self.last_login.strftime('%Y-%m-%d %H:%M') if self.last_login else '',
-        }
 
+@app.route('/api/chat/message', methods=['POST'])
+def chat_save_message():
+    d = request.get_json() or {}
+    key  = d.get('session_key', '')
+    role = d.get('role', 'user')
+    content = d.get('content', '').strip()
+    if not key or not content:
+        return jsonify({'error': 'missing fields'}), 400
+    s = ChatSession.query.filter_by(session_key=key).first()
+    if not s:
+        s = ChatSession(session_key=key)
+        db.session.add(s)
+        db.session.flush()
+    msg = ChatMessage(session_id=s.id, role=role, content=content)
+    s.updated_at = tw_now()
+    db.session.add(msg)
+    db.session.commit()
+    return jsonify({'success': True, 'is_human_mode': s.is_human_mode})
+
+
+@app.route('/api/chat/poll')
+def chat_poll():
+    """前端輪詢：取得最新訊息和模式狀態"""
+    key      = request.args.get('session_key', '')
+    after_id = int(request.args.get('after_id', 0))
+    s = ChatSession.query.filter_by(session_key=key).first()
+    if not s:
+        return jsonify({'is_human_mode': False, 'messages': []})
+    msgs = ChatMessage.query.filter(
+        ChatMessage.session_id == s.id,
+        ChatMessage.id > after_id
+    ).order_by(ChatMessage.created_at).all()
+    return jsonify({
+        'is_human_mode': s.is_human_mode,
+        'messages': [m.to_dict() for m in msgs]
+    })
+
+
+# ─────────────────────────────────────────────
+# Chat API (Admin)
+# ─────────────────────────────────────────────
+
+@app.route('/admin/api/chat/sessions')
+def admin_chat_sessions():
+    err = check_admin()
+    if err: return err
+    show = request.args.get('show', 'active')  # active | resolved | all
+    q = ChatSession.query
+    if show == 'active':
+        q = q.filter_by(is_resolved=False)
+    elif show == 'resolved':
+        q = q.filter_by(is_resolved=True)
+    sessions = q.order_by(ChatSession.updated_at.desc()).limit(100).all()
+    return jsonify([s.to_dict() for s in sessions])
+
+
+@app.route('/admin/api/chat/sessions/<int:sid>/messages')
+def admin_chat_messages(sid):
+    err = check_admin()
+    if err: return err
+    msgs = ChatMessage.query.filter_by(session_id=sid).order_by(ChatMessage.created_at).all()
+    s = ChatSession.query.get_or_404(sid)
+    return jsonify({'session': s.to_dict(), 'messages': [m.to_dict() for m in msgs]})
+
+
+@app.route('/admin/api/chat/sessions/<int:sid>/reply', methods=['POST'])
+def admin_chat_reply(sid):
+    err = check_admin()
+    if err: return err
+    d = request.get_json() or {}
+    content = d.get('content', '').strip()
+    if not content:
+        return jsonify({'error': '回覆不能為空'}), 400
+    s = ChatSession.query.get_or_404(sid)
+    msg = ChatMessage(session_id=sid, role='human', content=content)
+    s.updated_at = tw_now()
+    db.session.add(msg)
+    db.session.commit()
+    return jsonify({'success': True, 'message': msg.to_dict()})
+
+
+@app.route('/admin/api/chat/sessions/<int:sid>/mode', methods=['POST'])
+def admin_chat_toggle_mode(sid):
+    err = check_admin()
+    if err: return err
+    d = request.get_json() or {}
+    s = ChatSession.query.get_or_404(sid)
+    s.is_human_mode = d.get('is_human_mode', not s.is_human_mode)
+    db.session.commit()
+    return jsonify({'success': True, 'is_human_mode': s.is_human_mode})
+
+
+@app.route('/admin/api/chat/sessions/<int:sid>/resolve', methods=['POST'])
+def admin_chat_resolve(sid):
+    err = check_admin()
+    if err: return err
+    s = ChatSession.query.get_or_404(sid)
+    s.is_resolved = True
+    db.session.commit()
+    return jsonify({'success': True})
 # ─────────────────────────────────────────────
 # Member Auth API
 # ─────────────────────────────────────────────
@@ -1779,6 +1860,86 @@ class LineUser(db.Model):
             'line_user_id': self.line_user_id, 'phone': self.phone,
             'display_name': self.display_name, 'is_admin': self.is_admin,
             'created_at': self.created_at.strftime('%Y-%m-%d %H:%M') if self.created_at else '',
+        }
+
+class Member(db.Model):
+    __tablename__ = 'members'
+    id                    = db.Column(db.Integer, primary_key=True)
+    name                  = db.Column(db.String(50), nullable=False)
+    phone                 = db.Column(db.String(20), unique=True)
+    email                 = db.Column(db.String(100), unique=True)
+    password_hash         = db.Column(db.String(256))
+    is_verified_email     = db.Column(db.Boolean, default=False)
+    is_verified_phone     = db.Column(db.Boolean, default=False)
+    is_blocked            = db.Column(db.Boolean, default=False)
+    block_reason          = db.Column(db.String(200), default='')
+    email_verify_token    = db.Column(db.String(100))
+    phone_verify_code     = db.Column(db.String(6))
+    phone_code_expires    = db.Column(db.DateTime)
+    reset_token           = db.Column(db.String(100))
+    reset_token_expires   = db.Column(db.DateTime)
+    line_user_id          = db.Column(db.String(100))
+    created_at            = db.Column(db.DateTime, default=tw_now)
+    last_login            = db.Column(db.DateTime)
+
+    def set_password(self, pw):
+        self.password_hash = generate_password_hash(pw)
+
+    def check_password(self, pw):
+        return check_password_hash(self.password_hash, pw)
+
+    def to_dict(self):
+        return {
+            'id': self.id, 'name': self.name,
+            'phone': self.phone, 'email': self.email,
+            'is_verified_email': self.is_verified_email,
+            'is_verified_phone': self.is_verified_phone,
+            'is_blocked': self.is_blocked,
+            'block_reason': self.block_reason or '',
+            'created_at': self.created_at.strftime('%Y-%m-%d %H:%M') if self.created_at else '',
+            'last_login': self.last_login.strftime('%Y-%m-%d %H:%M') if self.last_login else '',
+        }
+class ChatSession(db.Model):
+    __tablename__ = 'chat_sessions'
+    id           = db.Column(db.Integer, primary_key=True)
+    session_key  = db.Column(db.String(64), unique=True, nullable=False)  # 前端 uuid
+    visitor_name = db.Column(db.String(50), default='訪客')
+    is_human_mode = db.Column(db.Boolean, default=False)  # True=真人接管
+    is_resolved  = db.Column(db.Boolean, default=False)
+    created_at   = db.Column(db.DateTime, default=tw_now)
+    updated_at   = db.Column(db.DateTime, default=tw_now, onupdate=tw_now)
+    messages     = db.relationship('ChatMessage', backref='session', lazy=True,
+                                   order_by='ChatMessage.created_at')
+
+    def to_dict(self):
+        msgs = [m.to_dict() for m in self.messages]
+        return {
+            'id': self.id,
+            'session_key': self.session_key,
+            'visitor_name': self.visitor_name,
+            'is_human_mode': self.is_human_mode,
+            'is_resolved': self.is_resolved,
+            'created_at': self.created_at.strftime('%Y-%m-%d %H:%M') if self.created_at else '',
+            'updated_at': self.updated_at.strftime('%Y-%m-%d %H:%M') if self.updated_at else '',
+            'message_count': len(msgs),
+            'last_message': msgs[-1]['content'][:40] if msgs else '',
+        }
+
+
+class ChatMessage(db.Model):
+    __tablename__ = 'chat_messages'
+    id         = db.Column(db.Integer, primary_key=True)
+    session_id = db.Column(db.Integer, db.ForeignKey('chat_sessions.id'))
+    role       = db.Column(db.String(10), nullable=False)  # 'user' | 'bot' | 'human'
+    content    = db.Column(db.Text, nullable=False)
+    created_at = db.Column(db.DateTime, default=tw_now)
+
+    def to_dict(self):
+        return {
+            'id': self.id,
+            'role': self.role,
+            'content': self.content,
+            'created_at': self.created_at.strftime('%H:%M') if self.created_at else '',
         }
 
 
@@ -3815,6 +3976,9 @@ with app.app_context():
             if 'members' not in existing_tables:
                 db.create_all()
                 print('[migrate] 新增 members table')
+            if 'chat_sessions' not in existing_tables:
+                db.create_all()
+                print('[migrate] 新增 chat_sessions / chat_messages tables')
     except Exception as e:
         print(f'[migrate] 欄位檢查略過：{e}')
     try:
@@ -4078,6 +4242,7 @@ def ai_chat():
  
 @app.route('/health')
 def health_check():
+    
     return jsonify({'status': 'ok', 'time': datetime.now().strftime('%Y-%m-%d %H:%M:%S')}), 200
 
 

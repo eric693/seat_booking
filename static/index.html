@@ -2486,6 +2486,10 @@ function toggleAiChat() {
   if (_aiChatOpen) {
     badge.style.display = 'none';
     document.getElementById('ai-chat-input').focus();
+    if (!_chatSessionKey) initChatSession();
+    startChatPolling();
+  } else {
+    stopChatPolling();
   }
 }
 
@@ -2559,6 +2563,14 @@ async function sendAiChat() {
   // Show user message
   _appendMsg('user', text);
   _aiChatHistory.push({ role: 'user', content: text });
+  syncChatMessage('user', text);
+
+  // If human mode, don't call AI — agent will reply via poll
+  if (_chatIsHumanMode) {
+    document.getElementById('ai-send-btn').disabled = false;
+    input.focus();
+    return;
+  }
 
   // Load rooms if not cached
   if (!_aiRoomsCache.length) {
@@ -2635,6 +2647,7 @@ LINE 預約網址：${liffUrl}
 
     const replyHtml = reply.replace(/\n/g, '<br>') + (roomCardsHtml ? `<div style="margin-top:8px;">${roomCardsHtml}</div>` : '');
     _appendMsg('bot', replyHtml);
+    syncChatMessage('bot', reply);
 
   } catch(e) {
     _removeTyping();
@@ -2971,6 +2984,85 @@ async function openMyBookings() {
   }
 }
 
+
+// ── CHAT SYNC TO BACKEND ──────────────────────────────────
+let _chatSessionKey = null;
+let _chatPollTimer  = null;
+let _chatLastMsgId  = 0;
+let _chatIsHumanMode = false;
+
+async function initChatSession() {
+  // Generate or retrieve session key from sessionStorage
+  let key = sessionStorage.getItem('chat_session_key');
+  if (!key) {
+    key = 'cs_' + Date.now() + '_' + Math.random().toString(36).slice(2, 9);
+    sessionStorage.setItem('chat_session_key', key);
+  }
+  _chatSessionKey = key;
+  const visitorName = _currentMember?.name || '網站訪客';
+  try {
+    const res = await fetch(`${API}/api/chat/session`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ session_key: key, visitor_name: visitorName })
+    });
+    const data = await res.json();
+    _chatIsHumanMode = data.is_human_mode || false;
+    _chatLastMsgId = 0;
+  } catch(e) {}
+}
+
+async function syncChatMessage(role, content) {
+  if (!_chatSessionKey) return;
+  try {
+    const res = await fetch(`${API}/api/chat/message`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ session_key: _chatSessionKey, role, content })
+    });
+    const data = await res.json();
+    if (data.is_human_mode !== undefined) {
+      _chatIsHumanMode = data.is_human_mode;
+    }
+  } catch(e) {}
+}
+
+async function pollChatMessages() {
+  if (!_chatSessionKey || !_aiChatOpen) return;
+  try {
+    const res = await fetch(`${API}/api/chat/poll?session_key=${_chatSessionKey}&after_id=${_chatLastMsgId}`);
+    const data = await res.json();
+    const wasHuman = _chatIsHumanMode;
+    _chatIsHumanMode = data.is_human_mode;
+
+    // Show human mode indicator if mode changed
+    if (_chatIsHumanMode && !wasHuman) {
+      _appendMsg('bot', '<span style="font-size:12px;background:#fff3cd;color:#856404;padding:4px 10px;border-radius:10px;font-weight:600;">✅ 真人客服已接入，由專員為您服務</span>');
+    } else if (!_chatIsHumanMode && wasHuman) {
+      _appendMsg('bot', '<span style="font-size:12px;background:var(--teal-light);color:var(--teal);padding:4px 10px;border-radius:10px;font-weight:600;">🤖 AI 助理已恢復回覆</span>');
+    }
+
+    // Display new messages from human agent
+    for (const msg of data.messages) {
+      if (msg.role === 'human') {
+        _appendMsg('bot', '🧑 ' + msg.content.replace(/\n/g, '<br>'));
+        _chatLastMsgId = msg.id;
+      } else if (msg.id > _chatLastMsgId) {
+        _chatLastMsgId = msg.id;
+      }
+    }
+  } catch(e) {}
+}
+
+function startChatPolling() {
+  if (_chatPollTimer) clearInterval(_chatPollTimer);
+  _chatPollTimer = setInterval(pollChatMessages, 3000);
+}
+
+function stopChatPolling() {
+  if (_chatPollTimer) { clearInterval(_chatPollTimer); _chatPollTimer = null; }
+}
+
 // ── INIT ──
 document.addEventListener('DOMContentLoaded', function() {
   initLiff();
@@ -2978,6 +3070,7 @@ document.addEventListener('DOMContentLoaded', function() {
   loadRooms();
   renderCal();
   initMemberSession();
+  initChatSession();
 });
 
 </script>

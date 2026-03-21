@@ -2200,7 +2200,7 @@ document.getElementById('queryModal').addEventListener('click', function(e) {
 });
 
 async function doQuery() {
-  const number = document.getElementById('qNumber').value.trim();
+  const number = document.getElementById('qNumber').value.trim().toUpperCase();
   const phone = document.getElementById('qPhone').value.trim();
   if (!number || !phone) { alert('請填寫預約編號和手機號碼'); return; }
   try {

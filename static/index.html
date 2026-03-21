@@ -965,6 +965,90 @@ footer {
   .page-wrapper { padding: 32px 20px 60px; }
   .hero { padding: 52px 20px 60px; }
 }
+
+/* ── MEMBER AUTH ── */
+.auth-tab-bar {
+  display: flex;
+  border-bottom: 1px solid var(--border);
+  margin-bottom: 24px;
+}
+.auth-tab {
+  flex: 1;
+  padding: 12px;
+  text-align: center;
+  font-size: 14px;
+  font-weight: 600;
+  cursor: pointer;
+  color: var(--ink-60);
+  border-bottom: 2px solid transparent;
+  margin-bottom: -1px;
+  transition: all 0.2s;
+}
+.auth-tab.active {
+  color: var(--teal);
+  border-bottom-color: var(--teal);
+}
+.auth-panel { display: none; }
+.auth-panel.active { display: block; }
+.member-avatar {
+  width: 32px; height: 32px;
+  border-radius: 50%;
+  background: var(--teal);
+  color: #fff;
+  display: flex; align-items: center; justify-content: center;
+  font-size: 13px; font-weight: 700;
+  cursor: pointer;
+  flex-shrink: 0;
+}
+.member-dropdown {
+  position: absolute;
+  top: 56px; right: 20px;
+  background: #fff;
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  box-shadow: 0 8px 24px rgba(0,0,0,0.12);
+  min-width: 180px;
+  z-index: 200;
+  display: none;
+  overflow: hidden;
+}
+.member-dropdown.open { display: block; }
+.member-dropdown-head {
+  padding: 14px 16px;
+  background: var(--teal);
+  color: #fff;
+}
+.member-dropdown-head .md-name { font-weight: 700; font-size: 14px; }
+.member-dropdown-head .md-email { font-size: 11px; opacity: 0.75; margin-top: 2px; }
+.member-dropdown-item {
+  padding: 11px 16px;
+  font-size: 13px;
+  cursor: pointer;
+  color: var(--ink);
+  border-bottom: 1px solid var(--border);
+  transition: background 0.15s;
+}
+.member-dropdown-item:last-child { border-bottom: none; }
+.member-dropdown-item:hover { background: var(--paper); }
+.member-dropdown-item.danger { color: var(--red); }
+.verify-badge {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  font-size: 11px;
+  padding: 2px 8px;
+  border-radius: 20px;
+  font-weight: 600;
+}
+.verify-badge.ok { background: #e8f5e9; color: #2e7d32; }
+.verify-badge.pending { background: #fff8e1; color: #f57f17; }
+.auth-divider {
+  display: flex; align-items: center; gap: 12px;
+  margin: 16px 0; color: var(--ink-60); font-size: 12px;
+}
+.auth-divider::before, .auth-divider::after {
+  content: ''; flex: 1; height: 1px; background: var(--border);
+}
 </style>
 </head>
 <body>
@@ -975,13 +1059,28 @@ footer {
       <div class="brand-icon" id="header-logo-wrap">MR</div>
       <div class="brand-name" id="hdr-title">會議室預約系統</div>
     </div>
-    <div class="header-actions">
+    <div class="header-actions" style="position:relative;">
       <span id="hdr-phone">02-1234-5678</span>
       <div id="liff-user-bar" style="display:none;align-items:center;gap:8px;">
         <img id="liff-avatar" src="" style="width:28px;height:28px;border-radius:50%;object-fit:cover;border:2px solid var(--teal);" alt="">
         <span id="liff-name" style="font-size:13px;font-weight:600;color:var(--teal);max-width:80px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;"></span>
       </div>
       <a class="header-link" onclick="openQueryModal()">查詢預約</a>
+      <!-- 未登入 -->
+      <a class="header-link" id="member-login-btn" onclick="openAuthModal()" style="border:1px solid rgba(255,255,255,0.3);padding:5px 14px;border-radius:20px;font-size:12px;font-weight:600;">登入 / 註冊</a>
+      <!-- 已登入 -->
+      <div id="member-logged-in" style="display:none;align-items:center;gap:8px;">
+        <div class="member-avatar" id="member-avatar-btn" onclick="toggleMemberDropdown()">我</div>
+        <div class="member-dropdown" id="member-dropdown">
+          <div class="member-dropdown-head">
+            <div class="md-name" id="dd-name">—</div>
+            <div class="md-email" id="dd-email">—</div>
+          </div>
+          <div class="member-dropdown-item" onclick="openMyBookings()">我的預約記錄</div>
+          <div class="member-dropdown-item" onclick="openMemberProfile()">帳號設定</div>
+          <div class="member-dropdown-item danger" onclick="memberLogout()">登出</div>
+        </div>
+      </div>
     </div>
   </div>
 </header>
@@ -1160,6 +1259,156 @@ footer {
       <button class="book-btn" style="background:var(--ink-60);flex:1;margin:0;" onclick="document.getElementById('queryModal').classList.remove('active')">關閉</button>
     </div>
     <div id="queryResult" style="margin-top:16px;"></div>
+  </div>
+</div>
+
+
+<!-- ── Auth Modal ── -->
+<div class="modal" id="authModal">
+  <div class="modal-box" style="max-width:440px;padding:36px 40px;">
+    <!-- Tab bar -->
+    <div class="auth-tab-bar">
+      <div class="auth-tab active" id="tab-login" onclick="switchAuthTab('login')">登入</div>
+      <div class="auth-tab" id="tab-register" onclick="switchAuthTab('register')">註冊</div>
+    </div>
+
+    <!-- Login Panel -->
+    <div class="auth-panel active" id="panel-login">
+      <div class="fgroup" style="margin-bottom:14px;">
+        <label style="font-size:13px;font-weight:500;">Email 或手機號碼</label>
+        <input class="finput" type="text" id="login-account" placeholder="your@email.com 或 0912345678" autocomplete="username">
+      </div>
+      <div class="fgroup" style="margin-bottom:8px;">
+        <label style="font-size:13px;font-weight:500;">密碼</label>
+        <input class="finput" type="password" id="login-password" placeholder="請輸入密碼" autocomplete="current-password"
+          onkeydown="if(event.key==='Enter')doLogin()">
+      </div>
+      <div style="text-align:right;margin-bottom:20px;">
+        <a onclick="switchAuthTab('forgot')" style="font-size:12px;color:var(--teal);cursor:pointer;">忘記密碼？</a>
+      </div>
+      <div id="login-error" style="display:none;color:var(--red);font-size:13px;margin-bottom:12px;padding:10px;background:#fff3f3;border-radius:6px;"></div>
+      <button class="book-btn" style="margin:0;" onclick="doLogin()">登入</button>
+      <div class="auth-divider">或</div>
+      <p style="text-align:center;font-size:13px;color:var(--ink-60);">
+        還沒有帳號？<a onclick="switchAuthTab('register')" style="color:var(--teal);cursor:pointer;font-weight:600;">立即註冊</a>
+      </p>
+    </div>
+
+    <!-- Register Panel -->
+    <div class="auth-panel" id="panel-register">
+      <div class="fgroup" style="margin-bottom:14px;">
+        <label style="font-size:13px;font-weight:500;">姓名 <span style="color:var(--red);">*</span></label>
+        <input class="finput" type="text" id="reg-name" placeholder="請輸入您的姓名">
+      </div>
+      <div class="fgroup" style="margin-bottom:14px;">
+        <label style="font-size:13px;font-weight:500;">Email <span style="font-size:11px;color:var(--ink-60);">（擇一必填）</span></label>
+        <input class="finput" type="email" id="reg-email" placeholder="your@email.com" autocomplete="email">
+      </div>
+      <div class="fgroup" style="margin-bottom:14px;">
+        <label style="font-size:13px;font-weight:500;">手機號碼 <span style="font-size:11px;color:var(--ink-60);">（擇一必填）</span></label>
+        <input class="finput" type="tel" id="reg-phone" placeholder="0912345678">
+      </div>
+      <div class="fgroup" style="margin-bottom:14px;">
+        <label style="font-size:13px;font-weight:500;">密碼 <span style="color:var(--red);">*</span> <span style="font-size:11px;color:var(--ink-60);">至少 6 碼</span></label>
+        <input class="finput" type="password" id="reg-password" placeholder="請設定密碼">
+      </div>
+      <div class="fgroup" style="margin-bottom:20px;">
+        <label style="font-size:13px;font-weight:500;">確認密碼 <span style="color:var(--red);">*</span></label>
+        <input class="finput" type="password" id="reg-password2" placeholder="再次輸入密碼"
+          onkeydown="if(event.key==='Enter')doRegister()">
+      </div>
+      <div id="reg-error" style="display:none;color:var(--red);font-size:13px;margin-bottom:12px;padding:10px;background:#fff3f3;border-radius:6px;"></div>
+      <button class="book-btn" style="margin:0;" onclick="doRegister()">建立帳號</button>
+    </div>
+
+    <!-- Forgot Password Panel -->
+    <div class="auth-panel" id="panel-forgot">
+      <p style="font-size:14px;color:var(--ink-60);margin-bottom:20px;">輸入您的 Email 或手機號碼，我們將發送重設連結。</p>
+      <div class="fgroup" style="margin-bottom:20px;">
+        <label style="font-size:13px;font-weight:500;">Email 或手機號碼</label>
+        <input class="finput" type="text" id="forgot-account" placeholder="your@email.com 或 0912345678">
+      </div>
+      <div id="forgot-msg" style="display:none;font-size:13px;margin-bottom:12px;padding:10px;border-radius:6px;"></div>
+      <button class="book-btn" style="margin:0 0 12px;" onclick="doForgotPassword()">發送重設連結</button>
+      <p style="text-align:center;">
+        <a onclick="switchAuthTab('login')" style="font-size:13px;color:var(--teal);cursor:pointer;">← 返回登入</a>
+      </p>
+    </div>
+
+    <!-- Phone Verify Panel -->
+    <div class="auth-panel" id="panel-phone-verify">
+      <div style="text-align:center;margin-bottom:20px;">
+        <div style="width:60px;height:60px;background:var(--teal-light);border-radius:50%;display:flex;align-items:center;justify-content:center;margin:0 auto 16px;font-size:28px;">📱</div>
+        <h3 style="font-family:'DM Serif Display',serif;font-size:22px;margin-bottom:8px;">手機號碼驗證</h3>
+        <p style="font-size:14px;color:var(--ink-60);">驗證碼已發送至您的手機，請輸入 6 位數驗證碼。</p>
+      </div>
+      <div class="fgroup" style="margin-bottom:20px;">
+        <input class="finput" type="text" id="phone-verify-code" placeholder="000000" maxlength="6"
+          style="text-align:center;font-size:24px;letter-spacing:8px;"
+          onkeydown="if(event.key==='Enter')doPhoneVerify()">
+      </div>
+      <div id="phone-verify-error" style="display:none;color:var(--red);font-size:13px;margin-bottom:12px;padding:10px;background:#fff3f3;border-radius:6px;"></div>
+      <button class="book-btn" style="margin:0 0 12px;" onclick="doPhoneVerify()">驗證</button>
+      <p style="text-align:center;font-size:13px;color:var(--ink-60);">
+        沒收到？<a onclick="resendPhoneCode()" style="color:var(--teal);cursor:pointer;">重新發送</a>
+      </p>
+    </div>
+
+    <!-- Success Panel -->
+    <div class="auth-panel" id="panel-auth-success">
+      <div style="text-align:center;padding:20px 0;">
+        <div style="width:68px;height:68px;background:var(--teal-light);border:2px solid rgba(42,107,107,0.3);border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:28px;margin:0 auto 20px;">✓</div>
+        <h3 style="font-family:'DM Serif Display',serif;font-size:26px;margin-bottom:10px;" id="auth-success-title">成功！</h3>
+        <p style="font-size:14px;color:var(--ink-60);line-height:1.7;" id="auth-success-msg"></p>
+      </div>
+    </div>
+
+    <button onclick="closeAuthModal()" style="position:absolute;top:16px;right:20px;background:none;border:none;font-size:22px;color:var(--ink-60);cursor:pointer;">×</button>
+  </div>
+</div>
+
+<!-- ── Member Profile Modal ── -->
+<div class="modal" id="memberProfileModal">
+  <div class="modal-box" style="max-width:460px;padding:36px 40px;">
+    <h2 style="font-family:'DM Serif Display',serif;font-size:24px;margin-bottom:24px;">帳號設定</h2>
+    <div id="profile-content">
+      <div class="sum-row">
+        <div class="sum-lbl">姓名</div>
+        <div class="sum-val" id="profile-name">—</div>
+      </div>
+      <div class="sum-row">
+        <div class="sum-lbl">Email</div>
+        <div class="sum-val" id="profile-email-row" style="display:flex;align-items:center;gap:8px;justify-content:flex-end;flex-wrap:wrap;">
+          <span id="profile-email">—</span>
+        </div>
+      </div>
+      <div class="sum-row">
+        <div class="sum-lbl">手機</div>
+        <div class="sum-val" id="profile-phone-row" style="display:flex;align-items:center;gap:8px;justify-content:flex-end;flex-wrap:wrap;">
+          <span id="profile-phone">—</span>
+        </div>
+      </div>
+      <div class="sum-row" style="border:none;">
+        <div class="sum-lbl">註冊時間</div>
+        <div class="sum-val" id="profile-created">—</div>
+      </div>
+    </div>
+    <div style="margin-top:20px;display:flex;gap:10px;">
+      <button class="book-btn" style="margin:0;flex:1;background:var(--ink-60);" onclick="document.getElementById('memberProfileModal').classList.remove('active')">關閉</button>
+    </div>
+    <button onclick="document.getElementById('memberProfileModal').classList.remove('active')" style="position:absolute;top:16px;right:20px;background:none;border:none;font-size:22px;color:var(--ink-60);cursor:pointer;">×</button>
+  </div>
+</div>
+
+<!-- ── My Bookings Modal ── -->
+<div class="modal" id="myBookingsModal">
+  <div class="modal-box" style="max-width:520px;padding:36px 40px;text-align:left;">
+    <h2 style="font-family:'DM Serif Display',serif;font-size:24px;margin-bottom:20px;">我的預約記錄</h2>
+    <div id="my-bookings-list"><div style="text-align:center;padding:40px;color:var(--ink-60);">載入中...</div></div>
+    <div style="margin-top:20px;">
+      <button class="book-btn" style="margin:0;background:var(--ink-60);" onclick="document.getElementById('myBookingsModal').classList.remove('active')">關閉</button>
+    </div>
+    <button onclick="document.getElementById('myBookingsModal').classList.remove('active')" style="position:absolute;top:16px;right:20px;background:none;border:none;font-size:22px;color:var(--ink-60);cursor:pointer;">×</button>
   </div>
 </div>
 
@@ -2407,13 +2656,328 @@ function _buildRoomsForAI() {
   return _aiRoomsCache.map(r => `・${r.name}（${r.room_type}，${r.capacity_label || r.capacity+'人'}，NT$${r.hourly_rate}/hr）`).join('\n');
 }
 
+
+// ══════════════════════════════════════════
+// ── MEMBER AUTH SYSTEM ────────────────────
+// ══════════════════════════════════════════
+
+let _currentMember = null;
+let _pendingMemberId = null; // for phone verification after register
+
+// ── Init: check existing session ──
+async function initMemberSession() {
+  try {
+    const res = await fetch(`${API}/api/members/me`);
+    if (res.ok) {
+      const m = await res.json();
+      _currentMember = m;
+      updateMemberUI();
+    }
+  } catch(e) {}
+}
+
+function updateMemberUI() {
+  const loginBtn    = document.getElementById('member-login-btn');
+  const loggedInEl  = document.getElementById('member-logged-in');
+  const avatarBtn   = document.getElementById('member-avatar-btn');
+  const ddName      = document.getElementById('dd-name');
+  const ddEmail     = document.getElementById('dd-email');
+
+  if (_currentMember) {
+    if (loginBtn) loginBtn.style.display = 'none';
+    if (loggedInEl) loggedInEl.style.display = 'flex';
+    if (avatarBtn) avatarBtn.textContent = _currentMember.name.charAt(0).toUpperCase();
+    if (ddName) ddName.textContent = _currentMember.name;
+    if (ddEmail) ddEmail.textContent = _currentMember.email || _currentMember.phone || '';
+
+    // Auto-fill booking form if fields exist
+    const nameEl  = document.getElementById('f_name');
+    const phoneEl = document.getElementById('f_phone');
+    const emailEl = document.getElementById('f_email');
+    if (nameEl && !nameEl.value)  nameEl.value = _currentMember.name;
+    if (phoneEl && !phoneEl.value) phoneEl.value = _currentMember.phone || '';
+    if (emailEl && !emailEl.value) emailEl.value = _currentMember.email || '';
+    updateSummary();
+  } else {
+    if (loginBtn) loginBtn.style.display = '';
+    if (loggedInEl) loggedInEl.style.display = 'none';
+  }
+}
+
+// ── Modal open/close ──
+function openAuthModal(tab) {
+  switchAuthTab(tab || 'login');
+  document.getElementById('authModal').classList.add('active');
+}
+
+function closeAuthModal() {
+  document.getElementById('authModal').classList.remove('active');
+}
+
+document.addEventListener('DOMContentLoaded', () => {
+  document.getElementById('authModal')?.addEventListener('click', function(e) {
+    if (e.target === this) closeAuthModal();
+  });
+  document.getElementById('memberProfileModal')?.addEventListener('click', function(e) {
+    if (e.target === this) this.classList.remove('active');
+  });
+  document.getElementById('myBookingsModal')?.addEventListener('click', function(e) {
+    if (e.target === this) this.classList.remove('active');
+  });
+  // Close dropdown when clicking outside
+  document.addEventListener('click', function(e) {
+    const dd = document.getElementById('member-dropdown');
+    const btn = document.getElementById('member-avatar-btn');
+    if (dd && !dd.contains(e.target) && e.target !== btn) {
+      dd.classList.remove('open');
+    }
+  });
+});
+
+function toggleMemberDropdown() {
+  document.getElementById('member-dropdown')?.classList.toggle('open');
+}
+
+function switchAuthTab(tab) {
+  ['login','register','forgot','phone-verify','auth-success'].forEach(t => {
+    document.getElementById(`panel-${t}`)?.classList.remove('active');
+    if (document.getElementById(`tab-${t}`)) {
+      document.getElementById(`tab-${t}`).classList.remove('active');
+    }
+  });
+  document.getElementById(`panel-${tab}`)?.classList.add('active');
+  if (document.getElementById(`tab-${tab}`)) {
+    document.getElementById(`tab-${tab}`).classList.add('active');
+  }
+  // Clear errors
+  ['login-error','reg-error','forgot-msg','phone-verify-error'].forEach(id => {
+    const el = document.getElementById(id);
+    if (el) el.style.display = 'none';
+  });
+}
+
+// ── Login ──
+async function doLogin() {
+  const account = document.getElementById('login-account').value.trim();
+  const pw      = document.getElementById('login-password').value;
+  const errEl   = document.getElementById('login-error');
+
+  if (!account || !pw) {
+    errEl.textContent = '請填寫帳號和密碼';
+    errEl.style.display = 'block'; return;
+  }
+  try {
+    const res = await fetch(`${API}/api/members/login`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ account, password: pw })
+    });
+    const data = await res.json();
+    if (res.ok) {
+      _currentMember = data.member;
+      updateMemberUI();
+      closeAuthModal();
+    } else {
+      errEl.textContent = data.error || '登入失敗';
+      errEl.style.display = 'block';
+    }
+  } catch(e) {
+    errEl.textContent = '連線失敗，請稍後再試';
+    errEl.style.display = 'block';
+  }
+}
+
+// ── Register ──
+async function doRegister() {
+  const name  = document.getElementById('reg-name').value.trim();
+  const email = document.getElementById('reg-email').value.trim().toLowerCase();
+  const phone = document.getElementById('reg-phone').value.trim().replace(/-/g,'').replace(/ /g,'');
+  const pw    = document.getElementById('reg-password').value;
+  const pw2   = document.getElementById('reg-password2').value;
+  const errEl = document.getElementById('reg-error');
+
+  if (!name) { errEl.textContent = '請填寫姓名'; errEl.style.display='block'; return; }
+  if (!email && !phone) { errEl.textContent = '請填寫 Email 或手機號碼'; errEl.style.display='block'; return; }
+  if (email && !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) {
+    errEl.textContent = 'Email 格式不正確'; errEl.style.display='block'; return;
+  }
+  if (!pw || pw.length < 6) { errEl.textContent = '密碼至少 6 碼'; errEl.style.display='block'; return; }
+  if (pw !== pw2) { errEl.textContent = '兩次密碼不一致'; errEl.style.display='block'; return; }
+
+  try {
+    const res = await fetch(`${API}/api/members/register`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ name, email: email||null, phone: phone||null, password: pw })
+    });
+    const data = await res.json();
+    if (res.ok) {
+      _pendingMemberId = data.member_id;
+      if (data.needs_phone_verify) {
+        switchAuthTab('phone-verify');
+      } else {
+        // Email only: show success
+        document.getElementById('auth-success-title').textContent = '註冊成功！';
+        document.getElementById('auth-success-msg').textContent =
+          '已發送驗證信至 ' + email + '，請查收並點擊連結完成驗證後登入。';
+        switchAuthTab('auth-success');
+        setTimeout(closeAuthModal, 4000);
+      }
+    } else {
+      errEl.textContent = data.error || '註冊失敗';
+      errEl.style.display = 'block';
+    }
+  } catch(e) {
+    errEl.textContent = '連線失敗，請稍後再試';
+    errEl.style.display = 'block';
+  }
+}
+
+// ── Phone Verify ──
+async function doPhoneVerify() {
+  const code  = document.getElementById('phone-verify-code').value.trim();
+  const errEl = document.getElementById('phone-verify-error');
+  if (!code || code.length !== 6) {
+    errEl.textContent = '請輸入 6 位數驗證碼'; errEl.style.display='block'; return;
+  }
+  try {
+    const res = await fetch(`${API}/api/members/verify-phone`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ member_id: _pendingMemberId, code })
+    });
+    const data = await res.json();
+    if (res.ok) {
+      document.getElementById('auth-success-title').textContent = '驗證成功！';
+      document.getElementById('auth-success-msg').textContent = '帳號已建立完成，請登入。';
+      switchAuthTab('auth-success');
+      setTimeout(() => { switchAuthTab('login'); }, 2500);
+    } else {
+      errEl.textContent = data.error || '驗證失敗';
+      errEl.style.display = 'block';
+    }
+  } catch(e) {
+    errEl.textContent = '連線失敗'; errEl.style.display = 'block';
+  }
+}
+
+async function resendPhoneCode() {
+  try {
+    await fetch(`${API}/api/members/resend-code`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ member_id: _pendingMemberId })
+    });
+    alert('驗證碼已重新發送');
+  } catch(e) {}
+}
+
+// ── Forgot Password ──
+async function doForgotPassword() {
+  const account = document.getElementById('forgot-account').value.trim();
+  const msgEl   = document.getElementById('forgot-msg');
+  if (!account) { msgEl.textContent='請填寫帳號'; msgEl.style.background='#fff3f3'; msgEl.style.color='var(--red)'; msgEl.style.display='block'; return; }
+  try {
+    const res = await fetch(`${API}/api/members/forgot-password`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ account })
+    });
+    const data = await res.json();
+    msgEl.textContent = data.message || '已發送重設連結';
+    msgEl.style.background = '#e8f5e9';
+    msgEl.style.color = '#2e7d32';
+    msgEl.style.display = 'block';
+  } catch(e) {
+    msgEl.textContent = '連線失敗'; msgEl.style.background='#fff3f3'; msgEl.style.color='var(--red)'; msgEl.style.display='block';
+  }
+}
+
+// ── Logout ──
+async function memberLogout() {
+  document.getElementById('member-dropdown')?.classList.remove('open');
+  await fetch(`${API}/api/members/logout`, { method: 'POST' });
+  _currentMember = null;
+  updateMemberUI();
+}
+
+// ── Profile ──
+function openMemberProfile() {
+  document.getElementById('member-dropdown')?.classList.remove('open');
+  if (!_currentMember) return;
+  document.getElementById('profile-name').textContent    = _currentMember.name;
+  document.getElementById('profile-created').textContent = _currentMember.created_at || '—';
+
+  // Email row
+  const emailRow = document.getElementById('profile-email-row');
+  const emailTxt = _currentMember.email || '—';
+  const emailBadge = _currentMember.email
+    ? (_currentMember.is_verified_email
+        ? '<span class="verify-badge ok">✓ 已驗證</span>'
+        : '<span class="verify-badge pending">待驗證</span>')
+    : '';
+  emailRow.innerHTML = `<span>${emailTxt}</span>${emailBadge}`;
+
+  // Phone row
+  const phoneRow = document.getElementById('profile-phone-row');
+  const phoneTxt = _currentMember.phone || '—';
+  const phoneBadge = _currentMember.phone
+    ? (_currentMember.is_verified_phone
+        ? '<span class="verify-badge ok">✓ 已驗證</span>'
+        : '<span class="verify-badge pending">待驗證</span>')
+    : '';
+  phoneRow.innerHTML = `<span>${phoneTxt}</span>${phoneBadge}`;
+
+  document.getElementById('memberProfileModal').classList.add('active');
+}
+
+// ── My Bookings ──
+async function openMyBookings() {
+  document.getElementById('member-dropdown')?.classList.remove('open');
+  document.getElementById('myBookingsModal').classList.add('active');
+  const list = document.getElementById('my-bookings-list');
+  if (!_currentMember) { list.innerHTML = '請先登入'; return; }
+  try {
+    const phone = _currentMember.phone || '';
+    const email = _currentMember.email || '';
+    // Use query booking check — pass phone
+    const res = await fetch(`${API}/api/bookings/by-member?phone=${encodeURIComponent(phone)}&email=${encodeURIComponent(email)}`);
+    if (!res.ok) throw new Error();
+    const bookings = await res.json();
+    if (!bookings.length) {
+      list.innerHTML = '<div style="text-align:center;padding:40px;color:var(--ink-60);">尚無預約記錄</div>';
+      return;
+    }
+    const statusMap = { confirmed:'已確認', cancelled:'已取消', completed:'已完成' };
+    list.innerHTML = bookings.map(b => `
+      <div style="border:1px solid var(--border);border-radius:8px;padding:14px 16px;margin-bottom:10px;">
+        <div style="display:flex;justify-content:space-between;align-items:flex-start;gap:8px;">
+          <div>
+            <div style="font-weight:700;font-size:14px;">${b.room_name}</div>
+            <div style="font-size:13px;color:var(--ink-60);margin-top:4px;">${b.date} &nbsp;${b.start_time}–${b.end_time}</div>
+            <div style="font-size:12px;color:var(--ink-60);margin-top:2px;">${b.booking_number}</div>
+          </div>
+          <div style="text-align:right;flex-shrink:0;">
+            <div style="font-size:12px;font-weight:600;color:${b.status==='cancelled'?'var(--red)':b.status==='completed'?'var(--ink-60)':'var(--green)'};">
+              ${statusMap[b.status]||b.status}
+            </div>
+            <div style="font-size:14px;font-weight:700;color:var(--teal);margin-top:4px;">NT$ ${b.total_price?.toLocaleString()}</div>
+          </div>
+        </div>
+      </div>
+    `).join('');
+  } catch(e) {
+    list.innerHTML = '<div style="color:var(--red);padding:20px;text-align:center;">載入失敗，請稍後再試</div>';
+  }
+}
+
 // ── INIT ──
 document.addEventListener('DOMContentLoaded', function() {
   initLiff();
   loadContent();
   loadRooms();
   renderCal();
-
+  initMemberSession();
 });
 
 </script>

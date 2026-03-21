@@ -1214,6 +1214,7 @@ footer {
       </div>
     </div>
 
+    <div id="booking-error-msg" style="display:none;background:#fff0ee;color:var(--red);border:1px solid #ffcdd2;border-radius:8px;padding:10px 14px;font-size:13px;text-align:center;margin-bottom:8px;"></div>
     <button class="book-btn" id="bookBtn" onclick="submitBooking()">確認預約</button>
 
     <div class="notice-box">
@@ -2253,6 +2254,25 @@ function validateFormFields() {
 
 // ── Submit ──
 async function submitBooking() {
+  // ── 登入驗證：未登入則阻擋並跳出登入視窗 ──
+  if (!_currentMember) {
+    const modal = document.getElementById('auth-modal');
+    if (modal) {
+      modal.style.display = 'flex';
+      openAuthModal('login');
+    }
+    // 顯示提示訊息
+    const errEl = document.getElementById('booking-error-msg');
+    if (errEl) {
+      errEl.textContent = '請先登入或註冊會員才能完成預約';
+      errEl.style.display = 'block';
+      setTimeout(() => { errEl.style.display = 'none'; }, 4000);
+    } else {
+      alert('請先登入或註冊會員才能完成預約');
+    }
+    return;
+  }
+
   if (!state.roomId) { alert('請選擇會議室'); return; }
   if (!state.date)   { alert('請選擇日期'); return; }
   if (!state.startTime || !state.endTime || selectedSlots.size === 0) {

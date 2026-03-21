@@ -1880,6 +1880,9 @@ def line_bind_profile():
 
 @app.route('/api/book', methods=['POST'])
 def create_booking():
+    # ── 會員登入驗證 ──
+    if not session.get('member_id'):
+        return jsonify({'error': '請先登入會員才能完成預約'}), 401
     try:
         data = request.get_json()
         if not data:

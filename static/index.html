@@ -3013,6 +3013,10 @@ async function initChatSession() {
 }
 
 async function syncChatMessage(role, content) {
+  // lazy init: 若 session 尚未建立，先等待初始化
+  if (!_chatSessionKey) {
+    await initChatSession();
+  }
   if (!_chatSessionKey) return;
   try {
     const res = await fetch(`${API}/api/chat/message`, {

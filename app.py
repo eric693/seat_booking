@@ -3917,7 +3917,7 @@ def member_register():
 
     # 寄送驗證信
     if email and m.email_verify_token:
-        verify_url = f"{SITE_URL}/verify-email?token={m.email_verify_token}"
+        verify_url = f"{SITE_URL}/api/members/verify-email?token={m.email_verify_token}"
         send_email(email, '【會員註冊】請驗證您的 Email',
             f'''<p>您好 {name}，</p>
             <p>請點擊以下連結驗證您的 Email：</p>

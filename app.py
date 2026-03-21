@@ -1349,6 +1349,21 @@ class SiteContent(db.Model):
             db.session.add(obj)
         db.session.commit()
 
+class LineQA(db.Model):
+    __tablename__ = 'line_qa'
+    id         = db.Column(db.Integer, primary_key=True)
+    keywords   = db.Column(db.String(500), nullable=False)  # 逗號分隔
+    reply      = db.Column(db.Text, nullable=False)
+    sort_order = db.Column(db.Integer, default=10)
+    is_active  = db.Column(db.Boolean, default=True)
+    created_at = db.Column(db.DateTime, default=tw_now)
+
+    def to_dict(self):
+        return {
+            'id': self.id, 'keywords': self.keywords,
+            'reply': self.reply, 'sort_order': self.sort_order,
+            'is_active': self.is_active,
+        }
 
 class BlockedSlot(db.Model):
     """管理員封鎖的時段（不開放預約）"""
@@ -2695,16 +2710,16 @@ def _line_ai_reply(uid: str, text: str) -> str:
 def _handle_line_text(uid, rtok, text):
     lower = text.lower()
     lu = upsert_line_user(uid)
- 
+
     # ── 預約對話流程攔截（最高優先）──
     if _handle_booking_flow(uid, rtok, text, lu):
         return
- 
+
     # ── 說明 / 主選單 ──
     if lower in ('說明', 'help', '指令', '?', '？', '選單', 'menu'):
         reply_line(rtok, [flex_main_menu()])
         return
- 
+
     # ── 查詢預約編號 ──
     if lower.startswith('查詢'):
         number = text[2:].strip().upper()
@@ -2721,7 +2736,7 @@ def _handle_line_text(uid, rtok, text):
         else:
             reply_line(rtok, [flex_booking_confirm(b)])
         return
- 
+
     # ── 我的預約 ──
     if lower in ('我的預約', '預約紀錄'):
         q_uid   = Booking.query.filter_by(line_user_id=uid)
@@ -2744,7 +2759,7 @@ def _handle_line_text(uid, rtok, text):
         else:
             reply_line(rtok, [flex_booking_confirm(b) for b in bs])
         return
- 
+
     # ── 時段查詢 ──
     if lower.startswith('時段'):
         import re as _re
@@ -2770,7 +2785,7 @@ def _handle_line_text(uid, rtok, text):
             rooms_data.append({'name': room.name, 'slots': slots})
         reply_line(rtok, [flex_timeslot(date_str, rooms_data)])
         return
- 
+
     # ── 取消特定預約 ──
     if lower.startswith('取消預約 '):
         number = text[5:].strip().upper()
@@ -2804,7 +2819,7 @@ def _handle_line_text(uid, rtok, text):
         for aid in admin_line_ids():
             push_line(aid, [flex_admin_notify(b)])
         return
- 
+
     # ── 綁定手機 ──
     if lower.startswith('綁定'):
         phone = text[2:].strip().replace('-', '').replace(' ', '')
@@ -2819,33 +2834,43 @@ def _handle_line_text(uid, rtok, text):
         db.session.commit()
         reply_line(rtok, [flex_bind_success(phone)])
         return
- 
+
     # ════════════════════════════════════════════
-    # ── 未識別指令：先判斷預約意圖，再走 AI 聊天 ──
+    # ── 未識別指令：Q&A → 預約意圖偵測 → AI 聊天 ──
     # ════════════════════════════════════════════
- 
-    # 1. 用 AI 偵測是否有預約意圖
+
+    # 1. 比對後台設定的 Q&A 關鍵字（優先於 AI）
+    try:
+        qa_items = LineQA.query.filter_by(is_active=True).order_by(
+            LineQA.sort_order, LineQA.id).all()
+        for qa in qa_items:
+            for kw in qa.keywords.split(','):
+                kw = kw.strip()
+                if kw and kw in text:
+                    reply_line(rtok, [{'type': 'text', 'text': qa.reply}])
+                    return
+    except Exception as e:
+        print(f'[Q&A match error] {e}')
+
+    # 2. 用 AI 偵測是否有預約意圖
     if _detect_booking_intent(text):
-        # 有意圖 → 直接啟動預約流程（等同用戶輸入「預約」）
         rooms = Room.query.filter_by(is_active=True).all()
         if not rooms:
             reply_line(rtok, [flex_not_found('目前沒有可用的會議室', '請稍後再試')])
             return
         _clear_sess(lu)
         _save_sess(lu, {'step': 'select_room'})
-        # 先給一句自然的銜接語，再顯示選房間 Flex
         reply_line(rtok, [
             {'type': 'text', 'text': '好的，為您開始預約流程，請先選擇會議室 😊'},
             flex_select_room(rooms)
         ])
         return
- 
-    # 2. 無預約意圖 → 走 AI 一般聊天
+
+    # 3. 無預約意圖 → 走 AI 一般聊天
     ai_reply = _line_ai_reply(uid, text)
     if ai_reply:
         reply_line(rtok, [{'type': 'text', 'text': ai_reply}])
     else:
-        # AI 未設定或呼叫失敗時的兜底
         reply_line(rtok, [flex_main_menu()])
 
 # ─────────────────────────────────────────────
@@ -3481,7 +3506,10 @@ with app.app_context():
             if 'time_config' not in rm_cols:
                 conn.execute(db.text('ALTER TABLE rooms ADD COLUMN time_config TEXT'))
                 conn.commit()
-                print('[migrate] 新增 rooms.time_config 欄位')
+                print('[migrate] 新增 rooms.time_config 欄位')            
+            if 'line_qa' not in existing_tables:
+                db.create_all()
+                print('[migrate] 新增 line_qa table')
     except Exception as e:
         print(f'[migrate] 欄位檢查略過：{e}')
     try:
@@ -3590,6 +3618,42 @@ def admin_get_login_logs():
     logs  = q.offset((page-1)*per).limit(per).all()
     return jsonify({'total': total, 'logs': [l.to_dict() for l in logs]})
 
+
+@app.route('/admin/api/line-qa', methods=['GET'])
+def admin_get_line_qa():
+    err = check_admin()
+    if err: return err
+    items = LineQA.query.order_by(LineQA.sort_order, LineQA.id).all()
+    return jsonify([i.to_dict() for i in items])
+
+@app.route('/admin/api/line-qa', methods=['POST'])
+def admin_add_line_qa():
+    err = check_admin()
+    if err: return err
+    d = request.get_json()
+    item = LineQA(keywords=d['keywords'], reply=d['reply'],
+                  sort_order=d.get('sort_order', 10))
+    db.session.add(item); db.session.commit()
+    return jsonify(item.to_dict()), 201
+
+@app.route('/admin/api/line-qa/<int:qid>', methods=['PUT'])
+def admin_update_line_qa(qid):
+    err = check_admin()
+    if err: return err
+    item = LineQA.query.get_or_404(qid)
+    d = request.get_json()
+    for f in ['keywords', 'reply', 'sort_order', 'is_active']:
+        if f in d: setattr(item, f, d[f])
+    db.session.commit()
+    return jsonify(item.to_dict())
+
+@app.route('/admin/api/line-qa/<int:qid>', methods=['DELETE'])
+def admin_delete_line_qa(qid):
+    err = check_admin()
+    if err: return err
+    item = LineQA.query.get_or_404(qid)
+    db.session.delete(item); db.session.commit()
+    return jsonify({'success': True})
 
 # ─────────────────────────────────────────────
 # Admin — Blocked Slots

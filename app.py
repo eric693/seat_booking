@@ -70,11 +70,16 @@ USE_GMAIL      = bool(GMAIL_USER and GMAIL_APP_PASS) and not USE_GMAIL_API and n
 USE_RESEND     = bool(RESEND_API_KEY)
 USE_EMAIL      = USE_GMAIL_API or USE_SENDGRID or USE_RESEND or USE_GMAIL
 
-# ── Twilio SMS（選用）───────────────────────────
-TWILIO_SID    = os.environ.get('TWILIO_SID', '')
-TWILIO_TOKEN  = os.environ.get('TWILIO_TOKEN', '')
-TWILIO_FROM   = os.environ.get('TWILIO_FROM', '')       # 例：+15005550006
-USE_TWILIO    = bool(TWILIO_SID and TWILIO_TOKEN and TWILIO_FROM)
+# ── TwSMS 簡訊（台灣本地，穩定）────────────────────
+TWSMS_USER = os.environ.get('TWSMS_USER', '')
+TWSMS_PASS = os.environ.get('TWSMS_PASS', '')
+USE_TWSMS  = bool(TWSMS_USER and TWSMS_PASS)
+
+# 保留 Twilio 設定（備援）
+TWILIO_SID   = os.environ.get('TWILIO_SID', '')
+TWILIO_TOKEN = os.environ.get('TWILIO_TOKEN', '')
+TWILIO_FROM  = os.environ.get('TWILIO_FROM', '')
+USE_TWILIO   = bool(TWILIO_SID and TWILIO_TOKEN and TWILIO_FROM)
 
 # ── Cloudinary（選用）────────────────────────
 # 設定後照片上傳至 Cloudinary，Render 重啟也不會消失
@@ -288,30 +293,58 @@ def _send_via_gmail(to_addr: str, subject: str, body_html: str):
 
 
 def send_sms(to_phone: str, body: str):
-    """透過 Twilio 發送 SMS，未設定則略過"""
-    if not USE_TWILIO or not to_phone:
+    """發送 SMS：TwSMS 優先，備援 Twilio"""
+    if not to_phone:
         return
-    # 台灣 09xx → +886 9xx
+    # 統一格式：09xx → +886 9xx
     phone = to_phone.strip().replace('-', '').replace(' ', '')
     if phone.startswith('0'):
         phone = '+886' + phone[1:]
     elif not phone.startswith('+'):
         phone = '+886' + phone
-    try:
-        resp = http_requests.post(
-            f'https://api.twilio.com/2010-04-01/Accounts/{TWILIO_SID}/Messages.json',
-            auth=(TWILIO_SID, TWILIO_TOKEN),
-            data={'From': TWILIO_FROM, 'To': phone, 'Body': body},
-            timeout=15
-        )
-        data = resp.json()
-        if resp.status_code >= 400:
-            print(f'[Twilio error] {data}')
-        else:
-            print(f'[Twilio] SMS sent to {phone}')
-    except Exception as e:
-        print(f'[Twilio error] {e}')
 
+    # ── 1. TwSMS（台灣本地，優先）──
+    if USE_TWSMS:
+        try:
+            resp = http_requests.get(
+                'https://api.twsms.com/json/sms_send.php',
+                params={
+                    'username': TWSMS_USER,
+                    'password': TWSMS_PASS,
+                    'mobile':   phone,
+                    'message':  body,
+                },
+                timeout=10
+            )
+            data = resp.json()
+            if data.get('code') == '00000':
+                print(f'[TwSMS] 發送成功 → {phone}')
+                return
+            else:
+                print(f'[TwSMS] 發送失敗：{data}')
+                # 失敗則 fallback 到 Twilio
+        except Exception as e:
+            print(f'[TwSMS error] {e}')
+
+    # ── 2. Twilio（備援）──
+    if USE_TWILIO:
+        try:
+            resp = http_requests.post(
+                f'https://api.twilio.com/2010-04-01/Accounts/{TWILIO_SID}/Messages.json',
+                auth=(TWILIO_SID, TWILIO_TOKEN),
+                data={'From': TWILIO_FROM, 'To': phone, 'Body': body},
+                timeout=15
+            )
+            data = resp.json()
+            if resp.status_code >= 400:
+                print(f'[Twilio error] {data}')
+            else:
+                print(f'[Twilio] SMS sent to {phone}')
+        except Exception as e:
+            print(f'[Twilio error] {e}')
+        return
+
+    print(f'[SMS] 未設定任何簡訊服務，略過發送 → {phone}')
 
 def _booking_email_html(booking) -> str:
     """預約確認 Email HTML 內容"""

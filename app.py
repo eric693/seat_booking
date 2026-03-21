@@ -7,6 +7,308 @@ import hmac
 import base64
 import requests as http_requests
 from datetime import datetime, timezone, timedelta
+import secrets
+from werkzeug.security import generate_password_hash, check_password_hash
+import random
+
+class Member(db.Model):
+    __tablename__ = 'members'
+    id                    = db.Column(db.Integer, primary_key=True)
+    name                  = db.Column(db.String(50), nullable=False)
+    phone                 = db.Column(db.String(20), unique=True)
+    email                 = db.Column(db.String(100), unique=True)
+    password_hash         = db.Column(db.String(256))
+    is_verified_email     = db.Column(db.Boolean, default=False)
+    is_verified_phone     = db.Column(db.Boolean, default=False)
+    is_blocked            = db.Column(db.Boolean, default=False)
+    block_reason          = db.Column(db.String(200), default='')
+    email_verify_token    = db.Column(db.String(100))
+    phone_verify_code     = db.Column(db.String(6))
+    phone_code_expires    = db.Column(db.DateTime)
+    reset_token           = db.Column(db.String(100))
+    reset_token_expires   = db.Column(db.DateTime)
+    line_user_id          = db.Column(db.String(100))
+    created_at            = db.Column(db.DateTime, default=tw_now)
+    last_login            = db.Column(db.DateTime)
+
+    def set_password(self, pw):
+        self.password_hash = generate_password_hash(pw)
+
+    def check_password(self, pw):
+        return check_password_hash(self.password_hash, pw)
+
+    def to_dict(self):
+        return {
+            'id': self.id, 'name': self.name,
+            'phone': self.phone, 'email': self.email,
+            'is_verified_email': self.is_verified_email,
+            'is_verified_phone': self.is_verified_phone,
+            'is_blocked': self.is_blocked,
+            'block_reason': self.block_reason or '',
+            'created_at': self.created_at.strftime('%Y-%m-%d %H:%M') if self.created_at else '',
+            'last_login': self.last_login.strftime('%Y-%m-%d %H:%M') if self.last_login else '',
+        }
+
+# ─────────────────────────────────────────────
+# Member Auth API
+# ─────────────────────────────────────────────
+
+def _member_session_check():
+    mid = session.get('member_id')
+    if not mid:
+        return None
+    m = Member.query.get(mid)
+    if not m or m.is_blocked:
+        session.pop('member_id', None)
+        return None
+    return m
+
+
+@app.route('/api/members/register', methods=['POST'])
+def member_register():
+    d = request.get_json() or {}
+    name  = d.get('name', '').strip()
+    email = d.get('email', '').strip().lower()
+    phone = d.get('phone', '').strip().replace('-', '').replace(' ', '')
+    pw    = d.get('password', '').strip()
+
+    if not name:
+        return jsonify({'error': '請填寫姓名'}), 400
+    if not pw or len(pw) < 6:
+        return jsonify({'error': '密碼至少 6 碼'}), 400
+    if not email and not phone:
+        return jsonify({'error': '請填寫 Email 或手機號碼'}), 400
+
+    # 唯一性檢查
+    if email and Member.query.filter_by(email=email).first():
+        return jsonify({'error': '此 Email 已被註冊'}), 400
+    if phone and Member.query.filter_by(phone=phone).first():
+        return jsonify({'error': '此手機號碼已被註冊'}), 400
+
+    m = Member(name=name, email=email or None, phone=phone or None)
+    m.set_password(pw)
+
+    # Email 驗證 token
+    if email:
+        m.email_verify_token = secrets.token_urlsafe(32)
+
+    # 手機驗證碼
+    if phone:
+        code = str(random.randint(100000, 999999))
+        m.phone_verify_code    = code
+        m.phone_code_expires   = tw_now() + timedelta(minutes=10)
+
+    db.session.add(m)
+    db.session.commit()
+
+    # 寄送驗證信
+    if email and m.email_verify_token:
+        verify_url = f"{SITE_URL}/verify-email?token={m.email_verify_token}"
+        send_email(email, '【會員註冊】請驗證您的 Email',
+            f'''<p>您好 {name}，</p>
+            <p>請點擊以下連結驗證您的 Email：</p>
+            <p><a href="{verify_url}" style="background:#2A6B6B;color:#fff;padding:12px 24px;border-radius:6px;text-decoration:none;">驗證 Email</a></p>
+            <p>連結 24 小時內有效。</p>''')
+
+    # 發送手機驗證碼
+    if phone and m.phone_verify_code:
+        send_sms(phone, f'【會員驗證】您的驗證碼為 {m.phone_verify_code}，10 分鐘內有效。')
+
+    return jsonify({
+        'success': True,
+        'member_id': m.id,
+        'needs_email_verify': bool(email),
+        'needs_phone_verify': bool(phone),
+        'message': '註冊成功！' + ('請查收驗證信。' if email else '') + ('請輸入手機驗證碼。' if phone else ''),
+    }), 201
+
+
+@app.route('/api/members/verify-email')
+def member_verify_email():
+    token = request.args.get('token', '')
+    m = Member.query.filter_by(email_verify_token=token).first()
+    if not m:
+        return '驗證連結無效或已過期', 400
+    m.is_verified_email   = True
+    m.email_verify_token  = None
+    db.session.commit()
+    return '''<html><body style="font-family:sans-serif;text-align:center;padding:60px;">
+        <h2 style="color:#2A6B6B;">✓ Email 驗證成功！</h2>
+        <p>您的帳號已完成驗證，請關閉此頁面並返回網站登入。</p>
+        <script>setTimeout(()=>window.close(),3000)</script>
+    </body></html>'''
+
+
+@app.route('/api/members/verify-phone', methods=['POST'])
+def member_verify_phone():
+    d   = request.get_json() or {}
+    mid = d.get('member_id') or session.get('member_id')
+    code = d.get('code', '').strip()
+    m = Member.query.get(mid)
+    if not m:
+        return jsonify({'error': '找不到會員'}), 404
+    if not m.phone_verify_code or m.phone_verify_code != code:
+        return jsonify({'error': '驗證碼錯誤'}), 400
+    if m.phone_code_expires and tw_now() > m.phone_code_expires:
+        return jsonify({'error': '驗證碼已過期，請重新發送'}), 400
+    m.is_verified_phone  = True
+    m.phone_verify_code  = None
+    m.phone_code_expires = None
+    db.session.commit()
+    return jsonify({'success': True, 'message': '手機驗證成功！'})
+
+
+@app.route('/api/members/resend-code', methods=['POST'])
+def member_resend_code():
+    d = request.get_json() or {}
+    mid = d.get('member_id') or session.get('member_id')
+    m = Member.query.get(mid)
+    if not m or not m.phone:
+        return jsonify({'error': '找不到會員'}), 404
+    code = str(random.randint(100000, 999999))
+    m.phone_verify_code  = code
+    m.phone_code_expires = tw_now() + timedelta(minutes=10)
+    db.session.commit()
+    send_sms(m.phone, f'【會員驗證】您的驗證碼為 {code}，10 分鐘內有效。')
+    return jsonify({'success': True})
+
+
+@app.route('/api/members/login', methods=['POST'])
+def member_login():
+    d       = request.get_json() or {}
+    account = d.get('account', '').strip().lower()  # email 或手機
+    pw      = d.get('password', '').strip()
+
+    m = (Member.query.filter_by(email=account).first() or
+         Member.query.filter_by(phone=account).first())
+
+    if not m or not m.check_password(pw):
+        return jsonify({'error': '帳號或密碼錯誤'}), 401
+    if m.is_blocked:
+        return jsonify({'error': f'此帳號已被停用。{("原因：" + m.block_reason) if m.block_reason else ""}'}), 403
+
+    session['member_id'] = m.id
+    m.last_login = tw_now()
+    db.session.commit()
+    return jsonify({'success': True, 'member': m.to_dict()})
+
+
+@app.route('/api/members/logout', methods=['POST'])
+def member_logout():
+    session.pop('member_id', None)
+    return jsonify({'success': True})
+
+
+@app.route('/api/members/me')
+def member_me():
+    m = _member_session_check()
+    if not m:
+        return jsonify({'error': '未登入'}), 401
+    return jsonify(m.to_dict())
+
+
+@app.route('/api/members/forgot-password', methods=['POST'])
+def member_forgot_password():
+    d     = request.get_json() or {}
+    account = d.get('account', '').strip().lower()
+    m = (Member.query.filter_by(email=account).first() or
+         Member.query.filter_by(phone=account).first())
+    # 不論是否找到都回相同訊息（防止帳號探測）
+    if m and m.email:
+        token = secrets.token_urlsafe(32)
+        m.reset_token         = token
+        m.reset_token_expires = tw_now() + timedelta(hours=1)
+        db.session.commit()
+        reset_url = f"{SITE_URL}/reset-password?token={token}"
+        send_email(m.email, '【會員】重設密碼',
+            f'''<p>您好，</p>
+            <p>請點擊以下連結重設密碼（1 小時內有效）：</p>
+            <p><a href="{reset_url}" style="background:#2A6B6B;color:#fff;padding:12px 24px;border-radius:6px;text-decoration:none;">重設密碼</a></p>
+            <p>如非本人操作請忽略此信。</p>''')
+    elif m and m.phone and not m.email:
+        # 無 email → 用簡訊發驗證碼
+        code = str(random.randint(100000, 999999))
+        m.phone_verify_code  = code
+        m.phone_code_expires = tw_now() + timedelta(minutes=10)
+        db.session.commit()
+        send_sms(m.phone, f'【重設密碼】驗證碼 {code}，10 分鐘內有效。')
+    return jsonify({'success': True, 'message': '若帳號存在，已發送重設連結。'})
+
+
+@app.route('/api/members/reset-password', methods=['POST'])
+def member_reset_password():
+    d     = request.get_json() or {}
+    token = d.get('token', '').strip()
+    pw    = d.get('password', '').strip()
+    if not pw or len(pw) < 6:
+        return jsonify({'error': '密碼至少 6 碼'}), 400
+    m = Member.query.filter_by(reset_token=token).first()
+    if not m:
+        return jsonify({'error': '連結無效或已過期'}), 400
+    if m.reset_token_expires and tw_now() > m.reset_token_expires:
+        return jsonify({'error': '連結已過期，請重新申請'}), 400
+    m.set_password(pw)
+    m.reset_token         = None
+    m.reset_token_expires = None
+    db.session.commit()
+    return jsonify({'success': True, 'message': '密碼已重設，請重新登入。'})
+
+
+# ─────────────────────────────────────────────
+# Admin — Members
+# ─────────────────────────────────────────────
+
+@app.route('/admin/api/members', methods=['GET'])
+def admin_get_members():
+    err = check_admin()
+    if err: return err
+    q = Member.query
+    if kw := request.args.get('q'):
+        q = q.filter(
+            Member.name.ilike(f'%{kw}%') |
+            Member.email.ilike(f'%{kw}%') |
+            Member.phone.ilike(f'%{kw}%')
+        )
+    members = q.order_by(Member.created_at.desc()).all()
+    return jsonify([m.to_dict() for m in members])
+
+
+@app.route('/admin/api/members/<int:mid>/block', methods=['POST'])
+def admin_block_member(mid):
+    err = check_admin()
+    if err: return err
+    m = Member.query.get_or_404(mid)
+    d = request.get_json() or {}
+    m.is_blocked   = True
+    m.block_reason = d.get('reason', '')
+    db.session.commit()
+    if m.email:
+        send_email(m.email, '【會員通知】帳號已被停用',
+            f'<p>您好 {m.name}，</p><p>您的帳號已被停用。' +
+            (f'原因：{m.block_reason}' if m.block_reason else '') +
+            '</p><p>如有疑問請聯繫管理員。</p>')
+    return jsonify({'success': True})
+
+
+@app.route('/admin/api/members/<int:mid>/unblock', methods=['POST'])
+def admin_unblock_member(mid):
+    err = check_admin()
+    if err: return err
+    m = Member.query.get_or_404(mid)
+    m.is_blocked   = False
+    m.block_reason = ''
+    db.session.commit()
+    return jsonify({'success': True})
+
+
+@app.route('/admin/api/members/<int:mid>', methods=['DELETE'])
+def admin_delete_member(mid):
+    err = check_admin()
+    if err: return err
+    m = Member.query.get_or_404(mid)
+    db.session.delete(m)
+    db.session.commit()
+    return jsonify({'success': True})
 
 def tw_now():
     """回傳台灣時間（UTC+8）的 naive datetime，用於所有 default 時間欄位"""""
@@ -3510,6 +3812,9 @@ with app.app_context():
             if 'line_qa' not in existing_tables:
                 db.create_all()
                 print('[migrate] 新增 line_qa table')
+            if 'members' not in existing_tables:
+                db.create_all()
+                print('[migrate] 新增 members table')
     except Exception as e:
         print(f'[migrate] 欄位檢查略過：{e}')
     try:

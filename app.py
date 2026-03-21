@@ -1952,7 +1952,7 @@ def flex_select_room(rooms) -> dict:
         'type': 'flex', 'altText': '請選擇會議室',
         'contents': {
             'type': 'bubble', 'size': 'mega',
-            'header': _header_box('預約會議室', 'Step 1 / 5  ·  選擇會議室'),
+            'header': _header_box('預約會議室', 'Step 1 / 7  ·  選擇會議室'),
             'body': {
                 'type': 'box', 'layout': 'vertical',
                 'backgroundColor': _C['bg'],
@@ -2006,7 +2006,7 @@ def flex_input_date(room_name: str) -> dict:
         'type': 'flex', 'altText': '請輸入日期',
         'contents': {
             'type': 'bubble', 'size': 'mega',
-            'header': _header_box(f'{room_name}', 'Step 2 / 5  ·  選擇日期'),
+            'header': _header_box(f'{room_name}', 'Step 2 / 7  ·  選擇日期'),
             'body': {
                 'type': 'box', 'layout': 'vertical',
                 'backgroundColor': _C['bg'],
@@ -2102,7 +2102,7 @@ def flex_select_slot(room_name: str, date_str: str,
         'contents': {
             'type': 'bubble', 'size': 'mega',
             'header': _header_box(f'{date_fmt}  ·  {room_name}',
-                                  'Step 3 / 5  ·  選擇時段'),
+                                  'Step 3 / 7  ·  選擇時段'),
             'body': {
                 'type': 'box', 'layout': 'vertical',
                 'backgroundColor': _C['bg'],
@@ -2129,7 +2129,7 @@ def flex_input_name() -> dict:
         'type': 'flex', 'altText': '請輸入聯絡人姓名',
         'contents': {
             'type': 'bubble', 'size': 'kilo',
-            'header': _header_box('聯絡人資料', 'Step 4 / 5  ·  請填寫資料'),
+            'header': _header_box('聯絡人資料', 'Step 4 / 7  ·  請填寫資料'),
             'body': {
                 'type': 'box', 'layout': 'vertical',
                 'backgroundColor': _C['bg'], 'paddingAll': '16px',
@@ -2158,7 +2158,7 @@ def flex_input_phone() -> dict:
         'type': 'flex', 'altText': '請輸入手機號碼',
         'contents': {
             'type': 'bubble', 'size': 'kilo',
-            'header': _header_box('聯絡人資料', 'Step 4 / 5  ·  手機號碼'),
+            'header': _header_box('聯絡人資料', 'Step 5 / 7  ·  手機號碼'),
             'body': {
                 'type': 'box', 'layout': 'vertical',
                 'backgroundColor': _C['bg'], 'paddingAll': '16px',
@@ -2187,7 +2187,7 @@ def flex_input_email() -> dict:
         'type': 'flex', 'altText': '請輸入 Email',
         'contents': {
             'type': 'bubble', 'size': 'kilo',
-            'header': _header_box('聯絡人資料', 'Step 4 / 5  ·  Email'),
+            'header': _header_box('聯絡人資料', 'Step 6 / 7  ·  Email'),
             'body': {
                 'type': 'box', 'layout': 'vertical',
                 'backgroundColor': _C['bg'], 'paddingAll': '16px',
@@ -2247,7 +2247,7 @@ def flex_confirm_booking(sess: dict) -> dict:
         'type': 'flex', 'altText': '請確認預約資料',
         'contents': {
             'type': 'bubble', 'size': 'mega',
-            'header': _header_box('確認預約資料', 'Step 5 / 5  ·  請確認後點「確認送出」'),
+            'header': _header_box('確認預約資料', 'Step 7 / 7  ·  請確認後點「確認送出」'),
             'body': {
                 'type': 'box', 'layout': 'vertical',
                 'backgroundColor': _C['bg'],

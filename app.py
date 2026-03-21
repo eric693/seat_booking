@@ -4030,16 +4030,23 @@ def member_resend_code():
 @app.route('/api/members/login', methods=['POST'])
 def member_login():
     d       = request.get_json() or {}
-    account = d.get('account', '').strip().lower()  # email 或手機
+    account = d.get('account', '').strip().lower()
     pw      = d.get('password', '').strip()
 
     m = (Member.query.filter_by(email=account).first() or
          Member.query.filter_by(phone=account).first())
 
+    # ① 先確認帳號存在 + 密碼正確
     if not m or not m.check_password(pw):
         return jsonify({'error': '帳號或密碼錯誤'}), 401
+
+    # ② 再檢查是否停用
     if m.is_blocked:
         return jsonify({'error': f'此帳號已被停用。{("原因：" + m.block_reason) if m.block_reason else ""}'}), 403
+
+    # ③ 最後檢查 Email 是否已驗證
+    if not m.is_verified_email and m.email:
+        return jsonify({'error': '請先至信箱點擊驗證連結，完成 Email 驗證後才能登入'}), 403
 
     session['member_id'] = m.id
     m.last_login = tw_now()

@@ -1100,7 +1100,7 @@ footer {
         <span style="width:5px;height:5px;border-radius:50%;background:rgba(255,255,255,0.5);display:inline-block;"></span>
         <span id="hero-badge">閱讀工作空間</span>
       </div>
-      <h1 class="hero-title" id="hero-title-el">企業<em>會議室</em>・即時預約</h1>
+      <h1 class="hero-title" id="hero-title-el">企業會議室・即時預約</h1>
       <p class="hero-desc" id="hero-desc">提供多種類型空間，彈性時段預約，滿足各種商務需求。</p>
       <div class="hero-meta">
         <div class="meta-row"><div class="meta-dot"></div><span id="meta-hours">週一至週五 08:00 – 22:00</span></div>
@@ -1628,6 +1628,7 @@ async function loadContent() {
       document.title = c.site_title;
       document.getElementById('hdr-title').textContent = c.site_title;
     }
+    if (c.hero_title) document.getElementById('hero-title-el').textContent = c.hero_title;
     if (c.site_description) document.getElementById('hero-desc').textContent = c.site_description;
     if (c.hero_badge) document.querySelector('#hero-badge').textContent = c.hero_badge;
     if (c.service_hours) document.getElementById('meta-hours').textContent = c.service_hours;
@@ -1646,7 +1647,7 @@ async function loadContent() {
     const showChat = c.show_chat_widget !== '0';
     const chatBtn   = document.getElementById('ai-chat-btn');
     const chatPanel = document.getElementById('ai-chat-panel');
-    if (chatBtn)   chatBtn.style.display   = showChat ? '' : 'none';
+    if (chatBtn)   chatBtn.style.display   = showChat ? 'flex' : 'none';
     if (chatPanel) chatPanel.style.display = showChat ? '' : 'none';
 
     // 註冊欄位顯示控制

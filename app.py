@@ -1798,11 +1798,12 @@ def uploaded_file(filename):
 
 @app.route('/api/site-content')
 def get_site_content():
-    keys = ['site_title','hero_title','site_subtitle','site_description','hero_badge',
-            'step1_title','step2_title','step3_title',
-            'service_hours','contact_phone','contact_email','footer_text',
-            'notice_1','notice_2','notice_3','notice_4','notice_5','logo_url',
-            'reg_show_email','reg_show_phone', 'show_chat_widget']
+    keys = ['site_title', 'site_subtitle', 'site_description', 'hero_badge',
+            'hero_title',        
+            'step1_title', 'step2_title', 'step3_title',
+            'service_hours', 'contact_phone', 'contact_email', 'footer_text',
+            'notice_1', 'notice_2', 'notice_3', 'notice_4', 'notice_5', 'logo_url',
+            'reg_show_email', 'reg_show_phone', 'show_chat_widget']
 
     data = {k: SiteContent.get(k) for k in keys}
     # form_fields：若未設定則回傳預設值

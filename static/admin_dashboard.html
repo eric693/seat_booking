@@ -865,7 +865,8 @@ input[list]::-webkit-calendar-picker-indicator { display: none !important; }
               <div class="cs-head">主頁 Hero 區塊</div>
               <div class="cs-body">
                 <div class="fgrid">
-                  <div class="cs-field"><label class="cs-label">網站標題</label><input class="finput" type="text" id="c-site_title"></div>
+                  <div class="cs-field"><label class="cs-label">網站標題（頁籤 & header）</label><input class="finput" type="text" id="c-site_title"></div>
+                  <div class="cs-field"><label class="cs-label">Hero 主標題大字</label><input class="finput" type="text" id="c-hero_title" placeholder="企業會議室・即時預約"></div>
                   <div class="cs-field"><label class="cs-label">標語小標籤</label><input class="finput" type="text" id="c-hero_badge"></div>
                   <div class="cs-field" style="grid-column:1/-1;"><label class="cs-label">主標題</label><input class="finput" type="text" id="c-site_subtitle"></div>
                   <div class="cs-field" style="grid-column:1/-1;"><label class="cs-label">Hero 副標說明文字</label><textarea class="ftarea" id="c-site_description" rows="2"></textarea></div>
@@ -1958,7 +1959,7 @@ async function loadContent() {
   try {
     const res = await fetch('/admin/api/site-content', { headers: H });
     const data = await res.json();
-    const keys = ['site_title','hero_badge','site_subtitle','site_description','step1_title','step2_title','step3_title','service_hours','contact_phone','contact_email','footer_text','notice_1','notice_2','notice_3','notice_4','notice_5'];
+    const keys = ['site_title','hero_title','hero_badge','site_subtitle','site_description','step1_title','step2_title','step3_title','service_hours','contact_phone','contact_email','footer_text','notice_1','notice_2','notice_3','notice_4','notice_5'];
     keys.forEach(k => { const el = document.getElementById(`c-${k}`); if (el && data[k] !== undefined) el.value = data[k]; });
     // 載入 toggle 開關
     const showChat2 = data.show_chat_widget !== '0';
@@ -1983,7 +1984,7 @@ async function loadContent() {
 }
 
 async function saveContent() {
-  const keys = ['site_title','hero_badge','site_subtitle','site_description','step1_title','step2_title','step3_title','service_hours','contact_phone','contact_email','footer_text','notice_1','notice_2','notice_3','notice_4','notice_5'];
+  const keys = ['site_title','hero_title','hero_badge','site_subtitle','site_description','step1_title','step2_title','step3_title','service_hours','contact_phone','contact_email','footer_text','notice_1','notice_2','notice_3','notice_4','notice_5'];
   const payload = {};
   keys.forEach(k => { const el = document.getElementById(`c-${k}`); if (el) payload[k] = el.value.trim(); });
   // 儲存 toggle 開關

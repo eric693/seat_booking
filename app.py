@@ -1798,7 +1798,7 @@ def uploaded_file(filename):
 
 @app.route('/api/site-content')
 def get_site_content():
-    keys = ['site_title','site_subtitle','site_description','hero_badge',
+    keys = ['site_title','hero_title','site_subtitle','site_description','hero_badge',
             'step1_title','step2_title','step3_title',
             'service_hours','contact_phone','contact_email','footer_text',
             'notice_1','notice_2','notice_3','notice_4','notice_5','logo_url',

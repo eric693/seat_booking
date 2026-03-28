@@ -922,6 +922,24 @@ input[list]::-webkit-calendar-picker-indicator { display: none !important; }
                 <p style="font-size:12px;color:var(--ink-60);margin-top:12px;">⚠️ 至少需開啟一個欄位，否則用戶無法完成註冊。</p>
               </div>
             </div>
+            <!-- 聊天視窗顯示設定 -->
+            <div class="content-section" style="grid-column:1/-1;">
+              <div class="cs-head">前台功能顯示設定</div>
+              <div class="cs-body">
+                <label style="display:flex;align-items:center;gap:10px;cursor:pointer;font-size:14px;font-weight:500;">
+                  <div style="position:relative;width:44px;height:24px;flex-shrink:0;">
+                    <input type="checkbox" id="c-show_chat_widget" style="opacity:0;width:0;height:0;position:absolute;"
+                      onchange="this.closest('label').querySelector('.toggle-track').style.background=this.checked?'var(--teal)':'#ccc'">
+                    <div class="toggle-track" style="position:absolute;inset:0;border-radius:12px;background:#ccc;transition:.2s;cursor:pointer;"
+                      onclick="let cb=this.closest('label').querySelector('input');cb.checked=!cb.checked;this.style.background=cb.checked?'var(--teal)':'#ccc'">
+                      <div style="position:absolute;width:18px;height:18px;border-radius:50%;background:#fff;top:3px;left:3px;transition:.2s;"></div>
+                    </div>
+                  </div>
+                  顯示前台聊天助理視窗
+                </label>
+                <p style="font-size:12px;color:var(--ink-60);margin-top:10px;">關閉後，前台右下角的聊天按鈕將隱藏。</p>
+              </div>
+            </div>
             <div class="content-section" style="grid-column:1/-1;">
               <div class="cs-head">預約須知（最多 5 條）</div>
               <div class="cs-body">
@@ -1943,6 +1961,12 @@ async function loadContent() {
     const keys = ['site_title','hero_badge','site_subtitle','site_description','step1_title','step2_title','step3_title','service_hours','contact_phone','contact_email','footer_text','notice_1','notice_2','notice_3','notice_4','notice_5'];
     keys.forEach(k => { const el = document.getElementById(`c-${k}`); if (el && data[k] !== undefined) el.value = data[k]; });
     // 載入 toggle 開關
+    const showChat2 = data.show_chat_widget !== '0';
+    const cbChat = document.getElementById('c-show_chat_widget');
+    if (cbChat) {
+      cbChat.checked = showChat2;
+      cbChat.closest('label').querySelector('.toggle-track').style.background = showChat2 ? 'var(--teal)' : '#ccc';
+    }
     const showEmail = data.reg_show_email !== '0';
     const showPhone = data.reg_show_phone !== '0';
     const cbEmail = document.getElementById('c-reg_show_email');
@@ -1967,6 +1991,8 @@ async function saveContent() {
   const cbPhone = document.getElementById('c-reg_show_phone');
   if (cbEmail) payload['reg_show_email'] = cbEmail.checked ? '1' : '0';
   if (cbPhone) payload['reg_show_phone'] = cbPhone.checked ? '1' : '0';
+  const cbChat = document.getElementById('c-show_chat_widget');
+  if (cbChat) payload['show_chat_widget'] = cbChat.checked ? '1' : '0';
   try {
     const res = await fetch('/admin/api/site-content', { method: 'POST', headers: { ...H, 'Content-Type': 'application/json' }, body: JSON.stringify(payload) });
     if (res.ok) toast('已儲存，前台將即時更新');

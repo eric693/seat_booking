@@ -1641,6 +1641,13 @@ async function loadContent() {
     if (notices.length) {
       document.getElementById('noticeList').innerHTML = notices.map(n => `<li>${n}</li>`).join('');
     }
+    // 聊天視窗顯示控制
+    const showChat = c.show_chat_widget !== '0';
+    const chatBtn   = document.getElementById('ai-chat-btn');
+    const chatPanel = document.getElementById('ai-chat-panel');
+    if (chatBtn)   chatBtn.style.display   = showChat ? '' : 'none';
+    if (chatPanel) chatPanel.style.display = showChat ? '' : 'none';
+
     // 註冊欄位顯示控制
     const showEmail = c.reg_show_email !== '0';
     const showPhone = c.reg_show_phone !== '0';

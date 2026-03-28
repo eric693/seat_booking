@@ -895,30 +895,20 @@ input[list]::-webkit-calendar-picker-indicator { display: none !important; }
               <div class="cs-head">會員註冊欄位顯示設定</div>
               <div class="cs-body">
                 <div style="display:flex;gap:24px;flex-wrap:wrap;align-items:center;">
-                  <label style="display:flex;align-items:center;gap:10px;cursor:pointer;font-size:14px;font-weight:500;">
-                    <div style="position:relative;width:44px;height:24px;flex-shrink:0;">
-                      <input type="checkbox" id="c-reg_show_email" style="opacity:0;width:0;height:0;position:absolute;"
-                        onchange="this.closest('label').querySelector('.toggle-track').style.background=this.checked?'var(--teal)':'#ccc'">
-                      <div class="toggle-track" style="position:absolute;inset:0;border-radius:12px;background:#ccc;transition:.2s;cursor:pointer;"
-                        onclick="let cb=this.closest('label').querySelector('input');cb.checked=!cb.checked;this.style.background=cb.checked?'var(--teal)':'#ccc'">
-                        <div style="position:absolute;width:18px;height:18px;border-radius:50%;background:#fff;top:3px;left:3px;transition:.2s;transform:translateX(0);"
-                          id="toggle-knob-email"></div>
-                      </div>
+                  <div style="display:flex;align-items:center;gap:10px;cursor:pointer;" onclick="toggleSwitch('c-reg_show_email')">
+                    <div id="sw-c-reg_show_email" style="width:44px;height:24px;border-radius:12px;background:#ccc;position:relative;transition:.3s;flex-shrink:0;">
+                      <div style="position:absolute;width:18px;height:18px;border-radius:50%;background:#fff;top:3px;left:3px;transition:.3s;" id="knob-c-reg_show_email"></div>
                     </div>
-                    顯示 Email 欄位
-                  </label>
-                  <label style="display:flex;align-items:center;gap:10px;cursor:pointer;font-size:14px;font-weight:500;">
-                    <div style="position:relative;width:44px;height:24px;flex-shrink:0;">
-                      <input type="checkbox" id="c-reg_show_phone" style="opacity:0;width:0;height:0;position:absolute;"
-                        onchange="this.closest('label').querySelector('.toggle-track').style.background=this.checked?'var(--teal)':'#ccc'">
-                      <div class="toggle-track" style="position:absolute;inset:0;border-radius:12px;background:#ccc;transition:.2s;cursor:pointer;"
-                        onclick="let cb=this.closest('label').querySelector('input');cb.checked=!cb.checked;this.style.background=cb.checked?'var(--teal)':'#ccc'">
-                        <div style="position:absolute;width:18px;height:18px;border-radius:50%;background:#fff;top:3px;left:3px;transition:.2s;"
-                          id="toggle-knob-phone"></div>
-                      </div>
+                    <input type="checkbox" id="c-reg_show_email" style="display:none;">
+                    <span style="font-size:14px;font-weight:500;">顯示 Email 欄位</span>
+                  </div>
+                  <div style="display:flex;align-items:center;gap:10px;cursor:pointer;" onclick="toggleSwitch('c-reg_show_phone')">
+                    <div id="sw-c-reg_show_phone" style="width:44px;height:24px;border-radius:12px;background:#ccc;position:relative;transition:.3s;flex-shrink:0;">
+                      <div style="position:absolute;width:18px;height:18px;border-radius:50%;background:#fff;top:3px;left:3px;transition:.3s;" id="knob-c-reg_show_phone"></div>
                     </div>
-                    顯示手機號碼欄位
-                  </label>
+                    <input type="checkbox" id="c-reg_show_phone" style="display:none;">
+                    <span style="font-size:14px;font-weight:500;">顯示手機號碼欄位</span>
+                  </div>
                 </div>
                 <p style="font-size:12px;color:var(--ink-60);margin-top:12px;">⚠️ 至少需開啟一個欄位，否則用戶無法完成註冊。</p>
               </div>
@@ -927,17 +917,13 @@ input[list]::-webkit-calendar-picker-indicator { display: none !important; }
             <div class="content-section" style="grid-column:1/-1;">
               <div class="cs-head">前台功能顯示設定</div>
               <div class="cs-body">
-                <label style="display:flex;align-items:center;gap:10px;cursor:pointer;font-size:14px;font-weight:500;">
-                  <div style="position:relative;width:44px;height:24px;flex-shrink:0;">
-                    <input type="checkbox" id="c-show_chat_widget" style="opacity:0;width:0;height:0;position:absolute;"
-                      onchange="this.closest('label').querySelector('.toggle-track').style.background=this.checked?'var(--teal)':'#ccc'">
-                    <div class="toggle-track" style="position:absolute;inset:0;border-radius:12px;background:#ccc;transition:.2s;cursor:pointer;"
-                      onclick="let cb=this.closest('label').querySelector('input');cb.checked=!cb.checked;this.style.background=cb.checked?'var(--teal)':'#ccc'">
-                      <div style="position:absolute;width:18px;height:18px;border-radius:50%;background:#fff;top:3px;left:3px;transition:.2s;"></div>
-                    </div>
+                <div style="display:flex;align-items:center;gap:10px;cursor:pointer;" onclick="toggleSwitch('c-show_chat_widget')">
+                  <div id="sw-c-show_chat_widget" style="width:44px;height:24px;border-radius:12px;background:#ccc;position:relative;transition:.3s;flex-shrink:0;">
+                    <div style="position:absolute;width:18px;height:18px;border-radius:50%;background:#fff;top:3px;left:3px;transition:.3s;" id="knob-c-show_chat_widget"></div>
                   </div>
-                  顯示前台聊天助理視窗
-                </label>
+                  <input type="checkbox" id="c-show_chat_widget" style="display:none;">
+                  <span style="font-size:14px;font-weight:500;">顯示前台聊天助理視窗</span>
+                </div>
                 <p style="font-size:12px;color:var(--ink-60);margin-top:10px;">關閉後，前台右下角的聊天按鈕將隱藏。</p>
               </div>
             </div>
@@ -1954,6 +1940,27 @@ async function saveRoom() {
   } catch { toast('儲存失敗', 'error'); }
 }
 
+// ── TOGGLE SWITCH ──
+function toggleSwitch(id) {
+  const cb  = document.getElementById(id);
+  const sw  = document.getElementById('sw-' + id);
+  const knob = document.getElementById('knob-' + id);
+  if (!cb || !sw) return;
+  cb.checked = !cb.checked;
+  sw.style.background = cb.checked ? 'var(--teal)' : '#ccc';
+  if (knob) knob.style.transform = cb.checked ? 'translateX(20px)' : 'translateX(0)';
+}
+
+function setSwitchState(id, checked) {
+  const cb  = document.getElementById(id);
+  const sw  = document.getElementById('sw-' + id);
+  const knob = document.getElementById('knob-' + id);
+  if (!cb || !sw) return;
+  cb.checked = checked;
+  sw.style.background = checked ? 'var(--teal)' : '#ccc';
+  if (knob) knob.style.transform = checked ? 'translateX(20px)' : 'translateX(0)';
+}
+
 // ── CONTENT ──
 async function loadContent() {
   try {
@@ -1962,24 +1969,9 @@ async function loadContent() {
     const keys = ['site_title','hero_title','hero_badge','site_subtitle','site_description','step1_title','step2_title','step3_title','service_hours','contact_phone','contact_email','footer_text','notice_1','notice_2','notice_3','notice_4','notice_5'];
     keys.forEach(k => { const el = document.getElementById(`c-${k}`); if (el && data[k] !== undefined) el.value = data[k]; });
     // 載入 toggle 開關
-    const showChat2 = data.show_chat_widget !== '0';
-    const cbChat = document.getElementById('c-show_chat_widget');
-    if (cbChat) {
-      cbChat.checked = showChat2;
-      cbChat.closest('label').querySelector('.toggle-track').style.background = showChat2 ? 'var(--teal)' : '#ccc';
-    }
-    const showEmail = data.reg_show_email !== '0';
-    const showPhone = data.reg_show_phone !== '0';
-    const cbEmail = document.getElementById('c-reg_show_email');
-    const cbPhone = document.getElementById('c-reg_show_phone');
-    if (cbEmail) {
-      cbEmail.checked = showEmail;
-      cbEmail.closest('label').querySelector('.toggle-track').style.background = showEmail ? 'var(--teal)' : '#ccc';
-    }
-    if (cbPhone) {
-      cbPhone.checked = showPhone;
-      cbPhone.closest('label').querySelector('.toggle-track').style.background = showPhone ? 'var(--teal)' : '#ccc';
-    }
+    setSwitchState('c-show_chat_widget', data.show_chat_widget !== '0');
+    setSwitchState('c-reg_show_email', data.reg_show_email !== '0');
+    setSwitchState('c-reg_show_phone', data.reg_show_phone !== '0');
   } catch { toast('載入失敗', 'error'); }
 }
 

@@ -889,6 +889,39 @@ input[list]::-webkit-calendar-picker-indicator { display: none !important; }
                 <div class="cs-field"><label class="cs-label">頁尾版權文字</label><input class="finput" type="text" id="c-footer_text"></div>
               </div>
             </div>
+            <!-- 會員註冊欄位設定 -->
+            <div class="content-section" style="grid-column:1/-1;">
+              <div class="cs-head">會員註冊欄位顯示設定</div>
+              <div class="cs-body">
+                <div style="display:flex;gap:24px;flex-wrap:wrap;align-items:center;">
+                  <label style="display:flex;align-items:center;gap:10px;cursor:pointer;font-size:14px;font-weight:500;">
+                    <div style="position:relative;width:44px;height:24px;flex-shrink:0;">
+                      <input type="checkbox" id="c-reg_show_email" style="opacity:0;width:0;height:0;position:absolute;"
+                        onchange="this.closest('label').querySelector('.toggle-track').style.background=this.checked?'var(--teal)':'#ccc'">
+                      <div class="toggle-track" style="position:absolute;inset:0;border-radius:12px;background:#ccc;transition:.2s;cursor:pointer;"
+                        onclick="let cb=this.closest('label').querySelector('input');cb.checked=!cb.checked;this.style.background=cb.checked?'var(--teal)':'#ccc'">
+                        <div style="position:absolute;width:18px;height:18px;border-radius:50%;background:#fff;top:3px;left:3px;transition:.2s;transform:translateX(0);"
+                          id="toggle-knob-email"></div>
+                      </div>
+                    </div>
+                    顯示 Email 欄位
+                  </label>
+                  <label style="display:flex;align-items:center;gap:10px;cursor:pointer;font-size:14px;font-weight:500;">
+                    <div style="position:relative;width:44px;height:24px;flex-shrink:0;">
+                      <input type="checkbox" id="c-reg_show_phone" style="opacity:0;width:0;height:0;position:absolute;"
+                        onchange="this.closest('label').querySelector('.toggle-track').style.background=this.checked?'var(--teal)':'#ccc'">
+                      <div class="toggle-track" style="position:absolute;inset:0;border-radius:12px;background:#ccc;transition:.2s;cursor:pointer;"
+                        onclick="let cb=this.closest('label').querySelector('input');cb.checked=!cb.checked;this.style.background=cb.checked?'var(--teal)':'#ccc'">
+                        <div style="position:absolute;width:18px;height:18px;border-radius:50%;background:#fff;top:3px;left:3px;transition:.2s;"
+                          id="toggle-knob-phone"></div>
+                      </div>
+                    </div>
+                    顯示手機號碼欄位
+                  </label>
+                </div>
+                <p style="font-size:12px;color:var(--ink-60);margin-top:12px;">⚠️ 至少需開啟一個欄位，否則用戶無法完成註冊。</p>
+              </div>
+            </div>
             <div class="content-section" style="grid-column:1/-1;">
               <div class="cs-head">預約須知（最多 5 條）</div>
               <div class="cs-body">
@@ -1909,6 +1942,19 @@ async function loadContent() {
     const data = await res.json();
     const keys = ['site_title','hero_badge','site_subtitle','site_description','step1_title','step2_title','step3_title','service_hours','contact_phone','contact_email','footer_text','notice_1','notice_2','notice_3','notice_4','notice_5'];
     keys.forEach(k => { const el = document.getElementById(`c-${k}`); if (el && data[k] !== undefined) el.value = data[k]; });
+    // 載入 toggle 開關
+    const showEmail = data.reg_show_email !== '0';
+    const showPhone = data.reg_show_phone !== '0';
+    const cbEmail = document.getElementById('c-reg_show_email');
+    const cbPhone = document.getElementById('c-reg_show_phone');
+    if (cbEmail) {
+      cbEmail.checked = showEmail;
+      cbEmail.closest('label').querySelector('.toggle-track').style.background = showEmail ? 'var(--teal)' : '#ccc';
+    }
+    if (cbPhone) {
+      cbPhone.checked = showPhone;
+      cbPhone.closest('label').querySelector('.toggle-track').style.background = showPhone ? 'var(--teal)' : '#ccc';
+    }
   } catch { toast('載入失敗', 'error'); }
 }
 
@@ -1916,6 +1962,11 @@ async function saveContent() {
   const keys = ['site_title','hero_badge','site_subtitle','site_description','step1_title','step2_title','step3_title','service_hours','contact_phone','contact_email','footer_text','notice_1','notice_2','notice_3','notice_4','notice_5'];
   const payload = {};
   keys.forEach(k => { const el = document.getElementById(`c-${k}`); if (el) payload[k] = el.value.trim(); });
+  // 儲存 toggle 開關
+  const cbEmail = document.getElementById('c-reg_show_email');
+  const cbPhone = document.getElementById('c-reg_show_phone');
+  if (cbEmail) payload['reg_show_email'] = cbEmail.checked ? '1' : '0';
+  if (cbPhone) payload['reg_show_phone'] = cbPhone.checked ? '1' : '0';
   try {
     const res = await fetch('/admin/api/site-content', { method: 'POST', headers: { ...H, 'Content-Type': 'application/json' }, body: JSON.stringify(payload) });
     if (res.ok) toast('已儲存，前台將即時更新');

@@ -1801,7 +1801,9 @@ def get_site_content():
     keys = ['site_title','site_subtitle','site_description','hero_badge',
             'step1_title','step2_title','step3_title',
             'service_hours','contact_phone','contact_email','footer_text',
-            'notice_1','notice_2','notice_3','notice_4','notice_5','logo_url']
+            'notice_1','notice_2','notice_3','notice_4','notice_5','logo_url',
+            'reg_show_email','reg_show_phone']
+            
     data = {k: SiteContent.get(k) for k in keys}
     # form_fields：若未設定則回傳預設值
     data['form_fields'] = SiteContent.get('form_fields') or """[{\"id\": \"name\", \"label\": \"聯絡人姓名\", \"type\": \"text\", \"placeholder\": \"請輸入姓名\", \"required\": true, \"system\": true, \"full\": false}, {\"id\": \"phone\", \"label\": \"手機號碼\", \"type\": \"tel\", \"placeholder\": \"0912345678\", \"required\": true, \"system\": true, \"full\": false}, {\"id\": \"email\", \"label\": \"Email\", \"type\": \"email\", \"placeholder\": \"your@email.com\", \"required\": true, \"system\": true, \"full\": false, \"hint\": \"必填，接收確認信\"}, {\"id\": \"department\", \"label\": \"部門／公司\", \"type\": \"text\", \"placeholder\": \"例：行銷部\", \"required\": false, \"system\": true, \"full\": false}, {\"id\": \"attendees\", \"label\": \"預計出席人數\", \"type\": \"select\", \"options\": \"1,2,3,4,5,6,8,10,15,20,30,50\", \"required\": false, \"system\": true, \"full\": false}, {\"id\": \"purpose\", \"label\": \"會議類型\", \"type\": \"select\", \"options\": \"部門會議,客戶洽談,員工培訓,產品發表,視訊會議,腦力激盪,其他\", \"required\": false, \"system\": true, \"full\": false}, {\"id\": \"note\", \"label\": \"備註\", \"type\": \"textarea\", \"placeholder\": \"特殊需求或注意事項...\", \"required\": false, \"system\": true, \"full\": true}]"""

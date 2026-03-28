@@ -1307,12 +1307,12 @@ footer {
         <label style="font-size:13px;font-weight:500;">姓名 <span style="color:var(--red);">*</span></label>
         <input class="finput" type="text" id="reg-name" placeholder="請輸入您的姓名">
       </div>
-      <div class="fgroup" style="margin-bottom:14px;">
-        <label style="font-size:13px;font-weight:500;">Email <span style="font-size:11px;color:var(--ink-60);">（擇一必填）</span></label>
+      <div class="fgroup" id="reg-email-group" style="margin-bottom:14px;">
+        <label id="reg-email-label" style="font-size:13px;font-weight:500;">Email <span style="font-size:11px;color:var(--ink-60);">（擇一必填）</span></label>
         <input class="finput" type="email" id="reg-email" placeholder="your@email.com" autocomplete="email">
       </div>
-      <div class="fgroup" style="margin-bottom:14px;">
-        <label style="font-size:13px;font-weight:500;">手機號碼 <span style="font-size:11px;color:var(--ink-60);">（擇一必填）</span></label>
+      <div class="fgroup" id="reg-phone-group" style="margin-bottom:14px;">
+        <label id="reg-phone-label" style="font-size:13px;font-weight:500;">手機號碼 <span style="font-size:11px;color:var(--ink-60);">（擇一必填）</span></label>
         <input class="finput" type="tel" id="reg-phone" placeholder="0912345678">
       </div>
       <div class="fgroup" style="margin-bottom:14px;">
@@ -1641,6 +1641,25 @@ async function loadContent() {
     if (notices.length) {
       document.getElementById('noticeList').innerHTML = notices.map(n => `<li>${n}</li>`).join('');
     }
+    // 註冊欄位顯示控制
+    const showEmail = c.reg_show_email !== '0';
+    const showPhone = c.reg_show_phone !== '0';
+    const emailGroup = document.getElementById('reg-email-group');
+    const phoneGroup = document.getElementById('reg-phone-group');
+    if (emailGroup) emailGroup.style.display = showEmail ? '' : 'none';
+    if (phoneGroup) phoneGroup.style.display = showPhone ? '' : 'none';
+    // 更新 label 提示
+    const emailLabel = document.getElementById('reg-email-label');
+    const phoneLabel = document.getElementById('reg-phone-label');
+    if (showEmail && showPhone) {
+      if (emailLabel) emailLabel.innerHTML = 'Email <span style="font-size:11px;color:var(--ink-60);">（擇一必填）</span>';
+      if (phoneLabel) phoneLabel.innerHTML = '手機號碼 <span style="font-size:11px;color:var(--ink-60);">（擇一必填）</span>';
+    } else if (showEmail) {
+      if (emailLabel) emailLabel.innerHTML = 'Email <span style="color:var(--red);">*</span>';
+    } else if (showPhone) {
+      if (phoneLabel) phoneLabel.innerHTML = '手機號碼 <span style="color:var(--red);">*</span>';
+    }
+
     if (c.logo_url) {
       const wrap = document.getElementById('header-logo-wrap');
       if (wrap) wrap.innerHTML = `<img src="${c.logo_url}" style="width:44px;height:44px;object-fit:contain;border-radius:6px;display:block;">`;

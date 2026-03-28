@@ -124,58 +124,64 @@ header {
   display: inline-flex;
   align-items: center;
   gap: 8px;
-  background: rgba(255,255,255,0.1);
-  border: 1px solid rgba(255,255,255,0.25);
-  color: rgba(255,255,255,0.85);
-  padding: 6px 14px;
+  background: rgba(255,255,255,0.06);
+  border: 1px solid rgba(255,255,255,0.15);
+  color: rgba(255,255,255,0.6);
+  padding: 5px 14px;
   border-radius: 100px;
-  font-size: 12px;
-  font-weight: 500;
-  text-transform: uppercase;
-  letter-spacing: 0.08em;
-  margin-bottom: 24px;
+  font-size: 11px;
+  font-weight: 400;
+  letter-spacing: 0.12em;
+  margin-bottom: 20px;
 }
 
 .hero-title {
   font-family: 'DM Serif Display', serif;
-  font-size: clamp(32px, 4vw, 52px);
-  line-height: 1.15;
-  margin-bottom: 20px;
-  letter-spacing: -0.01em;
+  font-size: clamp(36px, 5vw, 64px);
+  line-height: 1.1;
+  margin-bottom: 16px;
+  letter-spacing: -0.02em;
+  color: #ffffff;
   white-space: nowrap;
 }
 
 .hero-title em {
   font-style: normal;
-  color: var(--gold);
+  color: #ffffff;
 }
 
 .hero-desc {
-  font-size: 16px;
-  color: rgba(255,255,255,0.7);
-  line-height: 1.8;
-  max-width: 500px;
-  margin-bottom: 36px;
+  font-size: 15px;
+  color: rgba(255,255,255,0.6);
+  line-height: 1.75;
+  max-width: 520px;
+  margin-bottom: 32px;
+  font-weight: 300;
+  letter-spacing: 0.01em;
 }
 
 .hero-meta {
   display: flex;
   flex-direction: column;
-  gap: 10px;
+  gap: 8px;
+  border-top: 1px solid rgba(255,255,255,0.1);
+  padding-top: 20px;
+  margin-top: 4px;
 }
 
 .meta-row {
   display: flex;
   align-items: center;
   gap: 10px;
-  font-size: 13px;
-  color: rgba(255,255,255,0.65);
+  font-size: 12px;
+  color: rgba(255,255,255,0.5);
+  letter-spacing: 0.02em;
 }
 
 .meta-dot {
-  width: 6px; height: 6px;
+  width: 4px; height: 4px;
   border-radius: 50%;
-  background: var(--gold);
+  background: rgba(255,255,255,0.35);
   flex-shrink: 0;
 }
 
@@ -1090,11 +1096,11 @@ footer {
   <div class="hero-inner">
     <div>
       <div class="hero-badge">
-        <span style="width:6px;height:6px;border-radius:50%;background:var(--gold);animation:pls 2s infinite;display:inline-block;"></span>
-        <span id="hero-badge">專業會議空間</span>
+        <span style="width:5px;height:5px;border-radius:50%;background:rgba(255,255,255,0.5);display:inline-block;"></span>
+        <span id="hero-badge">閱讀工作空間</span>
       </div>
       <h1 class="hero-title" id="hero-title-el">企業<em>會議室</em>・即時預約</h1>
-      <p class="hero-desc" id="hero-desc">提供多種類型會議室，彈性時段預約，滿足各種商務需求。</p>
+      <p class="hero-desc" id="hero-desc">提供多種類型空間，彈性時段預約，滿足各種商務需求。</p>
       <div class="hero-meta">
         <div class="meta-row"><div class="meta-dot"></div><span id="meta-hours">週一至週五 08:00 – 22:00</span></div>
         <div class="meta-row"><div class="meta-dot"></div><span id="meta-email"><a href="/cdn-cgi/l/email-protection" class="__cf_email__" data-cfemail="ed8f82828684838aad88958c809d8188c38e8280">[email&#160;protected]</a></span></div>

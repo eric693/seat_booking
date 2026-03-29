@@ -2891,7 +2891,8 @@ async function doRegister() {
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({ name, email: email||null, phone: phone||null, password: pw })
     });
-    const data = await res.json();
+    let data;
+    try { data = await res.json(); } catch { data = {}; }
     if (res.ok) {
       _pendingMemberId = data.member_id;
       // Email 優先：有 email 就顯示 Email 驗證提示
@@ -2914,7 +2915,9 @@ async function doRegister() {
       errEl.style.display = 'block';
     }
   } catch(e) {
-    errEl.textContent = '連線失敗，請稍後再試';
+    console.error('[register error]', e);
+    const msg = e instanceof TypeError ? '無法連線伺服器，請確認網路後再試' : '連線失敗，請稍後再試';
+    errEl.textContent = msg;
     errEl.style.display = 'block';
   }
 }

@@ -1067,7 +1067,7 @@ footer {
       <div class="brand-name" id="hdr-title">會議室預約系統</div>
     </div>
     <div class="header-actions" style="position:relative;">
-      <span id="hdr-phone">02-1234-5678</span>
+      <span id="hdr-phone" style="display:none;"></span>
       <div id="liff-user-bar" style="display:none;align-items:center;gap:8px;">
         <img id="liff-avatar" src="" style="width:28px;height:28px;border-radius:50%;object-fit:cover;border:2px solid var(--teal);" alt="">
         <span id="liff-name" style="font-size:13px;font-weight:600;color:var(--teal);max-width:80px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;"></span>
@@ -1633,7 +1633,9 @@ async function loadContent() {
     if (c.hero_badge) document.querySelector('#hero-badge').textContent = c.hero_badge;
     if (c.service_hours) document.getElementById('meta-hours').textContent = c.service_hours;
     if (c.contact_email) document.getElementById('meta-email').textContent = c.contact_email;
-    if (c.contact_phone) document.getElementById('hdr-phone').textContent = c.contact_phone;
+    const phoneEl = document.getElementById('hdr-phone');
+    if (c.contact_phone) { phoneEl.textContent = c.contact_phone; phoneEl.style.display = ''; }
+    else { phoneEl.style.display = 'none'; }
     if (c.footer_text) document.getElementById('footerText').textContent = c.footer_text;
     if (c.step1_title) document.getElementById('txt-step1-title').textContent = c.step1_title;
     if (c.step2_title) document.getElementById('txt-step2-title').textContent = c.step2_title;

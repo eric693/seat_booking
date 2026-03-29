@@ -281,11 +281,10 @@ header {
   transition: transform 0.35s ease;
 }
 .room-carousel-track img {
-  width: 100%;
-  flex-shrink: 0;
   height: 200px;
   object-fit: cover;
   display: block;
+  flex-shrink: 0;
 }
 .room-carousel-btn {
   position: absolute;
@@ -1764,10 +1763,11 @@ async function loadRooms() {
       } else if (photos.length === 1) {
         photoHTML = `<div class="room-photo"><img src="${photos[0]}" alt="${r.name}" onerror="this.parentElement.innerHTML='<div class=room-photo-placeholder>${icon}</div>'"></div>`;
       } else {
-        const imgs = photos.map(p => `<img src="${p}" alt="${r.name}">`).join('');
+        const n = photos.length;
+        const imgs = photos.map(p => `<img src="${p}" alt="${r.name}" style="width:${100/n}%;">`).join('');
         const dots = photos.map((_, i) => `<span class="${i===0?'active':''}" onclick="carouselDot(event,this,${r.id})"></span>`).join('');
         photoHTML = `<div class="room-carousel" id="carousel-${r.id}">
-          <div class="room-carousel-track">${imgs}</div>
+          <div class="room-carousel-track" style="width:${n*100}%;">${imgs}</div>
           <button class="room-carousel-btn prev" onclick="carouselMove(event,${r.id},-1)">&#8249;</button>
           <button class="room-carousel-btn next" onclick="carouselMove(event,${r.id},1)">&#8250;</button>
           <div class="room-carousel-dots">${dots}</div>

@@ -281,10 +281,12 @@ header {
   transition: transform 0.35s ease;
 }
 .room-carousel-track img {
-  height: 200px;
-  object-fit: cover;
+  height: auto;
+  max-height: 320px;
+  object-fit: contain;
   display: block;
   flex-shrink: 0;
+  background: #111;
 }
 .room-carousel-btn {
   position: absolute;

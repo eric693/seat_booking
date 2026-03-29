@@ -1897,7 +1897,7 @@ async function handleModalPhotoSelect(event) {
   const progress = document.getElementById('modalUploadProgress'), bar = document.getElementById('modalUploadBar');
   progress.style.display = 'block'; bar.style.width = '15%';
   let file;
-  try { file = await autoCropImage(rawFile, 16/9, 1600); bar.style.width = '30%'; } catch { file = rawFile; bar.style.width = '30%'; }
+  try { file = await resizeImage(rawFile, 1600); bar.style.width = '30%'; } catch { file = rawFile; bar.style.width = '30%'; }
   const formData = new FormData(); formData.append('photo', file);
   try {
     bar.style.width = '70%';
@@ -2210,7 +2210,7 @@ async function uploadRoomPhotoFile(rawFile, roomId) {
   const prog = document.getElementById(`prog-${roomId}`), bar = document.getElementById(`progbar-${roomId}`);
   if (prog) { prog.style.display = 'block'; bar.style.width = '10%'; }
   let file;
-  try { file = await autoCropImage(rawFile, 16/9, 1600); } catch { file = rawFile; }
+  try { file = await resizeImage(rawFile, 1600); } catch { file = rawFile; }
   if (bar) bar.style.width = '30%';
   const fd = new FormData(); fd.append('photo', file);
   try {
@@ -2237,6 +2237,30 @@ async function setCover(roomId, idx) {
   const res = await fetch(`/admin/api/rooms/${roomId}/photos/cover`, { method: 'PUT', headers: { ...H, 'Content-Type': 'application/json' }, body: JSON.stringify({ index: idx }) });
   if (res.ok) { toast('主封面已設定'); loadPhotos(); }
   else toast('設定失敗', 'error');
+}
+
+// ── 圖片縮放工具（不裁切，保留原始比例）──
+function resizeImage(file, maxSize = 1600) {
+  return new Promise((resolve, reject) => {
+    const img = new Image();
+    const url = URL.createObjectURL(file);
+    img.onload = () => {
+      URL.revokeObjectURL(url);
+      let dw = img.width, dh = img.height;
+      if (dw <= maxSize && dh <= maxSize) { resolve(file); return; }
+      if (dw > dh) { dh = Math.round(dh * maxSize / dw); dw = maxSize; }
+      else         { dw = Math.round(dw * maxSize / dh); dh = maxSize; }
+      const canvas = document.createElement('canvas');
+      canvas.width = dw; canvas.height = dh;
+      canvas.getContext('2d').drawImage(img, 0, 0, dw, dh);
+      canvas.toBlob(blob => {
+        if (!blob) { reject(new Error('縮放失敗')); return; }
+        resolve(new File([blob], file.name.replace(/\.[^.]+$/, '.jpg'), { type: 'image/jpeg' }));
+      }, 'image/jpeg', 0.9);
+    };
+    img.onerror = () => reject(new Error('圖片載入失敗'));
+    img.src = url;
+  });
 }
 
 // ── 圖片裁切工具 ──

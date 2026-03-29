@@ -251,29 +251,20 @@ header {
 
 .room-photo {
   width: 100%;
-  background: #111;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  font-size: 40px;
-  color: rgba(255,255,255,0.3);
   overflow: hidden;
 }
 
 .room-photo img {
   width: 100%;
-  height: auto;
-  max-height: 320px;
-  object-fit: contain;
+  height: 200px;
+  object-fit: cover;
   display: block;
-  background: #111;
 }
 
 /* 多張照片輪播 */
 .room-carousel {
   position: relative;
   width: 100%;
-  background: #111;
   overflow: hidden;
 }
 .room-carousel-track {
@@ -281,12 +272,10 @@ header {
   transition: transform 0.35s ease;
 }
 .room-carousel-track img {
-  height: auto;
-  max-height: 320px;
-  object-fit: contain;
+  height: 200px;
+  object-fit: cover;
   display: block;
   flex-shrink: 0;
-  background: #111;
 }
 .room-carousel-btn {
   position: absolute;

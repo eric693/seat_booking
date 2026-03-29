@@ -269,6 +269,66 @@ header {
   background: #111;
 }
 
+/* 多張照片輪播 */
+.room-carousel {
+  position: relative;
+  width: 100%;
+  background: #111;
+  overflow: hidden;
+}
+.room-carousel-track {
+  display: flex;
+  transition: transform 0.35s ease;
+}
+.room-carousel-track img {
+  width: 100%;
+  flex-shrink: 0;
+  height: 200px;
+  object-fit: cover;
+  display: block;
+}
+.room-carousel-btn {
+  position: absolute;
+  top: 50%;
+  transform: translateY(-50%);
+  background: rgba(0,0,0,0.45);
+  color: #fff;
+  border: none;
+  width: 28px;
+  height: 28px;
+  border-radius: 50%;
+  font-size: 14px;
+  line-height: 1;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  opacity: 0;
+  transition: opacity 0.2s;
+  z-index: 2;
+}
+.room-carousel-btn.prev { left: 6px; }
+.room-carousel-btn.next { right: 6px; }
+.room-carousel:hover .room-carousel-btn { opacity: 1; }
+.room-carousel-dots {
+  position: absolute;
+  bottom: 6px;
+  left: 50%;
+  transform: translateX(-50%);
+  display: flex;
+  gap: 5px;
+  z-index: 2;
+}
+.room-carousel-dots span {
+  width: 6px;
+  height: 6px;
+  border-radius: 50%;
+  background: rgba(255,255,255,0.5);
+  cursor: pointer;
+  transition: background 0.2s;
+}
+.room-carousel-dots span.active { background: #fff; }
+
 .room-photo-placeholder {
   width: 100%;
   height: 160px;
@@ -1697,9 +1757,22 @@ async function loadRooms() {
     grid.innerHTML = rooms.map(r => {
       const icon = ROOM_ICONS[r.room_type] || 'MR';
       const amenHTML = (r.amenities || []).map(a => `<span class="amenity-tag">${a}</span>`).join('');
-      const photoHTML = r.photo_url
-        ? `<div class="room-photo"><img src="${r.photo_url}" alt="${r.name}" onerror="this.parentElement.innerHTML='${icon}'"></div>`
-        : `<div class="room-photo-placeholder">${icon}</div>`;
+      const photos = (r.photos && r.photos.length) ? r.photos : (r.photo_url ? [r.photo_url] : []);
+      let photoHTML;
+      if (photos.length === 0) {
+        photoHTML = `<div class="room-photo-placeholder">${icon}</div>`;
+      } else if (photos.length === 1) {
+        photoHTML = `<div class="room-photo"><img src="${photos[0]}" alt="${r.name}" onerror="this.parentElement.innerHTML='<div class=room-photo-placeholder>${icon}</div>'"></div>`;
+      } else {
+        const imgs = photos.map(p => `<img src="${p}" alt="${r.name}">`).join('');
+        const dots = photos.map((_, i) => `<span class="${i===0?'active':''}" onclick="carouselDot(event,this,${r.id})"></span>`).join('');
+        photoHTML = `<div class="room-carousel" id="carousel-${r.id}">
+          <div class="room-carousel-track">${imgs}</div>
+          <button class="room-carousel-btn prev" onclick="carouselMove(event,${r.id},-1)">&#8249;</button>
+          <button class="room-carousel-btn next" onclick="carouselMove(event,${r.id},1)">&#8250;</button>
+          <div class="room-carousel-dots">${dots}</div>
+        </div>`;
+      }
       // ★ 加上 data-min-hours
       return `
         <div class="room-card"
@@ -1726,6 +1799,30 @@ async function loadRooms() {
   } catch (e) {
     document.getElementById('roomsGrid').innerHTML = '<div style="grid-column:1/-1;padding:40px;text-align:center;color:red;">載入失敗，請重新整理</div>';
   }
+}
+
+function carouselMove(e, roomId, dir) {
+  e.stopPropagation();
+  const carousel = document.getElementById('carousel-' + roomId);
+  const track = carousel.querySelector('.room-carousel-track');
+  const dots = carousel.querySelectorAll('.room-carousel-dots span');
+  const total = track.children.length;
+  let cur = Math.round(track._offset || 0);
+  cur = (cur + dir + total) % total;
+  track._offset = cur;
+  track.style.transform = `translateX(-${cur * 100}%)`;
+  dots.forEach((d, i) => d.classList.toggle('active', i === cur));
+}
+
+function carouselDot(e, dot, roomId) {
+  e.stopPropagation();
+  const carousel = document.getElementById('carousel-' + roomId);
+  const track = carousel.querySelector('.room-carousel-track');
+  const dots = carousel.querySelectorAll('.room-carousel-dots span');
+  const idx = Array.from(dots).indexOf(dot);
+  track._offset = idx;
+  track.style.transform = `translateX(-${idx * 100}%)`;
+  dots.forEach((d, i) => d.classList.toggle('active', i === idx));
 }
 
 function selectRoom(el) {

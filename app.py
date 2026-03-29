@@ -4011,10 +4011,10 @@ def _member_session_check():
 @app.route('/api/members/register', methods=['POST'])
 def member_register():
     d = request.get_json() or {}
-    name  = d.get('name', '').strip()
-    email = d.get('email', '').strip().lower()
-    phone = d.get('phone', '').strip().replace('-', '').replace(' ', '')
-    pw    = d.get('password', '').strip()
+    name  = (d.get('name') or '').strip()
+    email = (d.get('email') or '').strip().lower()
+    phone = (d.get('phone') or '').strip().replace('-', '').replace(' ', '')
+    pw    = (d.get('password') or '').strip()
 
     if not name:
         return jsonify({'error': '請填寫姓名'}), 400

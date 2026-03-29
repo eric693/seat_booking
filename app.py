@@ -3239,7 +3239,10 @@ def admin_delete_room(rid):
     err = check_admin()
     if err: return err
     room = Room.query.get_or_404(rid)
-    room.is_active = False
+    active_bookings = Booking.query.filter_by(room_id=rid, status='confirmed').count()
+    if active_bookings > 0:
+        return jsonify({'success': False, 'error': f'此會議室有 {active_bookings} 筆待確認預約，請先取消或完成後再刪除。'}), 400
+    db.session.delete(room)
     db.session.commit()
     return jsonify({'success': True})
 

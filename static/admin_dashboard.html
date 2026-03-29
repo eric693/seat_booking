@@ -1822,6 +1822,7 @@ async function loadRoomsAdmin() {
           <div class="rac-actions">
             <button class="btn btn-outline btn-sm" onclick="editRoom(${r.id})" style="flex:1;">編輯</button>
             <button class="btn btn-outline btn-sm" onclick="toggleRoomStatus(${r.id}, ${!r.is_active})">${r.is_active ? '停用' : '啟用'}</button>
+            <button class="btn btn-sm" onclick="deleteRoom(${r.id}, '${r.name.replace(/'/g, '\\\'')}')" style="background:#C44B3A;color:#fff;border:none;">刪除</button>
           </div>
         </div>
       </div>`;
@@ -1833,6 +1834,14 @@ async function toggleRoomStatus(id, newActive) {
   const res = await fetch(`/admin/api/rooms/${id}`, { method: 'PUT', headers: { ...H, 'Content-Type': 'application/json' }, body: JSON.stringify({ is_active: newActive }) });
   if (res.ok) { toast(newActive ? '已啟用' : '已停用'); loadRoomsAdmin(); }
   else toast('操作失敗', 'error');
+}
+
+async function deleteRoom(id, name) {
+  if (!confirm(`確定要永久刪除「${name}」嗎？\n此操作無法復原，相關預約紀錄將一併移除。`)) return;
+  const res = await fetch(`/admin/api/rooms/${id}`, { method: 'DELETE', headers: H });
+  const data = await res.json();
+  if (res.ok) { toast('會議室已刪除'); loadRoomsAdmin(); }
+  else toast(data.error || '刪除失敗', 'error');
 }
 
 // ── ROOM MODAL ──

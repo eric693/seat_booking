@@ -1801,28 +1801,30 @@ async function loadRooms() {
   }
 }
 
+function carouselGoto(carousel, idx) {
+  const track = carousel.querySelector('.room-carousel-track');
+  const dots = carousel.querySelectorAll('.room-carousel-dots span');
+  const total = track.children.length;
+  track._cur = idx;
+  // translateX % 是相對 track 自身寬度（= total 張），需除以 total
+  track.style.transform = `translateX(-${idx * 100 / total}%)`;
+  dots.forEach((d, i) => d.classList.toggle('active', i === idx));
+}
+
 function carouselMove(e, roomId, dir) {
   e.stopPropagation();
   const carousel = document.getElementById('carousel-' + roomId);
   const track = carousel.querySelector('.room-carousel-track');
-  const dots = carousel.querySelectorAll('.room-carousel-dots span');
   const total = track.children.length;
-  let cur = Math.round(track._offset || 0);
-  cur = (cur + dir + total) % total;
-  track._offset = cur;
-  track.style.transform = `translateX(-${cur * 100}%)`;
-  dots.forEach((d, i) => d.classList.toggle('active', i === cur));
+  const cur = ((track._cur || 0) + dir + total) % total;
+  carouselGoto(carousel, cur);
 }
 
 function carouselDot(e, dot, roomId) {
   e.stopPropagation();
   const carousel = document.getElementById('carousel-' + roomId);
-  const track = carousel.querySelector('.room-carousel-track');
   const dots = carousel.querySelectorAll('.room-carousel-dots span');
-  const idx = Array.from(dots).indexOf(dot);
-  track._offset = idx;
-  track.style.transform = `translateX(-${idx * 100}%)`;
-  dots.forEach((d, i) => d.classList.toggle('active', i === idx));
+  carouselGoto(carousel, Array.from(dots).indexOf(dot));
 }
 
 function selectRoom(el) {

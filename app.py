@@ -65,10 +65,10 @@ GOOGLE_CLIENT_ID     = os.environ.get('GOOGLE_CLIENT_ID', '')
 GOOGLE_CLIENT_SECRET = os.environ.get('GOOGLE_CLIENT_SECRET', '')
 GOOGLE_REFRESH_TOKEN = os.environ.get('GOOGLE_REFRESH_TOKEN', '')
 USE_GMAIL_API  = bool(GOOGLE_CLIENT_ID and GOOGLE_CLIENT_SECRET and GOOGLE_REFRESH_TOKEN)
-USE_SENDGRID   = bool(SENDGRID_API_KEY) and not USE_GMAIL_API
-USE_GMAIL      = bool(GMAIL_USER and GMAIL_APP_PASS) and not USE_GMAIL_API and not USE_SENDGRID
-USE_RESEND     = bool(RESEND_API_KEY)
-USE_EMAIL      = USE_GMAIL_API or USE_SENDGRID or USE_RESEND or USE_GMAIL
+USE_GMAIL      = bool(GMAIL_USER and GMAIL_APP_PASS) and not USE_GMAIL_API
+USE_SENDGRID   = bool(SENDGRID_API_KEY) and not USE_GMAIL_API and not USE_GMAIL
+USE_RESEND     = bool(RESEND_API_KEY) and not USE_GMAIL_API and not USE_GMAIL and not USE_SENDGRID
+USE_EMAIL      = USE_GMAIL_API or USE_GMAIL or USE_SENDGRID or USE_RESEND
 
 # ── TwSMS 簡訊（台灣本地，穩定）────────────────────
 TWSMS_USER = os.environ.get('TWSMS_USER', '')
@@ -134,7 +134,7 @@ def reply_line(reply_token: str, messages: list):
 # ─────────────────────────────────────────────
 
 def send_email(to_addr: str, subject: str, body_html: str) -> bool:
-    """寄送 HTML 信件：Gmail API > Resend > SendGrid > Gmail SMTP。回傳 True 表示成功。"""
+    """寄送 HTML 信件：Gmail API > Gmail SMTP > SendGrid > Resend。回傳 True 表示成功。"""
     if not to_addr:
         return False
     if USE_GMAIL_API:
@@ -143,17 +143,17 @@ def send_email(to_addr: str, subject: str, body_html: str) -> bool:
             return True
         except Exception as e:
             print(f'[Gmail API] 失敗，自動切換備援：{e}')
-            if USE_RESEND:
-                print('[Email] 切換至 Resend 備援')
-                return _send_via_resend(to_addr, subject, body_html)
-            elif USE_SENDGRID:
+            if USE_SENDGRID:
                 return _send_via_sendgrid(to_addr, subject, body_html)
-    if USE_RESEND:
-        return _send_via_resend(to_addr, subject, body_html)
+            elif USE_RESEND:
+                return _send_via_resend(to_addr, subject, body_html)
+            return False
+    if USE_GMAIL:
+        return _send_via_gmail(to_addr, subject, body_html)
     elif USE_SENDGRID:
         return _send_via_sendgrid(to_addr, subject, body_html)
-    elif USE_GMAIL:
-        return _send_via_gmail(to_addr, subject, body_html)
+    elif USE_RESEND:
+        return _send_via_resend(to_addr, subject, body_html)
     else:
         print('[Email] 未設定任何 Email 服務，略過寄信')
         return False
@@ -280,27 +280,46 @@ def _send_via_resend(to_addr: str, subject: str, body_html: str) -> bool:
 
 
 def _send_via_gmail(to_addr: str, subject: str, body_html: str) -> bool:
-    """透過 Gmail SMTP SSL 寄信（備用）
-    注意：Render 免費方案封鎖 outbound SMTP（port 465/587），此方法無法在 Render 上使用。
-    請改用 SendGrid（HTTP API）。
+    """透過 Gmail SMTP 寄信（SSL port 465，失敗自動改 STARTTLS port 587）
+    需在 Gmail 帳號開啟「應用程式密碼」，並設定環境變數：
+      GMAIL_USER     = yourname@gmail.com
+      GMAIL_APP_PASS = 16 碼應用程式密碼（非 Gmail 登入密碼）
+    注意：Render 免費方案封鎖 SMTP，請改用 Gmail API（設定 OAuth2 三個環境變數）。
     """
     import smtplib
     from email.mime.multipart import MIMEMultipart
     from email.mime.text import MIMEText
     from_addr = MAIL_FROM or GMAIL_USER
-    try:
+
+    def _build_msg():
         msg = MIMEMultipart('alternative')
         msg['Subject'] = subject
         msg['From']    = from_addr
         msg['To']      = to_addr
         msg.attach(MIMEText(body_html, 'html', 'utf-8'))
+        return msg
+
+    # 先嘗試 SSL port 465
+    try:
         with smtplib.SMTP_SSL('smtp.gmail.com', 465, timeout=15) as s:
             s.login(GMAIL_USER, GMAIL_APP_PASS)
-            s.sendmail(from_addr, to_addr, msg.as_string())
-        print(f'[Gmail] sent to {to_addr}')
+            s.sendmail(from_addr, to_addr, _build_msg().as_string())
+        print(f'[Gmail SMTP/465] sent to {to_addr}')
         return True
     except Exception as e:
-        print(f'[Gmail error] {e}')
+        print(f'[Gmail SMTP/465] 失敗，改試 port 587：{e}')
+
+    # 備用：STARTTLS port 587
+    try:
+        with smtplib.SMTP('smtp.gmail.com', 587, timeout=15) as s:
+            s.ehlo()
+            s.starttls()
+            s.login(GMAIL_USER, GMAIL_APP_PASS)
+            s.sendmail(from_addr, to_addr, _build_msg().as_string())
+        print(f'[Gmail SMTP/587] sent to {to_addr}')
+        return True
+    except Exception as e:
+        print(f'[Gmail SMTP/587] 失敗：{e}')
         return False
 
 

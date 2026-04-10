@@ -2064,6 +2064,7 @@ def _sess(lu) -> dict:
 
 
 def _save_sess(lu, data: dict):
+    data['last_step_at'] = tw_now().isoformat()
     lu.booking_session = json.dumps(data, ensure_ascii=False)
     db.session.commit()
 
@@ -2433,13 +2434,36 @@ def flex_confirm_booking(sess: dict) -> dict:
 # 預約對話流程主控制器
 # ─────────────────────────────────────────────
 
+_BOOKING_TIMEOUT_SECS = 120  # 2 分鐘無操作自動結束預約流程
+
 def _handle_booking_flow(uid: str, rtok: str, text: str, lu):
     """
     回傳 True 表示訊息已被預約流程處理，False 表示不在流程中
     """
     import re as _re
+    from datetime import datetime as _dt
     sess = _sess(lu)
     step = sess.get('step', '')
+
+    # ── 超時檢查：2 分鐘內沒有操作，自動結束預約流程 ──
+    if step:
+        last_at_str = sess.get('last_step_at', '')
+        timed_out = False
+        if last_at_str:
+            try:
+                last_at = _dt.fromisoformat(last_at_str)
+                elapsed = (tw_now() - last_at).total_seconds()
+                if elapsed > _BOOKING_TIMEOUT_SECS:
+                    timed_out = True
+            except Exception:
+                timed_out = True  # 無法解析時間，視為超時
+        else:
+            timed_out = True  # 舊 session 沒有時間戳，視為超時
+        if timed_out:
+            _clear_sess(lu)
+            reply_line(rtok, [{'type': 'text',
+                'text': '預約流程已逾時（超過 2 分鐘），已自動結束。\n如需重新預約請點選「預約」，或直接輸入問題由 AI 為您解答。'}])
+            return True
 
     # ── 全域指令：不論 session 狀態都不攔截，交給一般 handler ──
     GLOBAL_CMDS = ('說明', 'help', '指令', '?', '？', '選單', 'menu',

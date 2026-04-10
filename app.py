@@ -133,31 +133,30 @@ def reply_line(reply_token: str, messages: list):
 # Gmail + SMS Helpers
 # ─────────────────────────────────────────────
 
-def send_email(to_addr: str, subject: str, body_html: str):
-    """寄送 HTML 信件：Gmail API > Resend > SendGrid > Gmail SMTP"""
+def send_email(to_addr: str, subject: str, body_html: str) -> bool:
+    """寄送 HTML 信件：Gmail API > Resend > SendGrid > Gmail SMTP。回傳 True 表示成功。"""
     if not to_addr:
-        return
+        return False
     if USE_GMAIL_API:
         try:
             _send_via_gmail_api(to_addr, subject, body_html)
-            return
+            return True
         except Exception as e:
             print(f'[Gmail API] 失敗，自動切換備援：{e}')
             if USE_RESEND:
                 print('[Email] 切換至 Resend 備援')
-                _send_via_resend(to_addr, subject, body_html)
-                return
+                return _send_via_resend(to_addr, subject, body_html)
             elif USE_SENDGRID:
-                _send_via_sendgrid(to_addr, subject, body_html)
-                return
+                return _send_via_sendgrid(to_addr, subject, body_html)
     if USE_RESEND:
-        _send_via_resend(to_addr, subject, body_html)
+        return _send_via_resend(to_addr, subject, body_html)
     elif USE_SENDGRID:
-        _send_via_sendgrid(to_addr, subject, body_html)
+        return _send_via_sendgrid(to_addr, subject, body_html)
     elif USE_GMAIL:
-        _send_via_gmail(to_addr, subject, body_html)
+        return _send_via_gmail(to_addr, subject, body_html)
     else:
         print('[Email] 未設定任何 Email 服務，略過寄信')
+        return False
 
 
 def _send_via_gmail_api(to_addr: str, subject: str, body_html: str):
@@ -210,7 +209,7 @@ def _send_via_gmail_api(to_addr: str, subject: str, body_html: str):
         raise  # 讓 send_email fallback 接手
 
 
-def _send_via_sendgrid(to_addr: str, subject: str, body_html: str):
+def _send_via_sendgrid(to_addr: str, subject: str, body_html: str) -> bool:
     """透過 SendGrid API 寄信"""
     from_addr = MAIL_FROM or 'noreply@example.com'
     payload = {
@@ -231,6 +230,7 @@ def _send_via_sendgrid(to_addr: str, subject: str, body_html: str):
         )
         if resp.status_code in (200, 202):
             print(f'[SendGrid] sent to {to_addr}')
+            return True
         else:
             print(f'[SendGrid error] {resp.status_code}: {resp.text[:500]}')
             # 403 = sender not verified; 401 = wrong API key
@@ -238,13 +238,18 @@ def _send_via_sendgrid(to_addr: str, subject: str, body_html: str):
                 print('[SendGrid] ★ 寄件人未驗證！請至 SendGrid → Settings → Sender Authentication 驗證寄件人')
             elif resp.status_code == 401:
                 print('[SendGrid] ★ API Key 錯誤，請確認 SENDGRID_API_KEY 環境變數')
+            return False
     except Exception as e:
         print(f'[SendGrid error] {e}')
+        return False
 
 
-def _send_via_resend(to_addr: str, subject: str, body_html: str):
-    """透過 Resend API 寄信（備援，API Key 不會過期）"""
-    from_addr = 'onboarding@resend.dev'  # Resend 免費版預設寄件人（無自訂網域時使用）
+def _send_via_resend(to_addr: str, subject: str, body_html: str) -> bool:
+    """透過 Resend API 寄信（備援，API Key 不會過期）
+    注意：Resend 免費版 onboarding@resend.dev 只能寄給自己帳號的 email，
+    若要寄給任意用戶請設定自訂網域，並在 MAIL_FROM 環境變數填入 your@yourdomain.com。
+    """
+    from_addr = MAIL_FROM if MAIL_FROM else 'onboarding@resend.dev'
     try:
         resp = http_requests.post(
             'https://api.resend.com/emails',
@@ -261,15 +266,20 @@ def _send_via_resend(to_addr: str, subject: str, body_html: str):
             timeout=15
         )
         data = resp.json()
-        if resp.status_code == 200 or resp.status_code == 201:
+        if resp.status_code in (200, 201):
             print(f'[Resend] 寄信成功 → {to_addr}')
+            return True
         else:
             print(f'[Resend] 寄信失敗：{data}')
+            if from_addr == 'onboarding@resend.dev':
+                print('[Resend] ★ 免費版 onboarding@resend.dev 只能寄給帳號本人，請設定 MAIL_FROM 並驗證自訂網域')
+            return False
     except Exception as e:
         print(f'[Resend] 例外錯誤：{e}')
+        return False
 
 
-def _send_via_gmail(to_addr: str, subject: str, body_html: str):
+def _send_via_gmail(to_addr: str, subject: str, body_html: str) -> bool:
     """透過 Gmail SMTP SSL 寄信（備用）
     注意：Render 免費方案封鎖 outbound SMTP（port 465/587），此方法無法在 Render 上使用。
     請改用 SendGrid（HTTP API）。
@@ -288,8 +298,10 @@ def _send_via_gmail(to_addr: str, subject: str, body_html: str):
             s.login(GMAIL_USER, GMAIL_APP_PASS)
             s.sendmail(from_addr, to_addr, msg.as_string())
         print(f'[Gmail] sent to {to_addr}')
+        return True
     except Exception as e:
         print(f'[Gmail error] {e}')
+        return False
 
 
 def send_sms(to_phone: str, body: str):
@@ -2482,7 +2494,7 @@ def _handle_booking_flow(uid: str, rtok: str, text: str, lu):
             }])
             return True
 
-        if not member.is_verified_email and member.email:
+        if member.is_verified_email is False and member.email:
             reply_line(rtok, [{'type': 'text', 'text':
                 '您的帳號尚未完成 Email 驗證，請先至信箱點擊驗證連結，完成驗證後才能預約。'}])
             return True
@@ -3022,7 +3034,7 @@ def _handle_line_text(uid, rtok, text):
                 '請確認您已在網站完成註冊，並輸入正確的手機號碼或 Email。')])
             return
 
-        if not member.is_verified_email and member.email:
+        if member.is_verified_email is False and member.email:
             reply_line(rtok, [{'type': 'text', 'text':
                 '此帳號尚未完成 Email 驗證，請先至信箱完成驗證後再綁定。'}])
             return
@@ -4134,8 +4146,8 @@ def member_login():
     if m.is_blocked:
         return jsonify({'error': f'此帳號已被停用。{("原因：" + m.block_reason) if m.block_reason else ""}'}), 403
 
-    # ③ 最後檢查 Email 是否已驗證
-    if not m.is_verified_email and m.email:
+    # ③ 最後檢查 Email 是否已驗證（NULL 表示舊帳號，視為已驗證）
+    if m.is_verified_email is False and m.email:
         return jsonify({'error': '請先至信箱點擊驗證連結，完成 Email 驗證後才能登入'}), 403
 
     session['member_id'] = m.id
@@ -4171,11 +4183,15 @@ def member_forgot_password():
         m.reset_token_expires = tw_now() + timedelta(hours=1)
         db.session.commit()
         reset_url = f"{SITE_URL}/reset-password?token={token}"
-        send_email(m.email, '【會員】重設密碼',
+        ok = send_email(m.email, '【會員】重設密碼',
             f'''<p>您好，</p>
             <p>請點擊以下連結重設密碼（1 小時內有效）：</p>
             <p><a href="{reset_url}" style="background:#2A6B6B;color:#fff;padding:12px 24px;border-radius:6px;text-decoration:none;">重設密碼</a></p>
             <p>如非本人操作請忽略此信。</p>''')
+        if ok:
+            print(f'[forgot-password] 重設信已寄出 → {m.email}')
+        else:
+            print(f'[forgot-password] ★ 重設信寄送失敗！帳號={m.email}，請確認 Email 服務環境變數是否設定正確')
     elif m and m.phone and not m.email:
         # 無 email → 用簡訊發驗證碼
         code = str(random.randint(100000, 999999))
@@ -4183,6 +4199,8 @@ def member_forgot_password():
         m.phone_code_expires = tw_now() + timedelta(minutes=10)
         db.session.commit()
         send_sms(m.phone, f'【重設密碼】驗證碼 {code}，10 分鐘內有效。')
+    elif not m:
+        print(f'[forgot-password] 查無帳號：{account}')
     return jsonify({'success': True, 'message': '若帳號存在，已發送重設連結。'})
 
 

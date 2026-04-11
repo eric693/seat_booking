@@ -3369,6 +3369,16 @@ document.addEventListener('DOMContentLoaded', function() {
   checkResetPasswordToken();
 });
 
+// BFCache 還原時（LINE in-app browser 返回頁面）強制關閉聊天視窗
+window.addEventListener('pageshow', function(e) {
+  if (e.persisted) {
+    _aiChatOpen = false;
+    const panel = document.getElementById('ai-chat-panel');
+    if (panel) panel.style.display = 'none';
+    stopChatPolling();
+  }
+});
+
 </script>
 </body>
 </html>

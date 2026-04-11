@@ -4079,10 +4079,18 @@ def member_register():
         return jsonify({'error': '請填寫 Email 或手機號碼'}), 400
 
     # 唯一性檢查
-    if email and Member.query.filter_by(email=email).first():
-        return jsonify({'error': '此 Email 已被註冊'}), 400
-    if phone and Member.query.filter_by(phone=phone).first():
-        return jsonify({'error': '此手機號碼已被註冊'}), 400
+    if email:
+        _existing_email = Member.query.filter_by(email=email).first()
+        if _existing_email:
+            if _existing_email.is_verified_email is False:
+                return jsonify({'error': '您已經註冊過，但尚未完成 Email 驗證，請至信箱點擊驗證連結後登入。'}), 400
+            return jsonify({'error': '您已經註冊過，請直接登入。'}), 400
+    if phone:
+        _existing_phone = Member.query.filter_by(phone=phone).first()
+        if _existing_phone:
+            if _existing_phone.is_verified_email is False and _existing_phone.email:
+                return jsonify({'error': '您已經註冊過，但尚未完成 Email 驗證，請至信箱點擊驗證連結後登入。'}), 400
+            return jsonify({'error': '您已經註冊過，請直接登入。'}), 400
 
     m = Member(name=name, email=email or None, phone=phone or None)
     m.set_password(pw)

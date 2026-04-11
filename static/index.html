@@ -1563,12 +1563,7 @@ footer {
     </div>
   </div>
   <!-- Quick replies -->
-  <div id="ai-quick-replies" style="padding:8px 12px;display:flex;gap:6px;flex-wrap:wrap;border-top:1px solid var(--border);">
-    <button class="ai-quick-btn" onclick="sendQuick('有哪些空間可以預約？')">查看空間</button>
-    <button class="ai-quick-btn" onclick="sendQuick('如何用LINE預約？')">LINE 預約</button>
-    <button class="ai-quick-btn" onclick="sendQuick('如何用網頁預約？')">網頁預約</button>
-    <button class="ai-quick-btn" onclick="sendQuick('費用怎麼計算？')">費用說明</button>
-  </div>
+  <div id="ai-quick-replies" style="padding:8px 12px;display:flex;gap:6px;flex-wrap:wrap;border-top:1px solid var(--border);"></div>
   <!-- Input -->
   <div style="padding:10px 12px;border-top:1px solid var(--border);display:flex;gap:8px;align-items:center;">
     <input id="ai-chat-input" type="text" placeholder="輸入問題..." maxlength="200"
@@ -1722,6 +1717,18 @@ async function loadContent() {
     const chatPanel = document.getElementById('ai-chat-panel');
     if (chatBtn)   chatBtn.style.display   = showChat ? 'flex' : 'none';
     if (chatPanel) chatPanel.style.display = 'none';
+
+    // 聊天快捷回覆按鈕
+    try {
+      const defaultQr = '[{"label":"查看空間","text":"有哪些空間可以預約？"},{"label":"LINE 預約","text":"如何用LINE預約？"},{"label":"網頁預約","text":"如何用網頁預約？"},{"label":"費用說明","text":"費用怎麼計算？"}]';
+      const qrs = JSON.parse(c.chat_quick_replies || defaultQr);
+      const qrEl = document.getElementById('ai-quick-replies');
+      if (qrEl) {
+        qrEl.innerHTML = qrs.map(q =>
+          `<button class="ai-quick-btn" onclick="sendQuick(${JSON.stringify(q.text)})">${q.label}</button>`
+        ).join('');
+      }
+    } catch(e) {}
 
     // 註冊欄位顯示控制
     const showEmail = c.reg_show_email !== '0';

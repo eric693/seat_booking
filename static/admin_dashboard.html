@@ -718,7 +718,7 @@ input[list]::-webkit-calendar-picker-indicator { display: none !important; }
       <span id="chat-unread-badge" style="display:none;background:var(--red);color:#fff;border-radius:10px;font-size:10px;font-weight:700;padding:1px 6px;margin-left:4px;"></span>
     </div>
     <div class="nav-item" onclick="showPage('lineqa',this)">
-      <span class="nav-icon"><svg width="16" height="16" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M8 2C5.2 2 3 4 3 6.5c0 1.5.7 2.8 1.8 3.7L4 13l3-1.5c.3.1.7.1 1 .1 2.8 0 5-2 5-4.5S10.8 2 8 2z"/><path d="M6 6.5h4M6 8.5h2.5" stroke-linecap="round"/></svg></span> LINE 問答設定
+      <span class="nav-icon"><svg width="16" height="16" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M8 2C5.2 2 3 4 3 6.5c0 1.5.7 2.8 1.8 3.7L4 13l3-1.5c.3.1.7.1 1 .1 2.8 0 5-2 5-4.5S10.8 2 8 2z"/><path d="M6 6.5h4M6 8.5h2.5" stroke-linecap="round"/></svg></span> Q&A 問答設定
     </div>
     <div class="nav-section">金流</div>
     <div class="nav-item" onclick="showPage('payment',this)">
@@ -1236,6 +1236,10 @@ input[list]::-webkit-calendar-picker-indicator { display: none !important; }
 
     <!-- ── LINE Q&A ── -->
     <div class="page" id="page-lineqa">
+      <div style="background:var(--teal-light);border:1px solid rgba(42,107,107,0.2);border-radius:8px;padding:12px 16px;margin-bottom:16px;font-size:13px;color:var(--teal);line-height:1.7;">
+        <strong>📌 同步說明：</strong>此頁面的 Q&A 設定同時作用於 <strong>LINE 機器人</strong> 與 <strong>網站聊天助理</strong>。
+        當訊息包含關鍵字時，系統會優先回覆設定內容，不呼叫 AI，兩個管道完全共用同一份設定。
+      </div>
       <div class="card" style="margin-bottom:20px;">
         <div class="card-head">
           <div class="card-title">新增 Q&A 自動回覆</div>
@@ -1253,7 +1257,7 @@ input[list]::-webkit-calendar-picker-indicator { display: none !important; }
           </div>
           <div style="margin-bottom:12px;">
             <label style="font-size:12px;color:var(--ink-60);display:block;margin-bottom:4px;">回覆內容</label>
-            <textarea class="finput" id="qa-reply" rows="4" placeholder="輸入 LINE 自動回覆的文字內容..." style="padding:8px;resize:vertical;width:100%;"></textarea>
+            <textarea class="finput" id="qa-reply" rows="4" placeholder="輸入自動回覆的文字內容（LINE 與網站聊天同時使用）..." style="padding:8px;resize:vertical;width:100%;"></textarea>
           </div>
           <div style="display:flex;align-items:center;gap:12px;">
             <button class="btn btn-primary" onclick="addLineQA()">+ 新增</button>
@@ -1270,7 +1274,7 @@ input[list]::-webkit-calendar-picker-indicator { display: none !important; }
           </div>
         </div>
         <div class="card-body">
-          <p style="font-size:13px;color:var(--ink-60);margin-bottom:16px;">當 LINE 用戶訊息包含關鍵字時，系統會優先回覆設定的內容，不會交給 AI 處理。</p>
+          <p style="font-size:13px;color:var(--ink-60);margin-bottom:16px;">當用戶訊息包含關鍵字時，系統會優先回覆設定的內容（LINE 機器人與網站聊天助理皆適用），不會交給 AI 處理。</p>
           <div id="qa-list"><div style="text-align:center;padding:40px;color:var(--ink-60);">載入中...</div></div>
         </div>
       </div>

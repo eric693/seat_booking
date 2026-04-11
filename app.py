@@ -4494,20 +4494,38 @@ def ai_chat():
     """AI 預約助理 - 使用 OpenAI API"""
     if not OPENAI_API_KEY:
         return jsonify({'error': 'AI 助理尚未設定，請聯繫管理員。'}), 503
- 
+
     data = request.get_json()
     messages = data.get('messages', [])
     system_prompt = data.get('system', '')
- 
+
     # 限制 messages 長度，避免 token 過多
     messages = messages[-10:]  # 最多保留最近 10 則
- 
+
     # 驗證格式
     for m in messages:
         if m.get('role') not in ('user', 'assistant'):
             return jsonify({'error': '訊息格式錯誤'}), 400
         if len(str(m.get('content', ''))) > 500:
             return jsonify({'error': '訊息過長'}), 400
+
+    # ── 優先比對後台 Q&A 關鍵字（與 LINE bot 共用同一份設定）──
+    last_user_text = ''
+    for m in reversed(messages):
+        if m.get('role') == 'user':
+            last_user_text = str(m.get('content', ''))
+            break
+    if last_user_text:
+        try:
+            qa_items = LineQA.query.filter_by(is_active=True).order_by(
+                LineQA.sort_order, LineQA.id).all()
+            for qa in qa_items:
+                for kw in qa.keywords.split(','):
+                    kw = kw.strip()
+                    if kw and kw in last_user_text:
+                        return jsonify({'reply': qa.reply})
+        except Exception as e:
+            print(f'[web ai-chat Q&A match error] {e}')
  
     payload = {
         'model': 'gpt-4o-mini',

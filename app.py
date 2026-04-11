@@ -3865,6 +3865,28 @@ def admin_delete_account(uid):
     db.session.commit()
     return jsonify({'success': True})
 
+@app.route('/admin/api/bookings/<int:bid>', methods=['PATCH'])
+def admin_update_booking(bid):
+    err = check_admin()
+    if err: return err
+    b = Booking.query.get_or_404(bid)
+    d = request.get_json() or {}
+    if 'customer_name'  in d: b.customer_name  = (d['customer_name'] or '').strip()
+    if 'customer_phone' in d: b.customer_phone = (d['customer_phone'] or '').strip()
+    if 'customer_email' in d: b.customer_email = (d['customer_email'] or '').strip() or None
+    if 'department'     in d: b.department     = (d['department'] or '').strip() or None
+    if 'date'           in d: b.date           = (d['date'] or '').strip()
+    if 'start_time'     in d: b.start_time     = (d['start_time'] or '').strip()
+    if 'end_time'       in d: b.end_time       = (d['end_time'] or '').strip()
+    if 'attendees'      in d: b.attendees      = int(d['attendees'] or 1)
+    if 'purpose'        in d: b.purpose        = (d['purpose'] or '').strip() or None
+    if 'note'           in d: b.note           = (d['note'] or '').strip() or None
+    if 'room_id'        in d and d['room_id']:  b.room_id = int(d['room_id'])
+    if 'total_price'    in d: b.total_price    = int(d['total_price'] or 0)
+    db.session.commit()
+    return jsonify({'success': True, 'booking': b.to_dict()})
+
+
 @app.route('/admin/api/bookings/<int:bid>', methods=['DELETE'])
 def admin_delete_booking(bid):
     err = check_admin()

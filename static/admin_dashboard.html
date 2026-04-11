@@ -1452,6 +1452,32 @@ input[list]::-webkit-calendar-picker-indicator { display: none !important; }
   </div>
 </div>
 
+<!-- Booking Edit Modal -->
+<div class="modal" id="bookingEditModal">
+  <div class="modal-box" style="max-width:600px;">
+    <div class="modal-title">編輯預約</div>
+    <input type="hidden" id="bm-id">
+    <div class="fgrid">
+      <div class="fg"><label>聯絡人姓名</label><input class="finput" type="text" id="bm-name"></div>
+      <div class="fg"><label>聯絡電話</label><input class="finput" type="tel" id="bm-phone"></div>
+      <div class="fg"><label>Email</label><input class="finput" type="email" id="bm-email" placeholder="（選填）"></div>
+      <div class="fg"><label>部門 / 單位</label><input class="finput" type="text" id="bm-dept" placeholder="（選填）"></div>
+      <div class="fg"><label>會議室</label><select class="fselect" id="bm-room"></select></div>
+      <div class="fg"><label>日期</label><input class="finput" type="date" id="bm-date"></div>
+      <div class="fg"><label>開始時間</label><input class="finput" type="time" id="bm-start"></div>
+      <div class="fg"><label>結束時間</label><input class="finput" type="time" id="bm-end"></div>
+      <div class="fg"><label>人數</label><input class="finput" type="number" id="bm-attendees" min="1"></div>
+      <div class="fg"><label>金額（NT$）</label><input class="finput" type="number" id="bm-price" min="0"></div>
+    </div>
+    <div class="fg" style="margin-top:12px;"><label>使用目的</label><textarea class="ftarea" id="bm-purpose" rows="2" placeholder="（選填）"></textarea></div>
+    <div class="fg" style="margin-top:12px;"><label>備註</label><textarea class="ftarea" id="bm-note" rows="2" placeholder="（選填）"></textarea></div>
+    <div class="modal-footer">
+      <button class="btn btn-outline" onclick="closeBookingEditModal()">取消</button>
+      <button class="btn btn-primary" onclick="saveBookingEdit()">儲存變更</button>
+    </div>
+  </div>
+</div>
+
 <!-- Room Modal -->
 <div class="modal" id="roomModal">
   <div class="modal-box">
@@ -1774,10 +1800,75 @@ async function loadBookings() {
       <td>${badgeHtml(b.status)}</td>
       <td><div style="display:flex;gap:4px;flex-wrap:wrap;">
         ${b.status === 'confirmed' ? `<button class="btn btn-outline btn-sm" onclick="completeBooking(${b.id})">完成</button><button class="btn btn-danger btn-sm" onclick="cancelBooking(${b.id})">取消</button>` : ''}
+        <button class="btn btn-outline btn-sm" onclick="openBookingEditModal(${b.id})" style="border-color:var(--teal);color:var(--teal);">編輯</button>
         <button class="btn btn-danger btn-sm" onclick="deleteBooking(${b.id})" style="opacity:0.7;">刪除</button>
       </div></td>
     </tr>`).join('');
   } catch(e) { console.error(e); }
+}
+
+// ── Booking Edit Modal ──
+async function openBookingEditModal(id) {
+  if (!allRooms.length) { const rr = await fetch('/admin/api/rooms', { headers: H }); allRooms = await rr.json(); }
+  const res = await fetch(`/admin/api/bookings?q=`, { headers: H });
+  const all = await res.json();
+  const b = all.find(x => x.id === id);
+  if (!b) { toast('找不到預約資料', 'error'); return; }
+
+  document.getElementById('bm-id').value       = b.id;
+  document.getElementById('bm-name').value     = b.customer_name || '';
+  document.getElementById('bm-phone').value    = b.customer_phone || '';
+  document.getElementById('bm-email').value    = b.customer_email || '';
+  document.getElementById('bm-dept').value     = b.department || '';
+  document.getElementById('bm-date').value     = b.date || '';
+  document.getElementById('bm-start').value    = b.start_time || '';
+  document.getElementById('bm-end').value      = b.end_time || '';
+  document.getElementById('bm-attendees').value= b.attendees || 1;
+  document.getElementById('bm-price').value    = b.total_price || 0;
+  document.getElementById('bm-purpose').value  = b.purpose || '';
+  document.getElementById('bm-note').value     = b.note || '';
+
+  const sel = document.getElementById('bm-room');
+  sel.innerHTML = allRooms.map(r => `<option value="${r.id}"${r.id === b.room_id ? ' selected' : ''}>${r.name}</option>`).join('');
+
+  document.getElementById('bookingEditModal').classList.add('show');
+}
+
+function closeBookingEditModal() {
+  document.getElementById('bookingEditModal').classList.remove('show');
+}
+
+async function saveBookingEdit() {
+  const id = document.getElementById('bm-id').value;
+  const payload = {
+    customer_name:  document.getElementById('bm-name').value.trim(),
+    customer_phone: document.getElementById('bm-phone').value.trim(),
+    customer_email: document.getElementById('bm-email').value.trim(),
+    department:     document.getElementById('bm-dept').value.trim(),
+    room_id:        document.getElementById('bm-room').value,
+    date:           document.getElementById('bm-date').value,
+    start_time:     document.getElementById('bm-start').value,
+    end_time:       document.getElementById('bm-end').value,
+    attendees:      document.getElementById('bm-attendees').value,
+    total_price:    document.getElementById('bm-price').value,
+    purpose:        document.getElementById('bm-purpose').value.trim(),
+    note:           document.getElementById('bm-note').value.trim(),
+  };
+  if (!payload.customer_name || !payload.customer_phone || !payload.date || !payload.start_time || !payload.end_time) {
+    toast('姓名、電話、日期、時間為必填', 'error'); return;
+  }
+  const res = await fetch(`/admin/api/bookings/${id}`, {
+    method: 'PATCH', headers: { ...H, 'Content-Type': 'application/json' },
+    body: JSON.stringify(payload)
+  });
+  if (res.ok) {
+    toast('預約已更新');
+    closeBookingEditModal();
+    loadBookings();
+    loadDashboardBookings();
+  } else {
+    toast('儲存失敗', 'error');
+  }
 }
 
 async function cancelBooking(id) {

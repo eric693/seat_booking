@@ -1725,7 +1725,7 @@ async function loadContent() {
       const qrEl = document.getElementById('ai-quick-replies');
       if (qrEl) {
         qrEl.innerHTML = qrs.map(q =>
-          `<button class="ai-quick-btn" onclick="sendQuick(${JSON.stringify(q.text)})">${q.label}</button>`
+          `<button class="ai-quick-btn" onclick="sendQuick(${JSON.stringify(q.text).replace(/"/g, '&quot;')})">${q.label}</button>`
         ).join('');
       }
     } catch(e) {}

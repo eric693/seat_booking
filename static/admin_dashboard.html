@@ -1266,15 +1266,9 @@ input[list]::-webkit-calendar-picker-indicator { display: none !important; }
           <div class="card-title">新增 Q&A 自動回覆</div>
         </div>
         <div class="card-body">
-          <div style="display:grid;grid-template-columns:1fr 1fr;gap:12px;margin-bottom:12px;">
-            <div>
-              <label style="font-size:12px;color:var(--ink-60);display:block;margin-bottom:4px;">關鍵字 <span style="color:var(--ink-40);font-size:11px;">（多個關鍵字用逗號分隔，如：費用,多少錢,價格）</span></label>
-              <input type="text" class="finput" id="qa-keywords" placeholder="例：費用,價格,多少錢" style="padding:8px;">
-            </div>
-            <div>
-              <label style="font-size:12px;color:var(--ink-60);display:block;margin-bottom:4px;">優先順序 <span style="color:var(--ink-40);font-size:11px;">（數字越小越優先）</span></label>
-              <input type="number" class="finput" id="qa-order" value="10" min="1" style="padding:8px;">
-            </div>
+          <div style="margin-bottom:12px;">
+            <label style="font-size:12px;color:var(--ink-60);display:block;margin-bottom:4px;">關鍵字 <span style="color:var(--ink-40);font-size:11px;">（多個關鍵字用逗號分隔，如：費用,多少錢,價格）</span></label>
+            <input type="text" class="finput" id="qa-keywords" placeholder="例：費用,價格,多少錢" style="padding:8px;">
           </div>
           <div style="margin-bottom:12px;">
             <label style="font-size:12px;color:var(--ink-60);display:block;margin-bottom:4px;">回覆內容</label>
@@ -3709,7 +3703,6 @@ function applyQaExample(idx) {
   const ex = QA_EXAMPLES[idx];
   document.getElementById('qa-keywords').value = ex.keywords;
   document.getElementById('qa-reply').value    = ex.reply;
-  document.getElementById('qa-order').value    = ex.order;
   // 捲動到新增表單
   document.getElementById('qa-keywords').scrollIntoView({ behavior: 'smooth', block: 'center' });
   document.getElementById('qa-keywords').focus();
@@ -3732,7 +3725,6 @@ async function loadLineQA() {
           <div style="flex:1;">
             <div style="display:flex;align-items:center;gap:8px;margin-bottom:8px;flex-wrap:wrap;">
               ${q.keywords.split(',').map(k => `<span style="background:var(--teal-light);color:var(--teal);border-radius:20px;padding:2px 10px;font-size:12px;font-weight:600;">${k.trim()}</span>`).join('')}
-              <span style="font-size:11px;color:var(--ink-60);margin-left:4px;">優先度 ${q.sort_order}</span>
               <span style="font-size:11px;padding:2px 8px;border-radius:10px;background:${q.is_active?'#e8f5e9':'#fce4ec'};color:${q.is_active?'#2e7d32':'#c62828'};">
                 ${q.is_active ? '啟用中' : '已停用'}
               </span>
@@ -3757,19 +3749,17 @@ async function loadLineQA() {
 async function addLineQA() {
   const keywords = document.getElementById('qa-keywords').value.trim();
   const reply    = document.getElementById('qa-reply').value.trim();
-  const order    = parseInt(document.getElementById('qa-order').value) || 10;
   const status   = document.getElementById('qa-add-status');
   if (!keywords) { toast('請填寫關鍵字', 'error'); return; }
   if (!reply)    { toast('請填寫回覆內容', 'error'); return; }
   const res = await fetch('/admin/api/line-qa', {
     method: 'POST', headers: { ...H, 'Content-Type': 'application/json' },
-    body: JSON.stringify({ keywords, reply, sort_order: order })
+    body: JSON.stringify({ keywords, reply, sort_order: 10 })
   });
   if (res.ok) {
     toast('Q&A 已新增', 'success');
     document.getElementById('qa-keywords').value = '';
     document.getElementById('qa-reply').value = '';
-    document.getElementById('qa-order').value = '10';
     loadLineQA();
   } else {
     toast('新增失敗', 'error');
@@ -3805,11 +3795,10 @@ function editLineQA(id, btn) {
   addBtn.onclick = async () => {
     const newKeywords = document.getElementById('qa-keywords').value.trim();
     const newReply    = document.getElementById('qa-reply').value.trim();
-    const newOrder    = parseInt(document.getElementById('qa-order').value) || 10;
     if (!newKeywords || !newReply) { toast('請填寫關鍵字與回覆', 'error'); return; }
     const res = await fetch(`/admin/api/line-qa/${id}`, {
       method: 'PUT', headers: { ...H, 'Content-Type': 'application/json' },
-      body: JSON.stringify({ keywords: newKeywords, reply: newReply, sort_order: newOrder })
+      body: JSON.stringify({ keywords: newKeywords, reply: newReply })
     });
     if (res.ok) {
       toast('已更新', 'success');
@@ -3817,7 +3806,6 @@ function editLineQA(id, btn) {
       addBtn.onclick = addLineQA;
       document.getElementById('qa-keywords').value = '';
       document.getElementById('qa-reply').value = '';
-      document.getElementById('qa-order').value = '10';
       loadLineQA();
     }
   };

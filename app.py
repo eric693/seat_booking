@@ -1839,6 +1839,9 @@ def get_site_content():
             'reg_show_email', 'reg_show_phone', 'show_chat_widget']
 
     data = {k: SiteContent.get(k) for k in keys}
+    # chat_quick_replies：若未設定則回傳預設值
+    data['chat_quick_replies'] = SiteContent.get('chat_quick_replies') or \
+        '[{"label":"查看空間","text":"有哪些空間可以預約？"},{"label":"LINE 預約","text":"如何用LINE預約？"},{"label":"網頁預約","text":"如何用網頁預約？"},{"label":"費用說明","text":"費用怎麼計算？"}]'
     # form_fields：若未設定則回傳預設值
     data['form_fields'] = SiteContent.get('form_fields') or """[{\"id\": \"name\", \"label\": \"聯絡人姓名\", \"type\": \"text\", \"placeholder\": \"請輸入姓名\", \"required\": true, \"system\": true, \"full\": false}, {\"id\": \"phone\", \"label\": \"手機號碼\", \"type\": \"tel\", \"placeholder\": \"0912345678\", \"required\": true, \"system\": true, \"full\": false}, {\"id\": \"email\", \"label\": \"Email\", \"type\": \"email\", \"placeholder\": \"your@email.com\", \"required\": true, \"system\": true, \"full\": false, \"hint\": \"必填，接收確認信\"}, {\"id\": \"department\", \"label\": \"部門／公司\", \"type\": \"text\", \"placeholder\": \"例：行銷部\", \"required\": false, \"system\": true, \"full\": false}, {\"id\": \"attendees\", \"label\": \"預計出席人數\", \"type\": \"select\", \"options\": \"1,2,3,4,5,6,8,10,15,20,30,50\", \"required\": false, \"system\": true, \"full\": false}, {\"id\": \"purpose\", \"label\": \"會議類型\", \"type\": \"select\", \"options\": \"部門會議,客戶洽談,員工培訓,產品發表,視訊會議,腦力激盪,其他\", \"required\": false, \"system\": true, \"full\": false}, {\"id\": \"note\", \"label\": \"備註\", \"type\": \"textarea\", \"placeholder\": \"特殊需求或注意事項...\", \"required\": false, \"system\": true, \"full\": true}]"""
     return jsonify(data)

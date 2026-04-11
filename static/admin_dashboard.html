@@ -927,6 +927,15 @@ input[list]::-webkit-calendar-picker-indicator { display: none !important; }
                 <p style="font-size:12px;color:var(--ink-60);margin-top:10px;">關閉後，前台右下角的聊天按鈕將隱藏。</p>
               </div>
             </div>
+            <!-- 聊天助理快捷回覆按鈕 -->
+            <div class="content-section" style="grid-column:1/-1;">
+              <div class="cs-head">聊天助理快捷回覆按鈕</div>
+              <div class="cs-body">
+                <p style="font-size:12px;color:var(--ink-60);margin-bottom:14px;">設定聊天視窗下方的快捷按鈕，最多 6 個。「按鈕文字」為顯示名稱；「點擊發送訊息」為使用者點擊後自動傳送的問句。</p>
+                <div id="quick-reply-list" style="display:flex;flex-direction:column;gap:10px;margin-bottom:12px;"></div>
+                <button type="button" onclick="addQuickReplyRow()" style="background:var(--teal-light);color:var(--teal);border:1px solid var(--teal);border-radius:6px;padding:6px 16px;font-size:13px;cursor:pointer;font-family:inherit;font-weight:500;">＋ 新增按鈕</button>
+              </div>
+            </div>
             <div class="content-section" style="grid-column:1/-1;">
               <div class="cs-head">預約須知（最多 5 條）</div>
               <div class="cs-body">
@@ -2081,6 +2090,35 @@ function setSwitchState(id, checked) {
   if (knob) knob.style.transform = checked ? 'translateX(20px)' : 'translateX(0)';
 }
 
+// ── QUICK REPLY HELPERS ──
+function addQuickReplyRow(label = '', text = '') {
+  const list = document.getElementById('quick-reply-list');
+  if (!list) return;
+  if (list.children.length >= 6) { toast('最多 6 個快捷按鈕', 'error'); return; }
+  const idx = Date.now();
+  const row = document.createElement('div');
+  row.style.cssText = 'display:flex;gap:8px;align-items:center;';
+  row.innerHTML = `
+    <input class="finput" type="text" placeholder="按鈕文字（如：查看空間）" value="${label.replace(/"/g,'&quot;')}"
+      style="width:140px;flex-shrink:0;" data-qr="label">
+    <input class="finput" type="text" placeholder="點擊發送訊息（如：有哪些空間可以預約？）" value="${text.replace(/"/g,'&quot;')}"
+      style="flex:1;" data-qr="text">
+    <button type="button" onclick="this.closest('div').remove()"
+      style="background:none;border:1px solid #e5e5e5;border-radius:6px;width:30px;height:30px;cursor:pointer;color:#999;font-size:16px;flex-shrink:0;line-height:1;">×</button>`;
+  list.appendChild(row);
+}
+
+function getQuickReplies() {
+  const rows = document.querySelectorAll('#quick-reply-list > div');
+  const result = [];
+  rows.forEach(row => {
+    const label = row.querySelector('[data-qr="label"]')?.value.trim() || '';
+    const text  = row.querySelector('[data-qr="text"]')?.value.trim()  || '';
+    if (label && text) result.push({ label, text });
+  });
+  return result;
+}
+
 // ── CONTENT ──
 async function loadContent() {
   try {
@@ -2092,6 +2130,16 @@ async function loadContent() {
     setSwitchState('c-show_chat_widget', data.show_chat_widget !== '0');
     setSwitchState('c-reg_show_email', data.reg_show_email !== '0');
     setSwitchState('c-reg_show_phone', data.reg_show_phone !== '0');
+    // 載入快捷回覆按鈕
+    const list = document.getElementById('quick-reply-list');
+    if (list) {
+      list.innerHTML = '';
+      const defaultQr = '[{"label":"查看空間","text":"有哪些空間可以預約？"},{"label":"LINE 預約","text":"如何用LINE預約？"},{"label":"網頁預約","text":"如何用網頁預約？"},{"label":"費用說明","text":"費用怎麼計算？"}]';
+      try {
+        const qrs = JSON.parse(data.chat_quick_replies || defaultQr);
+        qrs.forEach(q => addQuickReplyRow(q.label, q.text));
+      } catch { }
+    }
   } catch { toast('載入失敗', 'error'); }
 }
 
@@ -2106,6 +2154,8 @@ async function saveContent() {
   if (cbPhone) payload['reg_show_phone'] = cbPhone.checked ? '1' : '0';
   const cbChat = document.getElementById('c-show_chat_widget');
   if (cbChat) payload['show_chat_widget'] = cbChat.checked ? '1' : '0';
+  // 儲存快捷回覆按鈕
+  payload['chat_quick_replies'] = JSON.stringify(getQuickReplies());
   try {
     const res = await fetch('/admin/api/site-content', { method: 'POST', headers: { ...H, 'Content-Type': 'application/json' }, body: JSON.stringify(payload) });
     if (res.ok) toast('已儲存，前台將即時更新');

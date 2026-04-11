@@ -1636,11 +1636,7 @@ async function initLiff() {
       bar.style.display = 'flex';
     }
 
-    const nameEl = document.getElementById('fName');
-    if (nameEl && !nameEl.value.trim()) {
-      nameEl.value = profile.displayName || '';
-      updateSummary();
-    }
+    autoFillContactForm();
 
     try {
       await fetch(`${API}/api/line/bind-profile`, {
@@ -2375,6 +2371,18 @@ function updatePrice() {
 // ── 動態表單欄位 ──
 let _formFields = [];
 
+function autoFillContactForm() {
+  const member = _currentMember;
+  const liff   = window._liffProfile;
+  const nameEl  = document.getElementById('f_name');
+  const phoneEl = document.getElementById('f_phone');
+  const emailEl = document.getElementById('f_email');
+  if (nameEl  && !nameEl.value.trim())  nameEl.value  = (member?.name  || liff?.displayName || '');
+  if (phoneEl && !phoneEl.value.trim()) phoneEl.value = (member?.phone || '');
+  if (emailEl && !emailEl.value.trim()) emailEl.value = (member?.email || '');
+  updateSummary();
+}
+
 function renderFormFields(fields) {
   _formFields = fields;
   const grid = document.getElementById('dynamicFormGrid');
@@ -2396,6 +2404,7 @@ function renderFormFields(fields) {
     }
     return `<div class="fgroup${f.full?' full':''}">${labelHtml}${inputHtml}</div>`;
   }).join('');
+  autoFillContactForm();
 }
 
 function getFieldVal(id) {
@@ -2884,14 +2893,7 @@ function updateMemberUI() {
     if (ddName) ddName.textContent = _currentMember.name;
     if (ddEmail) ddEmail.textContent = _currentMember.email || _currentMember.phone || '';
 
-    // Auto-fill booking form if fields exist
-    const nameEl  = document.getElementById('f_name');
-    const phoneEl = document.getElementById('f_phone');
-    const emailEl = document.getElementById('f_email');
-    if (nameEl && !nameEl.value)  nameEl.value = _currentMember.name;
-    if (phoneEl && !phoneEl.value) phoneEl.value = _currentMember.phone || '';
-    if (emailEl && !emailEl.value) emailEl.value = _currentMember.email || '';
-    updateSummary();
+    autoFillContactForm();
   } else {
     if (loginBtn) loginBtn.style.display = '';
     if (loggedInEl) loggedInEl.style.display = 'none';

@@ -4120,10 +4120,8 @@ def member_register():
         return jsonify({'error': '請填寫姓名'}), 400
     if not pw or len(pw) < 6:
         return jsonify({'error': '密碼至少 6 碼'}), 400
-    if not email:
-        return jsonify({'error': '請填寫 Email'}), 400
-    if not phone:
-        return jsonify({'error': '請填寫手機號碼'}), 400
+    if not email and not phone:
+        return jsonify({'error': '請填寫 Email 或手機號碼'}), 400
 
     # 唯一性檢查
     if email:

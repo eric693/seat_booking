@@ -143,7 +143,9 @@ def send_email(to_addr: str, subject: str, body_html: str) -> bool:
             return True
         except Exception as e:
             print(f'[Gmail API] 失敗，自動切換備援：{e}')
-            if USE_SENDGRID:
+            if USE_GMAIL:
+                return _send_via_gmail(to_addr, subject, body_html)
+            elif USE_SENDGRID:
                 return _send_via_sendgrid(to_addr, subject, body_html)
             elif USE_RESEND:
                 return _send_via_resend(to_addr, subject, body_html)

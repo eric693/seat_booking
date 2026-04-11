@@ -3117,10 +3117,7 @@ async function openMyBookings() {
   const list = document.getElementById('my-bookings-list');
   if (!_currentMember) { list.innerHTML = '請先登入'; return; }
   try {
-    const phone = _currentMember.phone || '';
-    const email = _currentMember.email || '';
-    // Use query booking check — pass phone
-    const res = await fetch(`${API}/api/bookings/by-member?phone=${encodeURIComponent(phone)}&email=${encodeURIComponent(email)}`);
+    const res = await fetch(`${API}/api/bookings/by-member`, { credentials: 'include' });
     if (!res.ok) throw new Error();
     const bookings = await res.json();
     if (!bookings.length) {

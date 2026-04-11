@@ -2028,6 +2028,24 @@ def create_booking():
         print(f'[create_booking error] {type(e).__name__}: {e}')
         import traceback; traceback.print_exc()
         return jsonify({'error': f'預約失敗，請稍後再試（{type(e).__name__}）'}), 500
+@app.route('/api/bookings/by-member')
+def bookings_by_member():
+    """登入會員查詢自己的預約記錄（需要 session）"""
+    member = _member_session_check()
+    if not member:
+        return jsonify({'error': '請先登入'}), 401
+    conditions = []
+    if member.phone:
+        conditions.append(Booking.customer_phone == member.phone)
+    if member.email:
+        conditions.append(Booking.customer_email == member.email)
+    if not conditions:
+        return jsonify([])
+    q = Booking.query.filter(db.or_(*conditions)) \
+        .order_by(Booking.date.desc(), Booking.start_time.desc())
+    return jsonify([b.to_dict() for b in q.all()])
+
+
 @app.route('/api/bookings/check')
 def check_booking():
     number = request.args.get('number')

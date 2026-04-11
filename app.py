@@ -4363,6 +4363,33 @@ def admin_unblock_member(mid):
     return jsonify({'success': True})
 
 
+@app.route('/admin/api/members/<int:mid>', methods=['PATCH'])
+def admin_update_member(mid):
+    err = check_admin()
+    if err: return err
+    m = Member.query.get_or_404(mid)
+    d = request.get_json() or {}
+
+    new_email = (d.get('email') or '').strip().lower() or None
+    new_phone = (d.get('phone') or '').strip() or None
+
+    # 唯一性檢查（排除自己）
+    if new_email and new_email != m.email:
+        if Member.query.filter(Member.email == new_email, Member.id != mid).first():
+            return jsonify({'error': '此 Email 已被其他會員使用'}), 400
+    if new_phone and new_phone != m.phone:
+        if Member.query.filter(Member.phone == new_phone, Member.id != mid).first():
+            return jsonify({'error': '此手機號碼已被其他會員使用'}), 400
+
+    if 'name'  in d: m.name  = (d['name'] or '').strip()
+    if 'email' in d: m.email = new_email
+    if 'phone' in d: m.phone = new_phone
+    if d.get('password'):
+        m.set_password(d['password'].strip())
+    db.session.commit()
+    return jsonify({'success': True, 'member': m.to_dict()})
+
+
 @app.route('/admin/api/members/<int:mid>', methods=['DELETE'])
 def admin_delete_member(mid):
     err = check_admin()

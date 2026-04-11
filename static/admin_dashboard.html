@@ -1116,6 +1116,26 @@ input[list]::-webkit-calendar-picker-indicator { display: none !important; }
       </div>
     </div>
 
+    <!-- Edit Member Modal -->
+    <div class="modal" id="editMemberModal">
+      <div class="modal-box" style="max-width:440px;padding:36px;">
+        <h3 style="font-family:'DM Serif Display',serif;font-size:22px;margin-bottom:20px;">編輯會員資料</h3>
+        <input type="hidden" id="edit-member-id">
+        <div class="fgrid">
+          <div class="fg" style="grid-column:1/-1;"><label>姓名</label><input class="finput" type="text" id="em-name"></div>
+          <div class="fg"><label>Email</label><input class="finput" type="email" id="em-email" placeholder="（選填）"></div>
+          <div class="fg"><label>手機號碼</label><input class="finput" type="tel" id="em-phone" placeholder="（選填）"></div>
+          <div class="fg" style="grid-column:1/-1;"><label>新密碼 <span style="font-weight:400;color:var(--ink-60);">（留空不變更）</span></label><input class="finput" type="password" id="em-password" placeholder="至少 6 碼"></div>
+        </div>
+        <div id="edit-member-error" style="display:none;color:var(--red);font-size:13px;margin-top:12px;padding:10px;background:#fff3f3;border-radius:6px;"></div>
+        <div style="display:flex;gap:10px;margin-top:20px;">
+          <button class="btn btn-primary" style="flex:1;" onclick="saveEditMember()">儲存變更</button>
+          <button class="btn btn-outline" style="flex:1;" onclick="closeEditMemberModal()">取消</button>
+        </div>
+        <button onclick="closeEditMemberModal()" style="position:absolute;top:16px;right:20px;background:none;border:none;font-size:22px;color:var(--ink-60);cursor:pointer;">×</button>
+      </div>
+    </div>
+
     <!-- Block Member Modal -->
     <div class="modal" id="blockMemberModal">
       <div class="modal-box" style="max-width:420px;padding:36px;">
@@ -3425,6 +3445,7 @@ async function loadMembers() {
         <td style="font-size:12px;color:var(--ink-60);white-space:nowrap;">${m.last_login || '—'}</td>
         <td>
           <div style="display:flex;gap:6px;flex-wrap:wrap;">
+            <button class="btn btn-outline btn-sm" onclick="openEditMemberModal(${m.id},'${(m.name||'').replace(/'/g,"\\'")}','${m.email||''}','${m.phone||''}')" style="border-color:var(--teal);color:var(--teal);white-space:nowrap;">編輯</button>
             ${m.is_blocked
               ? `<button class="btn btn-outline btn-sm" onclick="unblockMember(${m.id})" style="white-space:nowrap;">解除停用</button>`
               : `<button class="btn btn-sm" onclick="openBlockModal(${m.id})" style="background:#fff0ee;color:var(--red);border:1px solid #ffcdd2;white-space:nowrap;">停用</button>`}
@@ -3435,6 +3456,53 @@ async function loadMembers() {
     `).join('');
   } catch(e) {
     tbody.innerHTML = '<tr><td colspan="9" style="color:var(--red);padding:20px;text-align:center;">載入失敗</td></tr>';
+  }
+}
+
+// ── Edit Member Modal ──
+function openEditMemberModal(id, name, email, phone) {
+  document.getElementById('edit-member-id').value = id;
+  document.getElementById('em-name').value    = name;
+  document.getElementById('em-email').value   = email;
+  document.getElementById('em-phone').value   = phone;
+  document.getElementById('em-password').value = '';
+  document.getElementById('edit-member-error').style.display = 'none';
+  document.getElementById('editMemberModal').classList.add('active');
+}
+
+function closeEditMemberModal() {
+  document.getElementById('editMemberModal').classList.remove('active');
+}
+
+async function saveEditMember() {
+  const id  = document.getElementById('edit-member-id').value;
+  const name = document.getElementById('em-name').value.trim();
+  const errEl = document.getElementById('edit-member-error');
+  errEl.style.display = 'none';
+
+  if (!name) { errEl.textContent = '姓名為必填'; errEl.style.display = 'block'; return; }
+  const pw = document.getElementById('em-password').value;
+  if (pw && pw.length < 6) { errEl.textContent = '新密碼至少 6 碼'; errEl.style.display = 'block'; return; }
+
+  const payload = {
+    name,
+    email: document.getElementById('em-email').value.trim(),
+    phone: document.getElementById('em-phone').value.trim(),
+  };
+  if (pw) payload.password = pw;
+
+  const res = await fetch(`/admin/api/members/${id}`, {
+    method: 'PATCH', headers: { ...H, 'Content-Type': 'application/json' },
+    body: JSON.stringify(payload)
+  });
+  const data = await res.json();
+  if (res.ok) {
+    toast('會員資料已更新');
+    closeEditMemberModal();
+    loadMembers();
+  } else {
+    errEl.textContent = data.error || '儲存失敗';
+    errEl.style.display = 'block';
   }
 }
 

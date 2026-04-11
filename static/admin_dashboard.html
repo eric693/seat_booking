@@ -931,7 +931,13 @@ input[list]::-webkit-calendar-picker-indicator { display: none !important; }
             <div class="content-section" style="grid-column:1/-1;">
               <div class="cs-head">聊天助理快捷回覆按鈕</div>
               <div class="cs-body">
-                <p style="font-size:12px;color:var(--ink-60);margin-bottom:14px;">設定聊天視窗下方的快捷按鈕，最多 6 個。「按鈕文字」為顯示名稱；「點擊發送訊息」為使用者點擊後自動傳送的問句。</p>
+                <p style="font-size:12px;color:var(--ink-60);margin-bottom:14px;">設定聊天視窗下方的快捷按鈕，最多 6 個。「按鈕文字」為顯示名稱；「點擊發送訊息」為點擊後傳送的問句；「AI 預設回覆」可指定固定回覆，留空則由 AI 自動回答。</p>
+                <div style="display:grid;grid-template-columns:130px 1fr 1fr auto;gap:8px;margin-bottom:6px;padding:0 2px;">
+                  <span style="font-size:11px;color:var(--ink-60);font-weight:500;">按鈕文字</span>
+                  <span style="font-size:11px;color:var(--ink-60);font-weight:500;">點擊發送訊息</span>
+                  <span style="font-size:11px;color:var(--ink-60);font-weight:500;">AI 預設回覆（留空由 AI 自動回答）</span>
+                  <span></span>
+                </div>
                 <div id="quick-reply-list" style="display:flex;flex-direction:column;gap:10px;margin-bottom:12px;"></div>
                 <button type="button" onclick="addQuickReplyRow()" style="background:var(--teal-light);color:var(--teal);border:1px solid var(--teal);border-radius:6px;padding:6px 16px;font-size:13px;cursor:pointer;font-family:inherit;font-weight:500;">＋ 新增按鈕</button>
               </div>
@@ -2095,18 +2101,19 @@ function setSwitchState(id, checked) {
 }
 
 // ── QUICK REPLY HELPERS ──
-function addQuickReplyRow(label = '', text = '') {
+function addQuickReplyRow(label = '', text = '', response = '') {
   const list = document.getElementById('quick-reply-list');
   if (!list) return;
   if (list.children.length >= 6) { toast('最多 6 個快捷按鈕', 'error'); return; }
-  const idx = Date.now();
   const row = document.createElement('div');
-  row.style.cssText = 'display:flex;gap:8px;align-items:center;';
+  row.style.cssText = 'display:grid;grid-template-columns:130px 1fr 1fr auto;gap:8px;align-items:center;';
   row.innerHTML = `
-    <input class="finput" type="text" placeholder="按鈕文字（如：查看空間）" value="${label.replace(/"/g,'&quot;')}"
-      style="width:140px;flex-shrink:0;" data-qr="label">
-    <input class="finput" type="text" placeholder="點擊發送訊息（如：有哪些空間可以預約？）" value="${text.replace(/"/g,'&quot;')}"
-      style="flex:1;" data-qr="text">
+    <input class="finput" type="text" placeholder="按鈕文字" value="${label.replace(/"/g,'&quot;')}"
+      style="font-size:13px;" data-qr="label">
+    <input class="finput" type="text" placeholder="點擊發送訊息" value="${text.replace(/"/g,'&quot;')}"
+      style="font-size:13px;" data-qr="text">
+    <input class="finput" type="text" placeholder="AI 預設回覆（留空則由 AI 自動回答）" value="${response.replace(/"/g,'&quot;')}"
+      style="font-size:13px;" data-qr="response">
     <button type="button" onclick="this.closest('div').remove()"
       style="background:none;border:1px solid #e5e5e5;border-radius:6px;width:30px;height:30px;cursor:pointer;color:#999;font-size:16px;flex-shrink:0;line-height:1;">×</button>`;
   list.appendChild(row);
@@ -2116,9 +2123,10 @@ function getQuickReplies() {
   const rows = document.querySelectorAll('#quick-reply-list > div');
   const result = [];
   rows.forEach(row => {
-    const label = row.querySelector('[data-qr="label"]')?.value.trim() || '';
-    const text  = row.querySelector('[data-qr="text"]')?.value.trim()  || '';
-    if (label && text) result.push({ label, text });
+    const label    = row.querySelector('[data-qr="label"]')?.value.trim()    || '';
+    const text     = row.querySelector('[data-qr="text"]')?.value.trim()     || '';
+    const response = row.querySelector('[data-qr="response"]')?.value.trim() || '';
+    if (label && text) result.push({ label, text, response });
   });
   return result;
 }
@@ -2142,7 +2150,7 @@ async function loadContent() {
       const defaultQr = '[{"label":"查看空間","text":"有哪些空間可以預約？"},{"label":"LINE 預約","text":"如何用LINE預約？"},{"label":"網頁預約","text":"如何用網頁預約？"},{"label":"費用說明","text":"費用怎麼計算？"}]';
       try {
         const qrs = JSON.parse(data.chat_quick_replies || defaultQr);
-        qrs.forEach(q => addQuickReplyRow(q.label, q.text));
+        qrs.forEach(q => addQuickReplyRow(q.label, q.text, q.response || ''));
       } catch { }
     }
     _contentLoaded = true;

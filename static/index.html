@@ -1725,7 +1725,7 @@ async function loadContent() {
       const qrEl = document.getElementById('ai-quick-replies');
       if (qrEl) {
         qrEl.innerHTML = qrs.map(q =>
-          `<button class="ai-quick-btn" onclick="sendQuick(${JSON.stringify(q.text).replace(/"/g, '&quot;')})">${q.label}</button>`
+          `<button class="ai-quick-btn" onclick="sendQuick(${JSON.stringify(q.text).replace(/"/g, '&quot;')},${JSON.stringify(q.response||'').replace(/"/g, '&quot;')})">${q.label}</button>`
         ).join('');
       }
     } catch(e) {}
@@ -2690,7 +2690,18 @@ function toggleAiChat() {
   }
 }
 
-function sendQuick(text) {
+function sendQuick(text, response) {
+  if (response && !_chatIsHumanMode) {
+    // 有預設回覆：直接顯示，不呼叫 AI
+    _appendMsg('user', text);
+    _aiChatHistory.push({ role: 'user', content: text });
+    syncChatMessage('user', text);
+    const replyHtml = response.replace(/\n/g, '<br>');
+    _appendMsg('bot', replyHtml);
+    _aiChatHistory.push({ role: 'assistant', content: response });
+    syncChatMessage('bot', response);
+    return;
+  }
   document.getElementById('ai-chat-input').value = text;
   sendAiChat();
 }

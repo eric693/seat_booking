@@ -4297,6 +4297,28 @@ def member_forgot_password():
     return jsonify({'success': True, 'message': '若帳號存在，已發送重設連結。'})
 
 
+@app.route('/api/members/change-password', methods=['POST'])
+def member_change_password():
+    """登入會員自行修改密碼（需要舊密碼驗證）"""
+    member = _member_session_check()
+    if not member:
+        return jsonify({'error': '請先登入'}), 401
+    d       = request.get_json() or {}
+    old_pw  = d.get('old_password', '').strip()
+    new_pw  = d.get('new_password', '').strip()
+    if not old_pw or not new_pw:
+        return jsonify({'error': '請填寫舊密碼與新密碼'}), 400
+    if not member.check_password(old_pw):
+        return jsonify({'error': '舊密碼不正確'}), 400
+    if len(new_pw) < 6:
+        return jsonify({'error': '新密碼至少 6 碼'}), 400
+    if old_pw == new_pw:
+        return jsonify({'error': '新密碼不能與舊密碼相同'}), 400
+    member.set_password(new_pw)
+    db.session.commit()
+    return jsonify({'success': True})
+
+
 @app.route('/api/members/reset-password', methods=['POST'])
 def member_reset_password():
     d     = request.get_json() or {}

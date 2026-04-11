@@ -1467,8 +1467,33 @@ footer {
         <div class="sum-val" id="profile-created">—</div>
       </div>
     </div>
-    <div style="margin-top:20px;display:flex;gap:10px;">
-      <button class="book-btn" style="margin:0;flex:1;background:var(--ink-60);" onclick="document.getElementById('memberProfileModal').classList.remove('active')">關閉</button>
+    <!-- 修改密碼區塊 -->
+    <div style="margin-top:20px;border-top:1px solid var(--border);padding-top:16px;">
+      <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:12px;">
+        <div style="font-size:14px;font-weight:600;">修改密碼</div>
+        <button id="toggle-change-pw-btn" onclick="toggleChangePwForm()" style="background:none;border:1px solid var(--border);border-radius:6px;padding:4px 12px;font-size:12px;cursor:pointer;color:var(--teal);">展開</button>
+      </div>
+      <div id="change-pw-form" style="display:none;">
+        <div style="display:flex;flex-direction:column;gap:10px;">
+          <div>
+            <label style="font-size:12px;color:var(--ink-60);display:block;margin-bottom:4px;">舊密碼</label>
+            <input class="finput" type="password" id="cp-old" placeholder="輸入目前密碼" style="width:100%;">
+          </div>
+          <div>
+            <label style="font-size:12px;color:var(--ink-60);display:block;margin-bottom:4px;">新密碼</label>
+            <input class="finput" type="password" id="cp-new" placeholder="至少 6 碼" style="width:100%;">
+          </div>
+          <div>
+            <label style="font-size:12px;color:var(--ink-60);display:block;margin-bottom:4px;">確認新密碼</label>
+            <input class="finput" type="password" id="cp-new2" placeholder="再次輸入新密碼" style="width:100%;" onkeydown="if(event.key==='Enter')doChangePassword()">
+          </div>
+          <div id="cp-msg" style="display:none;font-size:13px;padding:8px 12px;border-radius:6px;"></div>
+          <button class="book-btn" style="margin:0;" onclick="doChangePassword()">確認修改</button>
+        </div>
+      </div>
+    </div>
+    <div style="margin-top:16px;">
+      <button class="book-btn" style="margin:0;background:var(--ink-60);" onclick="document.getElementById('memberProfileModal').classList.remove('active')">關閉</button>
     </div>
     <button onclick="document.getElementById('memberProfileModal').classList.remove('active')" style="position:absolute;top:16px;right:20px;background:none;border:none;font-size:22px;color:var(--ink-60);cursor:pointer;">×</button>
   </div>
@@ -3108,6 +3133,58 @@ function openMemberProfile() {
   phoneRow.innerHTML = `<span>${phoneTxt}</span>${phoneBadge}`;
 
   document.getElementById('memberProfileModal').classList.add('active');
+}
+
+function toggleChangePwForm() {
+  const form = document.getElementById('change-pw-form');
+  const btn  = document.getElementById('toggle-change-pw-btn');
+  const open = form.style.display === 'none';
+  form.style.display = open ? 'block' : 'none';
+  btn.textContent    = open ? '收起' : '展開';
+  if (!open) {
+    document.getElementById('cp-old').value  = '';
+    document.getElementById('cp-new').value  = '';
+    document.getElementById('cp-new2').value = '';
+    document.getElementById('cp-msg').style.display = 'none';
+  }
+}
+
+async function doChangePassword() {
+  const old_pw = document.getElementById('cp-old').value;
+  const new_pw = document.getElementById('cp-new').value;
+  const new_pw2= document.getElementById('cp-new2').value;
+  const msgEl  = document.getElementById('cp-msg');
+
+  const showMsg = (text, ok) => {
+    msgEl.textContent   = text;
+    msgEl.style.background = ok ? '#e8f5e9' : '#fff3f3';
+    msgEl.style.color      = ok ? '#2e7d32' : 'var(--red)';
+    msgEl.style.display    = 'block';
+  };
+
+  if (!old_pw || !new_pw || !new_pw2) return showMsg('請填寫所有欄位', false);
+  if (new_pw !== new_pw2)             return showMsg('兩次新密碼不一致', false);
+  if (new_pw.length < 6)             return showMsg('新密碼至少 6 碼', false);
+
+  try {
+    const res = await fetch(`${API}/api/members/change-password`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      credentials: 'include',
+      body: JSON.stringify({ old_password: old_pw, new_password: new_pw })
+    });
+    const data = await res.json();
+    if (res.ok) {
+      showMsg('密碼已成功修改！', true);
+      document.getElementById('cp-old').value  = '';
+      document.getElementById('cp-new').value  = '';
+      document.getElementById('cp-new2').value = '';
+    } else {
+      showMsg(data.error || '修改失敗', false);
+    }
+  } catch(e) {
+    showMsg('連線失敗，請稍後再試', false);
+  }
 }
 
 // ── My Bookings ──

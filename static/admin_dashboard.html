@@ -2124,6 +2124,7 @@ function getQuickReplies() {
 }
 
 // ── CONTENT ──
+let _contentLoaded = false;
 async function loadContent() {
   try {
     const res = await fetch('/admin/api/site-content', { headers: H });
@@ -2144,10 +2145,12 @@ async function loadContent() {
         qrs.forEach(q => addQuickReplyRow(q.label, q.text));
       } catch { }
     }
+    _contentLoaded = true;
   } catch { toast('載入失敗', 'error'); }
 }
 
 async function saveContent() {
+  if (!_contentLoaded) { toast('設定尚未載入完成，請稍候再儲存', 'error'); return; }
   const keys = ['site_title','hero_title','hero_badge','site_subtitle','site_description','step1_title','step2_title','step3_title','service_hours','contact_phone','contact_email','footer_text','notice_1','notice_2','notice_3','notice_4','notice_5'];
   const payload = {};
   keys.forEach(k => { const el = document.getElementById(`c-${k}`); if (el) payload[k] = el.value.trim(); });

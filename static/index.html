@@ -1359,11 +1359,11 @@ footer {
         <input class="finput" type="text" id="reg-name" placeholder="請輸入您的姓名">
       </div>
       <div class="fgroup" id="reg-email-group" style="margin-bottom:14px;">
-        <label id="reg-email-label" style="font-size:13px;font-weight:500;">Email <span style="font-size:11px;color:var(--ink-60);">（擇一必填）</span></label>
+        <label id="reg-email-label" style="font-size:13px;font-weight:500;">Email <span style="color:var(--red);">*</span></label>
         <input class="finput" type="email" id="reg-email" placeholder="your@email.com" autocomplete="email">
       </div>
       <div class="fgroup" id="reg-phone-group" style="margin-bottom:14px;">
-        <label id="reg-phone-label" style="font-size:13px;font-weight:500;">手機號碼 <span style="font-size:11px;color:var(--ink-60);">（擇一必填）</span></label>
+        <label id="reg-phone-label" style="font-size:13px;font-weight:500;">手機號碼 <span style="color:var(--red);">*</span></label>
         <input class="finput" type="tel" id="reg-phone" placeholder="0912345678">
       </div>
       <div class="fgroup" style="margin-bottom:14px;">
@@ -1737,12 +1737,10 @@ async function loadContent() {
     // 更新 label 提示
     const emailLabel = document.getElementById('reg-email-label');
     const phoneLabel = document.getElementById('reg-phone-label');
-    if (showEmail && showPhone) {
-      if (emailLabel) emailLabel.innerHTML = 'Email <span style="font-size:11px;color:var(--ink-60);">（擇一必填）</span>';
-      if (phoneLabel) phoneLabel.innerHTML = '手機號碼 <span style="font-size:11px;color:var(--ink-60);">（擇一必填）</span>';
-    } else if (showEmail) {
+    if (showEmail) {
       if (emailLabel) emailLabel.innerHTML = 'Email <span style="color:var(--red);">*</span>';
-    } else if (showPhone) {
+    }
+    if (showPhone) {
       if (phoneLabel) phoneLabel.innerHTML = '手機號碼 <span style="color:var(--red);">*</span>';
     }
 
@@ -2992,11 +2990,14 @@ async function doRegister() {
   const pw2   = document.getElementById('reg-password2').value;
   const errEl = document.getElementById('reg-error');
 
+  const showEmail = document.getElementById('reg-email-group')?.style.display !== 'none';
+  const showPhone = document.getElementById('reg-phone-group')?.style.display !== 'none';
   if (!name) { errEl.textContent = '請填寫姓名'; errEl.style.display='block'; return; }
-  if (!email && !phone) { errEl.textContent = '請填寫 Email 或手機號碼'; errEl.style.display='block'; return; }
-  if (email && !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) {
+  if (showEmail && !email) { errEl.textContent = '請填寫 Email'; errEl.style.display='block'; return; }
+  if (showEmail && !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) {
     errEl.textContent = 'Email 格式不正確'; errEl.style.display='block'; return;
   }
+  if (showPhone && !phone) { errEl.textContent = '請填寫手機號碼'; errEl.style.display='block'; return; }
   if (!pw || pw.length < 6) { errEl.textContent = '密碼至少 6 碼'; errEl.style.display='block'; return; }
   if (pw !== pw2) { errEl.textContent = '兩次密碼不一致'; errEl.style.display='block'; return; }
 

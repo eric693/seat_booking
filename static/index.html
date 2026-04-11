@@ -1709,7 +1709,9 @@ async function loadContent() {
 
     const notices = ['notice_1','notice_2','notice_3','notice_4','notice_5'].map(k => c[k]).filter(Boolean);
     if (notices.length) {
-      document.getElementById('noticeList').innerHTML = notices.map(n => `<li>${n}</li>`).join('');
+      const nl = document.getElementById('noticeList');
+      nl.innerHTML = '';
+      notices.forEach(n => { const li = document.createElement('li'); li.textContent = n; nl.appendChild(li); });
     }
     // 聊天視窗顯示控制
     const showChat = c.show_chat_widget !== '0';
@@ -1749,7 +1751,13 @@ async function loadContent() {
 
     if (c.logo_url) {
       const wrap = document.getElementById('header-logo-wrap');
-      if (wrap) wrap.innerHTML = `<img src="${c.logo_url}" style="width:44px;height:44px;object-fit:contain;border-radius:6px;display:block;">`;
+      if (wrap) {
+        const img = document.createElement('img');
+        img.setAttribute('src', c.logo_url);
+        img.style.cssText = 'width:44px;height:44px;object-fit:contain;border-radius:6px;display:block;';
+        wrap.innerHTML = '';
+        wrap.appendChild(img);
+      }
     }
     try {
       const fields = typeof c.form_fields === 'string' ? JSON.parse(c.form_fields) : c.form_fields;
@@ -3138,23 +3146,29 @@ function openMemberProfile() {
 
   // Email row
   const emailRow = document.getElementById('profile-email-row');
-  const emailTxt = _currentMember.email || '—';
-  const emailBadge = _currentMember.email
-    ? (_currentMember.is_verified_email
-        ? '<span class="verify-badge ok">✓ 已驗證</span>'
-        : '<span class="verify-badge pending">待驗證</span>')
-    : '';
-  emailRow.innerHTML = `<span>${emailTxt}</span>${emailBadge}`;
+  emailRow.innerHTML = '';
+  const emailSpan = document.createElement('span');
+  emailSpan.textContent = _currentMember.email || '—';
+  emailRow.appendChild(emailSpan);
+  if (_currentMember.email) {
+    const emailBadge = document.createElement('span');
+    emailBadge.className = _currentMember.is_verified_email ? 'verify-badge ok' : 'verify-badge pending';
+    emailBadge.textContent = _currentMember.is_verified_email ? '✓ 已驗證' : '待驗證';
+    emailRow.appendChild(emailBadge);
+  }
 
   // Phone row
   const phoneRow = document.getElementById('profile-phone-row');
-  const phoneTxt = _currentMember.phone || '—';
-  const phoneBadge = _currentMember.phone
-    ? (_currentMember.is_verified_phone
-        ? '<span class="verify-badge ok">✓ 已驗證</span>'
-        : '<span class="verify-badge pending">待驗證</span>')
-    : '';
-  phoneRow.innerHTML = `<span>${phoneTxt}</span>${phoneBadge}`;
+  phoneRow.innerHTML = '';
+  const phoneSpan = document.createElement('span');
+  phoneSpan.textContent = _currentMember.phone || '—';
+  phoneRow.appendChild(phoneSpan);
+  if (_currentMember.phone) {
+    const phoneBadge = document.createElement('span');
+    phoneBadge.className = _currentMember.is_verified_phone ? 'verify-badge ok' : 'verify-badge pending';
+    phoneBadge.textContent = _currentMember.is_verified_phone ? '✓ 已驗證' : '待驗證';
+    phoneRow.appendChild(phoneBadge);
+  }
 
   document.getElementById('memberProfileModal').classList.add('active');
 }

@@ -101,7 +101,7 @@ def _line_headers():
 
 def verify_line_signature(body: bytes, signature: str) -> bool:
     if not LINE_CHANNEL_SECRET:
-        return True  # 本地開發略過驗證
+        return False  # 未設定 secret 一律拒絕
     digest = hmac.new(LINE_CHANNEL_SECRET.encode(), body, hashlib.sha256).digest()
     return hmac.compare_digest(base64.b64encode(digest).decode(), signature)
 
@@ -1560,7 +1560,9 @@ class Member(db.Model):
     is_blocked            = db.Column(db.Boolean, default=False)
     block_reason          = db.Column(db.String(200), default='')
     email_verify_token    = db.Column(db.String(100))
+    email_token_expires   = db.Column(db.DateTime)
     phone_verify_code     = db.Column(db.String(6))
+    phone_verify_attempts = db.Column(db.Integer, default=0)
     phone_code_expires    = db.Column(db.DateTime)
     reset_token           = db.Column(db.String(100))
     reset_token_expires   = db.Column(db.DateTime)
@@ -1634,21 +1636,16 @@ class ChatMessage(db.Model):
 # ─────────────────────────────────────────────
 
 def check_admin():
-    if session.get('admin_user_id'):
-        uid = session['admin_user_id']
-        if uid == 0:
-            return None
-        u = AdminUser.query.get(uid)
-        if u and u.is_active:
-            return None
-        session.clear()
-    pw = request.headers.get('X-Admin-Password')
-    if pw:
-        if pw == ADMIN_PASSWORD:
-            return None
-        u = AdminUser.query.filter_by(username='admin').first()
-        if u and u.check_password(pw):
-            return None
+    uid = session.get('admin_user_id')
+    if not uid:
+        return jsonify({'error': 'Unauthorized'}), 401
+    if uid == 0:
+        # 舊版 session（初始帳號），仍允許但限制為 superadmin
+        return None
+    u = AdminUser.query.get(uid)
+    if u and u.is_active:
+        return None
+    session.clear()
     return jsonify({'error': 'Unauthorized'}), 401
 
 
@@ -1715,7 +1712,7 @@ def get_ip_location(ip):
 
 
 def generate_booking_number():
-    today = datetime.now().strftime('%Y%m%d')
+    today = tw_now().strftime('%Y%m%d')
     count = Booking.query.filter(Booking.booking_number.like(f'MR{today}%')).count()
     return f'MR{today}{str(count + 1).zfill(4)}'
 
@@ -1981,7 +1978,12 @@ def create_booking():
         if not data.get('email', '').strip():
             return jsonify({'error': '請填寫 Email，用於接收預約確認信'}), 400
 
-        price = int(dur * room.hourly_rate)
+        if dur <= 0:
+            return jsonify({'error': '預約時數必須大於 0'}), 400
+        if dur > 24:
+            return jsonify({'error': '單次預約不能超過 24 小時'}), 400
+
+        price = max(0, int(dur * room.hourly_rate))
 
         line_uid = data.get('line_user_id', '')
         if not line_uid and data.get('phone'):
@@ -3198,13 +3200,6 @@ def admin_login():
         _log(True)
         return jsonify({'success': True, 'user': user.to_dict()})
 
-    if uname == 'admin' and pw == ADMIN_PASSWORD:
-        session['admin_user_id'] = 0
-        session['admin_username'] = 'admin'
-        session['admin_role'] = 'superadmin'
-        _log(True, '舊式密碼')
-        return jsonify({'success': True})
-
     _log(False, '密碼錯誤')
     return jsonify({'error': '帳號或密碼錯誤'}), 401
 
@@ -4140,9 +4135,10 @@ def member_register():
     m = Member(name=name, email=email or None, phone=phone or None)
     m.set_password(pw)
 
-    # Email 驗證 token
+    # Email 驗證 token（24 小時有效）
     if email:
-        m.email_verify_token = secrets.token_urlsafe(32)
+        m.email_verify_token  = secrets.token_urlsafe(32)
+        m.email_token_expires = tw_now() + timedelta(hours=24)
 
     # 手機驗證碼
     if phone:
@@ -4181,8 +4177,11 @@ def member_verify_email():
     m = Member.query.filter_by(email_verify_token=token).first()
     if not m:
         return '驗證連結無效或已過期', 400
+    if m.email_token_expires and tw_now() > m.email_token_expires:
+        return '驗證連結已過期（24 小時），請重新註冊或要求重新發送驗證信', 400
     m.is_verified_email   = True
     m.email_verify_token  = None
+    m.email_token_expires = None
     db.session.commit()
     return '''<html><body style="font-family:sans-serif;text-align:center;padding:60px;">
         <h2 style="color:#2A6B6B;">✓ Email 驗證成功！</h2>
@@ -4199,13 +4198,24 @@ def member_verify_phone():
     m = Member.query.get(mid)
     if not m:
         return jsonify({'error': '找不到會員'}), 404
-    if not m.phone_verify_code or m.phone_verify_code != code:
-        return jsonify({'error': '驗證碼錯誤'}), 400
     if m.phone_code_expires and tw_now() > m.phone_code_expires:
+        m.phone_verify_code  = None
+        m.phone_verify_attempts = 0
+        db.session.commit()
         return jsonify({'error': '驗證碼已過期，請重新發送'}), 400
-    m.is_verified_phone  = True
-    m.phone_verify_code  = None
-    m.phone_code_expires = None
+    attempts = m.phone_verify_attempts or 0
+    if attempts >= 5:
+        return jsonify({'error': '驗證碼錯誤次數過多，請重新發送驗證碼'}), 429
+    if not m.phone_verify_code or m.phone_verify_code != code:
+        m.phone_verify_attempts = attempts + 1
+        db.session.commit()
+        remaining = 5 - (attempts + 1)
+        msg = f'驗證碼錯誤，還剩 {remaining} 次機會' if remaining > 0 else '驗證碼錯誤次數過多，請重新發送驗證碼'
+        return jsonify({'error': msg}), 400
+    m.is_verified_phone     = True
+    m.phone_verify_code     = None
+    m.phone_code_expires    = None
+    m.phone_verify_attempts = 0
     db.session.commit()
     return jsonify({'success': True, 'message': '手機驗證成功！'})
 
@@ -4218,8 +4228,9 @@ def member_resend_code():
     if not m or not m.phone:
         return jsonify({'error': '找不到會員'}), 404
     code = str(random.randint(100000, 999999))
-    m.phone_verify_code  = code
-    m.phone_code_expires = tw_now() + timedelta(minutes=10)
+    m.phone_verify_code     = code
+    m.phone_code_expires    = tw_now() + timedelta(minutes=10)
+    m.phone_verify_attempts = 0
     db.session.commit()
     send_sms(m.phone, f'【會員驗證】您的驗證碼為 {code}，10 分鐘內有效。')
     return jsonify({'success': True})

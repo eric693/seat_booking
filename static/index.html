@@ -3029,6 +3029,9 @@ async function doRegister() {
   if (showEmail && email && !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) {
     errEl.textContent = 'Email 格式不正確'; errEl.style.display='block'; return;
   }
+  if (showPhone && phone && !/^09\d{8}$/.test(phone)) {
+    errEl.textContent = '手機號碼格式不正確（須為 09 開頭的 10 碼數字）'; errEl.style.display='block'; return;
+  }
   if (!pw || pw.length < 6) { errEl.textContent = '密碼至少 6 碼'; errEl.style.display='block'; return; }
   if (pw !== pw2) { errEl.textContent = '兩次密碼不一致'; errEl.style.display='block'; return; }
 

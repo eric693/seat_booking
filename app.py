@@ -4146,8 +4146,19 @@ def member_register():
         m.phone_verify_code    = code
         m.phone_code_expires   = tw_now() + timedelta(minutes=10)
 
-    db.session.add(m)
-    db.session.commit()
+    try:
+        db.session.add(m)
+        db.session.commit()
+    except Exception as e:
+        db.session.rollback()
+        err_str = str(e).lower()
+        if 'unique' in err_str or 'duplicate' in err_str:
+            if email and 'email' in err_str:
+                return jsonify({'error': '此 Email 已被使用，請直接登入或使用其他 Email。'}), 400
+            if phone and 'phone' in err_str:
+                return jsonify({'error': '此手機號碼已被使用，請直接登入或使用其他號碼。'}), 400
+            return jsonify({'error': '此帳號資訊已被使用，請直接登入。'}), 400
+        return jsonify({'error': '註冊失敗，請稍後再試。'}), 500
 
     # 寄送驗證信
     if email and m.email_verify_token:

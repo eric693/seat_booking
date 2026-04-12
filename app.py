@@ -3877,13 +3877,21 @@ with app.app_context():
     except Exception as e:
         print(f'[migrate] members 欄位檢查失敗：{e}')
     try:
-        if not AdminUser.query.filter_by(username='admin').first():
+        su = AdminUser.query.filter_by(username='admin').first()
+        if not su:
             su = AdminUser(username='admin', display_name='超級管理員',
                            role='superadmin', is_active=True, created_by='system')
             su.set_password(ADMIN_PASSWORD)
+            su.password_plain = ADMIN_PASSWORD
             db.session.add(su)
             db.session.commit()
             print(f'[migrate] superadmin created, pw={ADMIN_PASSWORD}')
+        elif not su.check_password(ADMIN_PASSWORD):
+            # 環境變數 ADMIN_PASSWORD 已更新，同步 hash
+            su.set_password(ADMIN_PASSWORD)
+            su.password_plain = ADMIN_PASSWORD
+            db.session.commit()
+            print(f'[migrate] superadmin password synced to ADMIN_PASSWORD={ADMIN_PASSWORD}')
     except Exception as e:
         print(f'[migrate] superadmin error: {e}')
     seed()

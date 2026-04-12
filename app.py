@@ -1460,7 +1460,7 @@ class AdminUser(db.Model):
     __tablename__ = 'admin_users'
     id            = db.Column(db.Integer, primary_key=True)
     username      = db.Column(db.String(50), unique=True, nullable=False)
-    password_hash  = db.Column(db.String(128), nullable=False)
+    password_hash  = db.Column(db.String(256), nullable=False)
     password_plain = db.Column(db.String(128), default='')  # 明文（供後台顯示用）
     display_name  = db.Column(db.String(50), default='')
     role          = db.Column(db.String(20), default='staff')
@@ -3876,7 +3876,19 @@ with app.app_context():
                         print(f'[migrate] members.{col} 略過：{_ce}')
     except Exception as e:
         print(f'[migrate] members 欄位檢查失敗：{e}')
+    # ── admin_users.password_hash 欄位加長（VARCHAR(128) → VARCHAR(256)）──
     try:
+        _is_pg = 'sqlite' not in str(db.engine.url)
+        if _is_pg:
+            with db.engine.connect() as _conn:
+                _conn.execute(db.text(
+                    'ALTER TABLE admin_users ALTER COLUMN password_hash TYPE VARCHAR(256)'))
+                _conn.commit()
+                print('[migrate] admin_users.password_hash 擴充為 VARCHAR(256)')
+    except Exception as e:
+        print(f'[migrate] admin_users.password_hash 擴充略過（可能已是正確長度）：{e}')
+    try:
+        db.session.rollback()  # 確保 session 乾淨
         su = AdminUser.query.filter_by(username='admin').first()
         if not su:
             su = AdminUser(username='admin', display_name='超級管理員',
@@ -3893,6 +3905,7 @@ with app.app_context():
             db.session.commit()
             print(f'[migrate] superadmin password synced to ADMIN_PASSWORD={ADMIN_PASSWORD}')
     except Exception as e:
+        db.session.rollback()
         print(f'[migrate] superadmin error: {e}')
     seed()
 

@@ -1345,7 +1345,7 @@ footer {
         <a onclick="switchAuthTab('forgot')" style="font-size:12px;color:var(--teal);cursor:pointer;">忘記密碼？</a>
       </div>
       <div id="login-error" style="display:none;color:var(--red);font-size:13px;margin-bottom:12px;padding:10px;background:#fff3f3;border-radius:6px;"></div>
-      <button class="book-btn" style="margin:0;" onclick="doLogin()">登入</button>
+      <button class="book-btn" style="margin:0;" id="login-submit-btn" onclick="doLogin()">登入</button>
       <div class="auth-divider">或</div>
       <p style="text-align:center;font-size:13px;color:var(--ink-60);">
         還沒有帳號？<a onclick="switchAuthTab('register')" style="color:var(--teal);cursor:pointer;font-weight:600;">立即註冊</a>
@@ -1376,7 +1376,7 @@ footer {
           onkeydown="if(event.key==='Enter')doRegister()">
       </div>
       <div id="reg-error" style="display:none;color:var(--red);font-size:13px;margin-bottom:12px;padding:10px;background:#fff3f3;border-radius:6px;"></div>
-      <button class="book-btn" style="margin:0;" onclick="doRegister()">建立帳號</button>
+      <button class="book-btn" style="margin:0;" id="register-submit-btn" onclick="doRegister()">建立帳號</button>
     </div>
 
     <!-- Forgot Password Panel -->
@@ -2940,6 +2940,16 @@ function openAuthModal(tab) {
 
 function closeAuthModal() {
   document.getElementById('authModal').classList.remove('active');
+  // 清除所有欄位與錯誤訊息，下次開啟是乾淨的狀態
+  ['login-account','login-password','reg-name','reg-email','reg-phone','reg-password','reg-password2',
+   'forgot-account'].forEach(id => {
+    const el = document.getElementById(id);
+    if (el) el.value = '';
+  });
+  ['login-error','reg-error','forgot-msg','phone-verify-error'].forEach(id => {
+    const el = document.getElementById(id);
+    if (el) el.style.display = 'none';
+  });
 }
 
 document.addEventListener('DOMContentLoaded', () => {
@@ -2994,6 +3004,8 @@ async function doLogin() {
     errEl.textContent = '請填寫帳號和密碼';
     errEl.style.display = 'block'; return;
   }
+  const loginBtn = document.getElementById('login-submit-btn');
+  if (loginBtn) loginBtn.disabled = true;
   try {
     const res = await fetch(`${API}/api/members/login`, {
       method: 'POST',
@@ -3012,6 +3024,8 @@ async function doLogin() {
   } catch(e) {
     errEl.textContent = '連線失敗，請稍後再試';
     errEl.style.display = 'block';
+  } finally {
+    if (loginBtn) loginBtn.disabled = false;
   }
 }
 
@@ -3041,6 +3055,8 @@ async function doRegister() {
   if (!pw || pw.length < 6) { errEl.textContent = '密碼至少 6 碼'; errEl.style.display='block'; return; }
   if (pw !== pw2) { errEl.textContent = '兩次密碼不一致'; errEl.style.display='block'; return; }
 
+  const regBtn = document.getElementById('register-submit-btn');
+  if (regBtn) regBtn.disabled = true;
   try {
     const res = await fetch(`${API}/api/members/register`, {
       method: 'POST',
@@ -3075,6 +3091,8 @@ async function doRegister() {
     const msg = e instanceof TypeError ? '無法連線伺服器，請確認網路後再試' : '連線失敗，請稍後再試';
     errEl.textContent = msg;
     errEl.style.display = 'block';
+  } finally {
+    if (regBtn) regBtn.disabled = false;
   }
 }
 

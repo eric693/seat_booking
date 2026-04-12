@@ -3534,6 +3534,10 @@ def admin_cancel_booking(bid):
     err = check_admin()
     if err: return err
     b = Booking.query.get_or_404(bid)
+    if b.status == 'cancelled':
+        return jsonify({'error': '此預約已經是取消狀態'}), 400
+    if b.status == 'completed':
+        return jsonify({'error': '已完成的預約無法取消'}), 400
     b.status = 'cancelled'
     db.session.commit()
     if b.line_user_id:
@@ -3554,6 +3558,10 @@ def admin_complete_booking(bid):
     err = check_admin()
     if err: return err
     b = Booking.query.get_or_404(bid)
+    if b.status == 'completed':
+        return jsonify({'error': '此預約已經是完成狀態'}), 400
+    if b.status == 'cancelled':
+        return jsonify({'error': '已取消的預約無法標記為完成'}), 400
     b.status = 'completed'
     db.session.commit()
     return jsonify({'success': True})

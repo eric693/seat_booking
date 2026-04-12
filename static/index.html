@@ -1650,6 +1650,7 @@ async function initLiff() {
 }
 
 function esc(s) { return String(s).replace(/'/g, '&#39;').replace(/"/g, '&quot;'); }
+function htmlEsc(s) { return String(s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;').replace(/'/g,'&#39;'); }
 
 const state = {
   room: null,
@@ -1780,7 +1781,7 @@ async function loadRooms() {
     const grid = document.getElementById('roomsGrid');
     grid.innerHTML = rooms.map(r => {
       const icon = ROOM_ICONS[r.room_type] || 'MR';
-      const amenHTML = (r.amenities || []).map(a => `<span class="amenity-tag">${a}</span>`).join('');
+      const amenHTML = (r.amenities || []).map(a => `<span class="amenity-tag">${htmlEsc(a)}</span>`).join('');
       const photos = (r.photos && r.photos.length) ? r.photos : (r.photo_url ? [r.photo_url] : []);
       let photoHTML;
       if (photos.length === 0) {
@@ -1810,9 +1811,9 @@ async function loadRooms() {
           <div class="selected-check">&#10003;</div>
           ${photoHTML}
           <div class="room-body">
-            <div class="room-type-tag">${r.room_type}</div>
-            <div class="room-name">${r.name}</div>
-            <div class="room-desc">${r.description || ''}</div>
+            <div class="room-type-tag">${htmlEsc(r.room_type)}</div>
+            <div class="room-name">${htmlEsc(r.name)}</div>
+            <div class="room-desc">${htmlEsc(r.description || '')}</div>
             <div class="amenities-list">${amenHTML}</div>
             <div class="room-footer">
               <div class="room-capacity">容納 <strong>${r.capacity_label || r.capacity + ' 人'}</strong> · ${r.floor || ''}${r.min_hours && r.min_hours > 0 ? ' · 最少 ' + (r.min_hours === Math.floor(r.min_hours) ? r.min_hours : r.min_hours) + ' 小時' : ''}</div>
@@ -2671,7 +2672,12 @@ async function doQuery() {
           <div class="ct-row"><span class="ct-key">狀態</span><span class="ct-val">${statusMap[data.status] || data.status}</span></div>
         </div>`;
     } else {
-      document.getElementById('queryResult').innerHTML = '<div style="color:var(--red);padding:12px;text-align:center;">' + data.error + '</div>';
+      const qErr = document.createElement('div');
+      qErr.style.cssText = 'color:var(--red);padding:12px;text-align:center;';
+      qErr.textContent = data.error || '查詢失敗';
+      const qr = document.getElementById('queryResult');
+      qr.innerHTML = '';
+      qr.appendChild(qErr);
     }
   } catch (e) {
     document.getElementById('queryResult').innerHTML = `<div style="color:var(--red);padding:12px;text-align:center;">查詢失敗，請稍後再試</div>`;
@@ -2701,10 +2707,10 @@ function toggleAiChat() {
 function sendQuick(text, response) {
   if (response && !_chatIsHumanMode) {
     // 有預設回覆：直接顯示，不呼叫 AI
-    _appendMsg('user', text);
+    _appendMsg('user', htmlEsc(text));
     _aiChatHistory.push({ role: 'user', content: text });
     syncChatMessage('user', text);
-    const replyHtml = response.replace(/\n/g, '<br>');
+    const replyHtml = htmlEsc(response).replace(/\n/g, '<br>');
     _appendMsg('bot', replyHtml);
     _aiChatHistory.push({ role: 'assistant', content: response });
     syncChatMessage('bot', response);
@@ -2777,7 +2783,7 @@ async function sendAiChat() {
   document.getElementById('ai-send-btn').disabled = true;
 
   // Show user message
-  _appendMsg('user', text);
+  _appendMsg('user', htmlEsc(text));
   _aiChatHistory.push({ role: 'user', content: text });
   syncChatMessage('user', text);
 
@@ -2861,7 +2867,7 @@ LINE 預約網址：${liffUrl}
       if (room) roomCardsHtml = _buildRoomCard(room);
     }
 
-    const replyHtml = reply.replace(/\n/g, '<br>') + (roomCardsHtml ? `<div style="margin-top:8px;">${roomCardsHtml}</div>` : '');
+    const replyHtml = htmlEsc(reply).replace(/\n/g, '<br>') + (roomCardsHtml ? `<div style="margin-top:8px;">${roomCardsHtml}</div>` : '');
     _appendMsg('bot', replyHtml);
     syncChatMessage('bot', reply);
 

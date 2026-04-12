@@ -1470,13 +1470,10 @@ class AdminUser(db.Model):
     created_by    = db.Column(db.String(50), default='')
 
     def set_password(self, pw):
-        import hashlib
-        self.password_hash  = hashlib.sha256(pw.encode()).hexdigest()
-        self.password_plain = pw  # 同步存明文
+        self.password_hash = generate_password_hash(pw)
 
     def check_password(self, pw):
-        import hashlib
-        return self.password_hash == hashlib.sha256(pw.encode()).hexdigest()
+        return check_password_hash(self.password_hash, pw)
 
     def get_permissions(self):
         import json as _j
@@ -1499,7 +1496,6 @@ class AdminUser(db.Model):
         return {
             'id': self.id, 'username': self.username,
             'display_name': self.display_name, 'role': self.role,
-            'password_plain': self.password_plain or '',
             'permissions': self.get_permissions(),
             'is_active': self.is_active,
             'created_at': self.created_at.strftime('%Y-%m-%d %H:%M') if self.created_at else '',
@@ -1657,7 +1653,9 @@ def get_current_admin():
         return AdminUser.query.get(uid)
     pw = request.headers.get('X-Admin-Password')
     if pw:
-        return AdminUser.query.filter_by(username='admin').first()
+        u = AdminUser.query.filter_by(username='admin').first()
+        if u and u.check_password(pw):
+            return u
     return None
 
 
@@ -3279,17 +3277,26 @@ def admin_get_rooms():
 def admin_add_room():
     err = check_admin()
     if err: return err
-    d = request.get_json()
-    r = Room(name=d['name'], room_type=d['room_type'],
-             capacity=d.get('capacity', 10), capacity_min=d.get('capacity_min', 0),
-             hourly_rate=d.get('hourly_rate', 500),
-             min_hours=float(d.get('min_hours', 1.0)),
-             description=d.get('description',''),
-             amenities=json.dumps(d.get('amenities',[]), ensure_ascii=False),
-             floor=d.get('floor',''), photo_url=d.get('photo_url',''),
-             is_active=d.get('is_active', True))
-    db.session.add(r)
-    db.session.commit()
+    d = request.get_json() or {}
+    if not d.get('name') or not d.get('room_type'):
+        return jsonify({'error': '請填寫會議室名稱與類型'}), 400
+    amenities = d.get('amenities', [])
+    if not isinstance(amenities, list):
+        amenities = []
+    try:
+        r = Room(name=d['name'].strip(), room_type=d['room_type'].strip(),
+                 capacity=int(d.get('capacity', 10)), capacity_min=int(d.get('capacity_min', 0)),
+                 hourly_rate=int(d.get('hourly_rate', 500)),
+                 min_hours=float(d.get('min_hours', 1.0)),
+                 description=d.get('description',''),
+                 amenities=json.dumps(amenities, ensure_ascii=False),
+                 floor=d.get('floor',''), photo_url=d.get('photo_url',''),
+                 is_active=d.get('is_active', True))
+        db.session.add(r)
+        db.session.commit()
+    except Exception as e:
+        db.session.rollback()
+        return jsonify({'error': f'新增失敗：{e}'}), 500
     return jsonify(r.to_dict()), 201
 
 @app.route('/admin/api/rooms/<int:rid>', methods=['PUT'])
@@ -3297,14 +3304,19 @@ def admin_update_room(rid):
     err = check_admin()
     if err: return err
     room = Room.query.get_or_404(rid)
-    d = request.get_json()
-    for f in ['name','room_type','capacity','capacity_min','hourly_rate','min_hours','description',
-                'floor','photo_url','is_active','sort_order','time_config']:
-        if f in d:
-            setattr(room, f, d[f])
-    if 'amenities' in d:
-        room.amenities = json.dumps(d['amenities'], ensure_ascii=False)
-    db.session.commit()
+    d = request.get_json() or {}
+    try:
+        for f in ['name','room_type','capacity','capacity_min','hourly_rate','min_hours','description',
+                    'floor','photo_url','is_active','sort_order','time_config']:
+            if f in d:
+                setattr(room, f, d[f])
+        if 'amenities' in d:
+            amenities = d['amenities'] if isinstance(d['amenities'], list) else []
+            room.amenities = json.dumps(amenities, ensure_ascii=False)
+        db.session.commit()
+    except Exception as e:
+        db.session.rollback()
+        return jsonify({'error': f'更新失敗：{e}'}), 500
     return jsonify(room.to_dict())
 
 @app.route('/admin/api/rooms/<int:rid>', methods=['DELETE'])
@@ -3358,7 +3370,11 @@ def admin_add_room_photo(rid):
     photos.append(url)
     r.photos = json.dumps(photos, ensure_ascii=False)
     r.photo_url = r.get_cover()
-    db.session.commit()
+    try:
+        db.session.commit()
+    except Exception as e:
+        db.session.rollback()
+        return jsonify({'error': f'儲存失敗：{e}'}), 500
     return jsonify({'success': True, 'photos': photos, 'cover_index': r.cover_index or 0})
 
 @app.route('/admin/api/rooms/<int:rid>/photos/<int:idx>', methods=['DELETE'])
@@ -3836,8 +3852,13 @@ def admin_get_accounts():
 def admin_create_account():
     err = check_admin()
     if err: return err
-    d = request.get_json()
-    if AdminUser.query.filter_by(username=d['username']).first():
+    d = request.get_json() or {}
+    if not d.get('username', '').strip():
+        return jsonify({'error': '請填寫帳號'}), 400
+    pw = d.get('password', '').strip()
+    if not pw or len(pw) < 6:
+        return jsonify({'error': '請設定至少 6 碼的密碼'}), 400
+    if AdminUser.query.filter_by(username=d['username'].strip()).first():
         return jsonify({'error': '帳號已存在'}), 400
     creator = get_current_admin()
     u = AdminUser(
@@ -3847,12 +3868,16 @@ def admin_create_account():
         is_active    = d.get('is_active', True),
         created_by   = creator.username if creator else 'admin',
     )
-    u.set_password(d.get('password', 'changeme'))
+    u.set_password(pw)
     if d.get('permissions') is not None:
         import json as _j
         u.permissions = _j.dumps(d['permissions'], ensure_ascii=False)
-    db.session.add(u)
-    db.session.commit()
+    try:
+        db.session.add(u)
+        db.session.commit()
+    except Exception as e:
+        db.session.rollback()
+        return jsonify({'error': f'建立失敗：{e}'}), 500
     return jsonify({'success': True, 'user': u.to_dict()}), 201
 
 @app.route('/admin/api/accounts/<int:uid>', methods=['PUT'])
@@ -3860,14 +3885,22 @@ def admin_update_account(uid):
     err = check_admin()
     if err: return err
     u = AdminUser.query.get_or_404(uid)
-    d = request.get_json()
+    d = request.get_json() or {}
     import json as _j
     if 'display_name' in d: u.display_name = d['display_name']
     if 'role' in d: u.role = d['role']
     if 'is_active' in d: u.is_active = d['is_active']
-    if 'password' in d and d['password']: u.set_password(d['password'])
+    if 'password' in d and d['password']:
+        pw = str(d['password']).strip()
+        if len(pw) < 6:
+            return jsonify({'error': '密碼至少 6 碼'}), 400
+        u.set_password(pw)
     if 'permissions' in d: u.permissions = _j.dumps(d['permissions'], ensure_ascii=False)
-    db.session.commit()
+    try:
+        db.session.commit()
+    except Exception as e:
+        db.session.rollback()
+        return jsonify({'error': f'更新失敗：{e}'}), 500
     return jsonify({'success': True, 'user': u.to_dict()})
 
 @app.route('/admin/api/accounts/<int:uid>', methods=['DELETE'])
@@ -3885,8 +3918,21 @@ def admin_delete_account(uid):
 def admin_update_booking(bid):
     err = check_admin()
     if err: return err
+    import re as _re
     b = Booking.query.get_or_404(bid)
     d = request.get_json() or {}
+    if 'date' in d:
+        date_val = (d['date'] or '').strip()
+        if date_val and not _re.match(r'^\d{4}-\d{2}-\d{2}$', date_val):
+            return jsonify({'error': '日期格式錯誤，請使用 YYYY-MM-DD'}), 400
+    if 'start_time' in d:
+        st = (d['start_time'] or '').strip()
+        if st and not _re.match(r'^\d{2}:\d{2}$', st):
+            return jsonify({'error': '開始時間格式錯誤，請使用 HH:MM'}), 400
+    if 'end_time' in d:
+        et = (d['end_time'] or '').strip()
+        if et and not _re.match(r'^\d{2}:\d{2}$', et):
+            return jsonify({'error': '結束時間格式錯誤，請使用 HH:MM'}), 400
     if 'customer_name'  in d: b.customer_name  = (d['customer_name'] or '').strip()
     if 'customer_phone' in d: b.customer_phone = (d['customer_phone'] or '').strip()
     if 'customer_email' in d: b.customer_email = (d['customer_email'] or '').strip() or None
@@ -3899,7 +3945,11 @@ def admin_update_booking(bid):
     if 'note'           in d: b.note           = (d['note'] or '').strip() or None
     if 'room_id'        in d and d['room_id']:  b.room_id = int(d['room_id'])
     if 'total_price'    in d: b.total_price    = int(d['total_price'] or 0)
-    db.session.commit()
+    try:
+        db.session.commit()
+    except Exception as e:
+        db.session.rollback()
+        return jsonify({'error': f'更新失敗：{e}'}), 500
     return jsonify({'success': True, 'booking': b.to_dict()})
 
 

@@ -3827,7 +3827,8 @@ with app.app_context():
             mb_cols_query = "PRAGMA table_info(members)" if 'sqlite' in str(db.engine.url) else "SELECT column_name FROM information_schema.columns WHERE table_name='members'"
             mb_cols = [r[1] for r in conn.execute(db.text(mb_cols_query)).fetchall()] if 'sqlite' in str(db.engine.url) else [r[0] for r in conn.execute(db.text(mb_cols_query)).fetchall()]
             if 'email_token_expires' not in mb_cols:
-                conn.execute(db.text('ALTER TABLE members ADD COLUMN email_token_expires DATETIME'))
+                _ts_type = 'DATETIME' if 'sqlite' in str(db.engine.url) else 'TIMESTAMP'
+                conn.execute(db.text(f'ALTER TABLE members ADD COLUMN email_token_expires {_ts_type}'))
                 conn.commit()
                 print('[migrate] 新增 members.email_token_expires 欄位')
             if 'phone_verify_attempts' not in mb_cols:

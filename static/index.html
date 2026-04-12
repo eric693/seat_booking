@@ -2349,12 +2349,14 @@ function updateSumTime() {
 function updateSummary() {
   const name  = getFieldVal('name');
   const phone = getFieldVal('phone');
+  const sumName = document.getElementById('sum-name');
+  if (!sumName) return;
   if (name) {
-    document.getElementById('sum-name').textContent = name + (phone ? ` · ${phone}` : '');
-    document.getElementById('sum-name').classList.remove('empty');
+    sumName.textContent = name + (phone ? ` · ${phone}` : '');
+    sumName.classList.remove('empty');
   } else {
-    document.getElementById('sum-name').textContent = '請填寫';
-    document.getElementById('sum-name').classList.add('empty');
+    sumName.textContent = '請填寫';
+    sumName.classList.add('empty');
   }
 }
 

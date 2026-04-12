@@ -1163,9 +1163,9 @@ input[list]::-webkit-calendar-picker-indicator { display: none !important; }
         <input type="hidden" id="block-member-id">
         <div style="display:flex;gap:10px;">
           <button class="btn btn-primary" style="background:var(--red);flex:1;" onclick="confirmBlockMember()">確認停用</button>
-          <button class="btn btn-outline" style="flex:1;" onclick="document.getElementById('blockMemberModal').classList.remove('active')">取消</button>
+          <button class="btn btn-outline" style="flex:1;" onclick="document.getElementById('blockMemberModal').classList.remove('show')">取消</button>
         </div>
-        <button onclick="document.getElementById('blockMemberModal').classList.remove('active')" style="position:absolute;top:16px;right:20px;background:none;border:none;font-size:22px;color:var(--ink-60);cursor:pointer;">×</button>
+        <button onclick="document.getElementById('blockMemberModal').classList.remove('show')" style="position:absolute;top:16px;right:20px;background:none;border:none;font-size:22px;color:var(--ink-60);cursor:pointer;">×</button>
       </div>
     </div>
 
@@ -1897,8 +1897,8 @@ async function saveBookingEdit() {
     date:           document.getElementById('bm-date').value,
     start_time:     document.getElementById('bm-start').value,
     end_time:       document.getElementById('bm-end').value,
-    attendees:      document.getElementById('bm-attendees').value,
-    total_price:    document.getElementById('bm-price').value,
+    attendees:      parseInt(document.getElementById('bm-attendees').value) || 1,
+    total_price:    parseInt(document.getElementById('bm-price').value) || 0,
     purpose:        document.getElementById('bm-purpose').value.trim(),
     note:           document.getElementById('bm-note').value.trim(),
   };
@@ -3541,11 +3541,11 @@ function openEditMemberModal(id, name, email, phone) {
   document.getElementById('em-phone').value   = phone;
   document.getElementById('em-password').value = '';
   document.getElementById('edit-member-error').style.display = 'none';
-  document.getElementById('editMemberModal').classList.add('active');
+  document.getElementById('editMemberModal').classList.add('show');
 }
 
 function closeEditMemberModal() {
-  document.getElementById('editMemberModal').classList.remove('active');
+  document.getElementById('editMemberModal').classList.remove('show');
 }
 
 async function saveEditMember() {
@@ -3583,7 +3583,7 @@ async function saveEditMember() {
 function openBlockModal(id) {
   document.getElementById('block-member-id').value = id;
   document.getElementById('block-reason').value = '';
-  document.getElementById('blockMemberModal').classList.add('active');
+  document.getElementById('blockMemberModal').classList.add('show');
 }
 
 async function confirmBlockMember() {
@@ -3596,7 +3596,7 @@ async function confirmBlockMember() {
   });
   if (res.ok) {
     toast('已停用該會員', 'success');
-    document.getElementById('blockMemberModal').classList.remove('active');
+    document.getElementById('blockMemberModal').classList.remove('show');
     loadMembers();
   } else {
     toast('操作失敗', 'error');

@@ -2627,7 +2627,7 @@ function showSuccess(booking, isMulti) {
       return h + ' 小時 ' + m + ' 分鐘';
     })()],
     ['聯絡人', booking.customer_name],
-    ['費用', `NT$ ${booking.total_price.toLocaleString()}`],
+    ['費用', `NT$ ${(booking.total_price || 0).toLocaleString()}`],
   ];
   document.getElementById('confirmTable').innerHTML = rows.map(([k, v]) =>
     `<div class="ct-row"><span class="ct-key">${k}</span><span class="ct-val">${v}</span></div>`

@@ -3792,7 +3792,7 @@ with app.app_context():
                 db.create_all()
                 print('[migrate] 新增 blocked_slots table')
             # admin_users.password_plain
-            au_cols = [c['name'] for c in conn.execute(db.text("PRAGMA table_info(admin_users)")).fetchall()] if 'sqlite' in str(db.engine.url) else [r[0] for r in conn.execute(db.text("SELECT column_name FROM information_schema.columns WHERE table_name='admin_users'")).fetchall()]
+            au_cols = [c[1] for c in conn.execute(db.text("PRAGMA table_info(admin_users)")).fetchall()] if 'sqlite' in str(db.engine.url) else [r[0] for r in conn.execute(db.text("SELECT column_name FROM information_schema.columns WHERE table_name='admin_users'")).fetchall()]
             if 'password_plain' not in au_cols:
                 try:
                     conn.execute(db.text('ALTER TABLE admin_users ADD COLUMN password_plain VARCHAR(128) DEFAULT \'\''))
@@ -3823,6 +3823,17 @@ with app.app_context():
             if 'members' not in existing_tables:
                 db.create_all()
                 print('[migrate] 新增 members table')
+            # members 欄位補齊
+            mb_cols_query = "PRAGMA table_info(members)" if 'sqlite' in str(db.engine.url) else "SELECT column_name FROM information_schema.columns WHERE table_name='members'"
+            mb_cols = [r[1] for r in conn.execute(db.text(mb_cols_query)).fetchall()] if 'sqlite' in str(db.engine.url) else [r[0] for r in conn.execute(db.text(mb_cols_query)).fetchall()]
+            if 'email_token_expires' not in mb_cols:
+                conn.execute(db.text('ALTER TABLE members ADD COLUMN email_token_expires DATETIME'))
+                conn.commit()
+                print('[migrate] 新增 members.email_token_expires 欄位')
+            if 'phone_verify_attempts' not in mb_cols:
+                conn.execute(db.text('ALTER TABLE members ADD COLUMN phone_verify_attempts INTEGER DEFAULT 0'))
+                conn.commit()
+                print('[migrate] 新增 members.phone_verify_attempts 欄位')
             if 'chat_sessions' not in existing_tables:
                 db.create_all()
                 print('[migrate] 新增 chat_sessions / chat_messages tables')

@@ -3845,6 +3845,37 @@ with app.app_context():
         print('[migrate] db.create_all() done')
     except Exception as e:
         print(f'[migrate] create_all error: {e}')
+    # ── members 欄位補齊（獨立執行，確保 PostgreSQL 也能補上）──
+    try:
+        _is_pg = 'sqlite' not in str(db.engine.url)
+        _ts    = 'TIMESTAMP' if _is_pg else 'DATETIME'
+        _mb_q  = ("SELECT column_name FROM information_schema.columns WHERE table_name='members'"
+                  if _is_pg else "PRAGMA table_info(members)")
+        with db.engine.connect() as _conn:
+            if _is_pg:
+                _mb_cols = [r[0] for r in _conn.execute(db.text(_mb_q)).fetchall()]
+            else:
+                _mb_cols = [r[1] for r in _conn.execute(db.text(_mb_q)).fetchall()]
+            _member_cols = {
+                'email_token_expires':    f'ALTER TABLE members ADD COLUMN email_token_expires {_ts}',
+                'phone_verify_attempts':  'ALTER TABLE members ADD COLUMN phone_verify_attempts INTEGER DEFAULT 0',
+                'phone_code_expires':     f'ALTER TABLE members ADD COLUMN phone_code_expires {_ts}',
+                'reset_token_expires':    f'ALTER TABLE members ADD COLUMN reset_token_expires {_ts}',
+                'line_user_id':           'ALTER TABLE members ADD COLUMN line_user_id VARCHAR(100)',
+                'last_login':             f'ALTER TABLE members ADD COLUMN last_login {_ts}',
+                'is_verified_phone':      'ALTER TABLE members ADD COLUMN is_verified_phone BOOLEAN DEFAULT FALSE',
+                'block_reason':           "ALTER TABLE members ADD COLUMN block_reason VARCHAR(200) DEFAULT ''",
+            }
+            for col, sql in _member_cols.items():
+                if col not in _mb_cols:
+                    try:
+                        _conn.execute(db.text(sql))
+                        _conn.commit()
+                        print(f'[migrate] 新增 members.{col} 欄位')
+                    except Exception as _ce:
+                        print(f'[migrate] members.{col} 略過：{_ce}')
+    except Exception as e:
+        print(f'[migrate] members 欄位檢查失敗：{e}')
     try:
         if not AdminUser.query.filter_by(username='admin').first():
             su = AdminUser(username='admin', display_name='超級管理員',

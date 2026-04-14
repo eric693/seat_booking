@@ -3057,7 +3057,7 @@ const ALL_PAGES = [
   {id:'dashboard',label:'儀表板'},{id:'bookings',label:'預約管理'},
   {id:'rooms',label:'會議室管理'},{id:'content',label:'文字內容'},
   {id:'photos',label:'照片管理'},{id:'formfields',label:'表單欄位'},
-  {id:'blocked',label:'封鎖時段'},{id:'lineqa',label:'LINE問答'},{id:'members',label:'會員管理'},{id:'chat',label:'聊天記錄'},{id:'payment',label:'付款設定'},
+  {id:'blocked',label:'封鎖時段'},{id:'lineusers',label:'Line用戶'},{id:'lineqa',label:'LINE問答'},{id:'members',label:'會員管理'},{id:'chat',label:'聊天記錄'},{id:'payment',label:'付款設定'},
   {id:'accounts',label:'帳號管理'},{id:'logs',label:'登入紀錄'}
 ];
 
@@ -3914,6 +3914,10 @@ function applyPermissions(perms) {
     'photos':     "showPage('photos'",
     'formfields': "showPage('formfields'",
     'blocked':    "showPage('blocked'",
+    'lineusers':  "showPage('lineusers'",
+    'members':    "showPage('members'",
+    'chat':       "showPage('chat'",
+    'lineqa':     "showPage('lineqa'",
     'accounts':   "showPage('accounts'",
     'payment':    "showPage('payment'",
     'logs':       "showPage('logs'",

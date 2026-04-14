@@ -1477,7 +1477,7 @@ class AdminUser(db.Model):
 
     def get_permissions(self):
         import json as _j
-        ALL = ['dashboard','bookings','rooms','content','photos','formfields','blocked','payment','accounts','logs']
+        ALL = ['dashboard','bookings','rooms','content','photos','formfields','blocked','lineusers','members','chat','lineqa','payment','accounts','logs']
         if self.role == 'superadmin':
             return ALL
         if self.permissions:

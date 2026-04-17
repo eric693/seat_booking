@@ -2051,14 +2051,14 @@ def bookings_by_member():
 
 @app.route('/api/bookings/check')
 def check_booking():
-    number = request.args.get('number')
     phone  = request.args.get('phone')
-    if not number or not phone:
-        return jsonify({'error': '請提供預約編號和電話'}), 400
-    b = Booking.query.filter_by(booking_number=number, customer_phone=phone).first()
-    if not b:
+    if not phone:
+        return jsonify({'error': '請提供手機號碼'}), 400
+    bookings = Booking.query.filter_by(customer_phone=phone)\
+        .order_by(Booking.date.desc(), Booking.start_time.desc()).all()
+    if not bookings:
         return jsonify({'error': '找不到此預約'}), 404
-    return jsonify(b.to_dict())
+    return jsonify([b.to_dict() for b in bookings])
 
 
 # ─────────────────────────────────────────────

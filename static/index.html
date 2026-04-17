@@ -1304,10 +1304,6 @@ footer {
     <h2 class="modal-title" style="margin-bottom:20px;">查詢預約</h2>
     <div class="form-grid" style="grid-template-columns:1fr;">
       <div class="fgroup">
-        <label>預約編號</label>
-        <input class="finput" type="text" id="qNumber" placeholder="MR20260221XXXX">
-      </div>
-      <div class="fgroup">
         <label>手機號碼</label>
         <input class="finput" type="tel" id="qPhone" placeholder="0912345678">
       </div>
@@ -2657,22 +2653,22 @@ document.getElementById('queryModal').addEventListener('click', function(e) {
 });
 
 async function doQuery() {
-  const number = document.getElementById('qNumber').value.trim().toUpperCase();
   const phone = document.getElementById('qPhone').value.trim();
-  if (!number || !phone) { alert('請填寫預約編號和手機號碼'); return; }
+  if (!phone) { alert('請填寫手機號碼'); return; }
   try {
-    const res = await fetch(`${API}/api/bookings/check?number=${encodeURIComponent(number)}&phone=${encodeURIComponent(phone)}`);
+    const res = await fetch(`${API}/api/bookings/check?phone=${encodeURIComponent(phone)}`);
     const data = await res.json();
     if (res.ok) {
       const statusMap = { confirmed: '已確認', cancelled: '已取消', completed: '已完成' };
-      document.getElementById('queryResult').innerHTML = `
-        <div class="confirm-table">
-          <div class="ct-row"><span class="ct-key">預約編號</span><span class="ct-val">${data.booking_number}</span></div>
-          <div class="ct-row"><span class="ct-key">會議室</span><span class="ct-val">${data.room_name}</span></div>
-          <div class="ct-row"><span class="ct-key">日期</span><span class="ct-val">${data.date}</span></div>
-          <div class="ct-row"><span class="ct-key">時段</span><span class="ct-val">${data.start_time} – ${data.end_time}</span></div>
-          <div class="ct-row"><span class="ct-key">狀態</span><span class="ct-val">${statusMap[data.status] || data.status}</span></div>
-        </div>`;
+      const list = Array.isArray(data) ? data : [data];
+      document.getElementById('queryResult').innerHTML = list.map(b => `
+        <div class="confirm-table" style="margin-bottom:12px;">
+          <div class="ct-row"><span class="ct-key">預約編號</span><span class="ct-val">${b.booking_number}</span></div>
+          <div class="ct-row"><span class="ct-key">會議室</span><span class="ct-val">${b.room_name}</span></div>
+          <div class="ct-row"><span class="ct-key">日期</span><span class="ct-val">${b.date}</span></div>
+          <div class="ct-row"><span class="ct-key">時段</span><span class="ct-val">${b.start_time} – ${b.end_time}</span></div>
+          <div class="ct-row"><span class="ct-key">狀態</span><span class="ct-val">${statusMap[b.status] || b.status}</span></div>
+        </div>`).join('');
     } else {
       const qErr = document.createElement('div');
       qErr.style.cssText = 'color:var(--red);padding:12px;text-align:center;';

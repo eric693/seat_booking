@@ -412,7 +412,7 @@ def _booking_email_html(booking) -> str:
 </style></head><body>
 <div class="wrap">
   <div class="hd">
-    <div class="hd-chip">預約已確認</div>
+    <div class="hd-chip">{'預約已確認' if booking.status == 'confirmed' else '預約待審核'}</div>
     <h1>{room}</h1>
     <p>預約編號：{booking.booking_number}</p>
   </div>
@@ -434,9 +434,10 @@ def _booking_email_html(booking) -> str:
 
 
 def _booking_sms_body(booking) -> str:
-    """預約確認 SMS 內文"""
+    """預約 SMS 內文（依狀態顯示待審核或已確認）"""
     room = booking.room.name if booking.room else '—'
-    return (f'【預約確認】{room}\n'
+    tag = '【預約待審核】' if getattr(booking, 'status', 'pending') == 'pending' else '【預約確認】'
+    return (f'{tag}{room}\n'
             f'日期：{booking.date} {booking.start_time}–{booking.end_time}\n'
             f'編號：{booking.booking_number}\n'
             f'如需取消請提前 2 小時告知。')
@@ -1008,18 +1009,18 @@ def flex_booking_confirm(booking) -> dict:
 
     return {
         'type': 'flex',
-        'altText': f'【預約確認】{room}｜{booking.date} {_fmt_segments(booking)}｜編號 {booking.booking_number}',
+        'altText': f'{"【預約待審核】" if booking.status == "pending" else "【預約確認】"}{room}｜{booking.date} {_fmt_segments(booking)}｜編號 {booking.booking_number}',
         'contents': {
             'type': 'bubble',
             'size': 'kilo',
             'header': {
                 'type': 'box', 'layout': 'vertical',
-                'backgroundColor': '#3a3a3a' if is_expired else ('#1a3333'),
+                'backgroundColor': '#3a3a3a' if is_expired else ('#1a3350' if booking.status == 'pending' else '#1a3333'),
                 'paddingAll': '0px',
                 'contents': [
                     # 頂部色條
                     {'type': 'box', 'layout': 'vertical',
-                     'backgroundColor': '#888888' if is_expired else '#2A6B6B', 'height': '4px',
+                     'backgroundColor': '#888888' if is_expired else ('#1d4ed8' if booking.status == 'pending' else '#2A6B6B'), 'height': '4px',
                      'contents': []},
                     # 主 header 內容
                     {'type': 'box', 'layout': 'vertical',
@@ -1029,10 +1030,10 @@ def flex_booking_confirm(booking) -> dict:
                          {'type': 'box', 'layout': 'horizontal',
                           'contents': [
                              {'type': 'box', 'layout': 'vertical',
-                              'backgroundColor': '#888888' if is_expired else '#2A6B6B', 'cornerRadius': '20px',
+                              'backgroundColor': '#888888' if is_expired else ('#1d4ed8' if booking.status == 'pending' else '#2A6B6B'), 'cornerRadius': '20px',
                               'paddingAll': '4px', 'paddingStart': '12px', 'paddingEnd': '12px',
                               'flex': 0,
-                              'contents': [{'type': 'text', 'text': '已過期' if is_expired else ('已完成' if is_completed else '預約已確認'),
+                              'contents': [{'type': 'text', 'text': '已過期' if is_expired else ('已完成' if is_completed else ('預約待審核' if booking.status == 'pending' else '預約已確認')),
                                             'size': 'xs', 'color': '#ffffff', 'weight': 'bold'}]},
                          ]},
                          # 預約編號（獨立一行，完整顯示）
@@ -1085,7 +1086,7 @@ def flex_booking_confirm(booking) -> dict:
                     {'type': 'button',
                      'action': {'type': 'message', 'label': '查詢此預約',
                                 'text': f'查詢 {booking.booking_number}'},
-                     'style': 'primary', 'color': '#888888' if is_expired else '#2A6B6B',
+                     'style': 'primary', 'color': '#888888' if is_expired else ('#1d4ed8' if booking.status == 'pending' else '#2A6B6B'),
                      'height': 'sm'},
                     *([{'type': 'button',
                      'action': {'type': 'message', 'label': '取消此預約',
@@ -2032,8 +2033,9 @@ def create_booking():
             for aid in admin_line_ids():
                 push_line(aid, [flex_admin_notify(booking)])
             if booking.customer_email:
+                subj_tag = '【預約待審核】' if booking.status == 'pending' else '【預約確認】'
                 send_email(booking.customer_email,
-                           f'【預約確認】{booking.room.name} – {booking.date}',
+                           f'{subj_tag}{booking.room.name} – {booking.date}',
                            _booking_email_html(booking))
             send_sms(booking.customer_phone, _booking_sms_body(booking))
         except Exception as ne:
@@ -3647,16 +3649,15 @@ def admin_confirm_booking(bid):
     db.session.commit()
     # 發送確認通知
     try:
+        if b.line_user_id:
+            push_line(b.line_user_id, [flex_booking_confirm(b)])
         if b.customer_email:
             send_email(b.customer_email,
                        f'【預約確認】{b.room.name} – {b.date}',
                        _booking_email_html(b))
-    except Exception:
-        pass
-    try:
         send_sms(b.customer_phone, _booking_sms_body(b))
-    except Exception:
-        pass
+    except Exception as e:
+        print(f'[admin confirm notify error] {e}')
     return jsonify({'success': True})
 
 

@@ -3880,7 +3880,11 @@ with app.app_context():
             if 'time_config' not in rm_cols:
                 conn.execute(db.text('ALTER TABLE rooms ADD COLUMN time_config TEXT'))
                 conn.commit()
-                print('[migrate] 新增 rooms.time_config 欄位')            
+                print('[migrate] 新增 rooms.time_config 欄位')
+            if 'cleaning_buffer' not in rm_cols:
+                conn.execute(db.text('ALTER TABLE rooms ADD COLUMN cleaning_buffer INTEGER DEFAULT 0'))
+                conn.commit()
+                print('[migrate] 新增 rooms.cleaning_buffer 欄位')            
             if 'line_qa' not in existing_tables:
                 db.create_all()
                 print('[migrate] 新增 line_qa table')
@@ -3940,6 +3944,38 @@ with app.app_context():
                         print(f'[migrate] members.{col} 略過：{_ce}')
     except Exception as e:
         print(f'[migrate] members 欄位檢查失敗：{e}')
+    # ── rooms.cleaning_buffer 欄位補齊 ──
+    try:
+        _is_pg = 'sqlite' not in str(db.engine.url)
+        _rm_q  = ("SELECT column_name FROM information_schema.columns WHERE table_name='rooms'"
+                  if _is_pg else "PRAGMA table_info(rooms)")
+        with db.engine.connect() as _conn:
+            if _is_pg:
+                _rm_cols = [r[0] for r in _conn.execute(db.text(_rm_q)).fetchall()]
+            else:
+                _rm_cols = [r[1] for r in _conn.execute(db.text(_rm_q)).fetchall()]
+            if 'cleaning_buffer' not in _rm_cols:
+                _conn.execute(db.text('ALTER TABLE rooms ADD COLUMN cleaning_buffer INTEGER DEFAULT 0'))
+                _conn.commit()
+                print('[migrate] 新增 rooms.cleaning_buffer 欄位')
+    except Exception as e:
+        print(f'[migrate] rooms.cleaning_buffer 略過：{e}')
+    # ── bookings.status 欄位（確保欄位存在）──
+    try:
+        _is_pg = 'sqlite' not in str(db.engine.url)
+        _bk_q  = ("SELECT column_name FROM information_schema.columns WHERE table_name='bookings'"
+                  if _is_pg else "PRAGMA table_info(bookings)")
+        with db.engine.connect() as _conn:
+            if _is_pg:
+                _bk_cols = [r[0] for r in _conn.execute(db.text(_bk_q)).fetchall()]
+            else:
+                _bk_cols = [r[1] for r in _conn.execute(db.text(_bk_q)).fetchall()]
+            if 'status' not in _bk_cols:
+                _conn.execute(db.text("ALTER TABLE bookings ADD COLUMN status VARCHAR(20) DEFAULT 'pending'"))
+                _conn.commit()
+                print('[migrate] 新增 bookings.status 欄位')
+    except Exception as e:
+        print(f'[migrate] bookings.status 略過：{e}')
     # ── admin_users.password_hash 欄位加長（VARCHAR(128) → VARCHAR(256)）──
     try:
         _is_pg = 'sqlite' not in str(db.engine.url)

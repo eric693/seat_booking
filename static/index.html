@@ -1978,6 +1978,20 @@ async function selectDate(ds, el) {
     cleaningSlots     = new Set();
     adminBlockedSlots = new Set();
 
+    // 提前預約限制：今日才需鎖格
+    const advMin = data.advance_minutes || 0;
+    if (advMin > 0) {
+      const nowTw = new Date(Date.now() + 8 * 3600000); // UTC+8
+      const todayStr = nowTw.toISOString().slice(0, 10);
+      if (ds === todayStr) {
+        const cutoffMin = nowTw.getUTCHours() * 60 + nowTw.getUTCMinutes() + advMin;
+        for (let i = 0; i < SLOT_COUNT; i++) {
+          const slotMin = (SLOT_START_HOUR + Math.floor(i / 2)) * 60 + (i % 2 === 0 ? 0 : 30);
+          if (slotMin < cutoffMin) blockedSlots.add(i);
+        }
+      }
+    }
+
     // 處理時段設定：若有 open_periods，把「非開放時間」標記為封鎖
     _openPeriods = data.open_periods || [];  // [{period_id, label, start, end}]
     _hasTimeConfig = data.has_time_config || false;

@@ -1311,6 +1311,7 @@ class Room(db.Model):
     floor       = db.Column(db.String(20))
     min_hours        = db.Column(db.Float, default=1.0)   # 最低預約時數（0=不限)
     cleaning_buffer  = db.Column(db.Integer, default=0)   # 清潔緩衝時間（分鐘）
+    advance_minutes  = db.Column(db.Integer, default=0)   # 最短提前預約分鐘數（0=不限）
     sort_order  = db.Column(db.Integer, default=0)
     created_at  = db.Column(db.DateTime, default=tw_now)
     time_config = db.Column(db.Text)
@@ -1353,6 +1354,7 @@ class Room(db.Model):
             'is_active': self.is_active, 'floor': self.floor,
             'min_hours': float(self.min_hours or 1.0),
             'cleaning_buffer': int(self.cleaning_buffer or 0),
+            'advance_minutes': int(self.advance_minutes or 0),
             'sort_order': self.sort_order or 0,
             'time_config': self.time_config or '',
         }
@@ -1910,6 +1912,7 @@ def room_availability(room_id):
         'booked_slots': get_booked_slots(room_id, date),
         'open_periods': _get_open_periods(room, date),
         'has_time_config': bool(room.time_config),
+        'advance_minutes': int(room.advance_minutes or 0),
     })
 
 
@@ -1986,6 +1989,21 @@ def create_booking():
             start_time    = data['start_time']
             end_time      = data['end_time']
             segments_json = None
+
+        # 最短提前預約時間檢查
+        adv = int(room.advance_minutes or 0)
+        if adv > 0:
+            now_tw = datetime.now(timezone.utc) + timedelta(hours=8)
+            cutoff = now_tw + timedelta(minutes=adv)
+            from datetime import datetime as _dt2
+            booking_start_dt = _dt2.strptime(f'{data["date"]} {start_time}', '%Y-%m-%d %H:%M')
+            cutoff_naive = cutoff.replace(tzinfo=None)
+            if booking_start_dt < cutoff_naive:
+                if adv >= 60 and adv % 60 == 0:
+                    adv_str = f'{adv // 60} 小時'
+                else:
+                    adv_str = f'{adv} 分鐘'
+                return jsonify({'error': f'此會議室需提前 {adv_str} 預約，請選擇較晚的時段'}), 400
 
         if not data.get('phone', '').strip():
             return jsonify({'error': '請填寫手機號碼'}), 400
@@ -3372,6 +3390,7 @@ def admin_add_room():
                  hourly_rate=int(d.get('hourly_rate', 500)),
                  min_hours=float(d.get('min_hours', 1.0)),
                  cleaning_buffer=int(d.get('cleaning_buffer', 0)),
+                 advance_minutes=int(d.get('advance_minutes', 0)),
                  description=d.get('description',''),
                  amenities=json.dumps(amenities, ensure_ascii=False),
                  floor=d.get('floor',''), photo_url=d.get('photo_url',''),
@@ -3391,7 +3410,7 @@ def admin_update_room(rid):
     d = request.get_json() or {}
     try:
         for f in ['name','room_type','capacity','capacity_min','hourly_rate','min_hours','cleaning_buffer',
-                  'description','floor','photo_url','is_active','sort_order','time_config']:
+                  'advance_minutes','description','floor','photo_url','is_active','sort_order','time_config']:
             if f in d:
                 setattr(room, f, d[f])
         if 'amenities' in d:
@@ -3992,7 +4011,7 @@ with app.app_context():
                         print(f'[migrate] members.{col} 略過：{_ce}')
     except Exception as e:
         print(f'[migrate] members 欄位檢查失敗：{e}')
-    # ── rooms.cleaning_buffer 欄位補齊 ──
+    # ── rooms 欄位補齊（cleaning_buffer, advance_minutes）──
     try:
         _is_pg = 'sqlite' not in str(db.engine.url)
         _rm_q  = ("SELECT column_name FROM information_schema.columns WHERE table_name='rooms'"
@@ -4006,8 +4025,12 @@ with app.app_context():
                 _conn.execute(db.text('ALTER TABLE rooms ADD COLUMN cleaning_buffer INTEGER DEFAULT 0'))
                 _conn.commit()
                 print('[migrate] 新增 rooms.cleaning_buffer 欄位')
+            if 'advance_minutes' not in _rm_cols:
+                _conn.execute(db.text('ALTER TABLE rooms ADD COLUMN advance_minutes INTEGER DEFAULT 0'))
+                _conn.commit()
+                print('[migrate] 新增 rooms.advance_minutes 欄位')
     except Exception as e:
-        print(f'[migrate] rooms.cleaning_buffer 略過：{e}')
+        print(f'[migrate] rooms 欄位補齊略過：{e}')
     # ── bookings.status 欄位（確保欄位存在）──
     try:
         _is_pg = 'sqlite' not in str(db.engine.url)

@@ -1538,6 +1538,7 @@ input[list]::-webkit-calendar-picker-indicator { display: none !important; }
       <div class="fg"><label>容納人數</label><div style="display:flex;gap:8px;align-items:center;"><input class="finput" type="number" id="rm-capacity-min" placeholder="最少（選填）" min="1" style="flex:1;"><span style="color:var(--ink-60);white-space:nowrap;">～</span><input class="finput" type="number" id="rm-capacity" placeholder="最多" min="1" style="flex:1;"><span style="color:var(--ink-60);white-space:nowrap;">人</span></div><div style="font-size:12px;color:var(--ink-60);margin-top:4px;">填寫最少人數可顯示「4～6 人」範圍</div></div>
       <div class="fg"><label>每小時費率（NT$）</label><input class="finput" type="number" id="rm-rate" placeholder="500" min="0"></div>
       <div class="fg"><label>最低預約時數 <span>（0 = 不限）</span></label><div style="display:flex;align-items:center;gap:8px;"><input class="finput" type="number" id="rm-min-hours" placeholder="1" min="0" step="0.5" style="flex:1;"><span style="color:var(--ink-60);white-space:nowrap;">小時</span></div></div>
+      <div class="fg"><label>清潔緩衝時間 <span>（每筆預約結束後保留的清潔時間，0 = 不限）</span></label><div style="display:flex;align-items:center;gap:8px;"><input class="finput" type="number" id="rm-cleaning-buffer" placeholder="0" min="0" step="5" style="flex:1;"><span style="color:var(--ink-60);white-space:nowrap;">分鐘</span></div></div>
       <div class="fg"><label>樓層</label><input class="finput" type="text" id="rm-floor" placeholder="例：3F"></div>
       <div class="fg"><label>前台顯示順序 <span>（數字越小越前面，0=自動）</span></label><input class="finput" type="number" id="rm-sort-order" placeholder="0" min="0" style="width:120px;"></div>
       <div class="fg"><label>狀態</label><select class="fselect" id="rm-active"><option value="true">啟用</option><option value="false">停用</option></select></div>
@@ -1966,7 +1967,7 @@ async function loadRoomsAdmin() {
         <div class="rac-body">
           <div class="rac-type">${r.room_type}</div>
           <div class="rac-name">${r.name}</div>
-          <div class="rac-meta">容納 ${r.capacity_label || r.capacity + ' 人'} · ${r.floor || 'F—'} · NT$ ${r.hourly_rate.toLocaleString()}/hr${r.min_hours>0?' · 最少 '+(r.min_hours===Math.floor(r.min_hours)?r.min_hours:r.min_hours)+' 小時':''}</div>
+          <div class="rac-meta">容納 ${r.capacity_label || r.capacity + ' 人'} · ${r.floor || 'F—'} · NT$ ${r.hourly_rate.toLocaleString()}/hr${r.min_hours>0?' · 最少 '+(r.min_hours===Math.floor(r.min_hours)?r.min_hours:r.min_hours)+' 小時':''}${r.cleaning_buffer>0?' · 清潔 '+r.cleaning_buffer+'分':''}</div>
           ${r.description ? `<div class="rac-desc">${r.description.length > 60 ? r.description.slice(0,60) + '…' : r.description}</div>` : ''}
           <div class="rac-actions">
             <button class="btn btn-outline btn-sm" onclick="editRoom(${r.id})" style="flex:1;">編輯</button>
@@ -2000,6 +2001,7 @@ function openRoomModal() {
   document.getElementById('rm-type').value = '洽談室';
   document.getElementById('rm-active').value = 'true';
   document.getElementById('rm-min-hours').value = '1';
+  document.getElementById('rm-cleaning-buffer').value = '0';
   document.getElementById('rm-sort-order').value = '0';
   document.getElementById('rm-photo-url').value = '';
   document.getElementById('currentPhotoRow').style.display = 'none';
@@ -2022,6 +2024,7 @@ function editRoom(id) {
   document.getElementById('rm-desc').value = r.description || '';
   document.getElementById('rm-active').value = r.is_active ? 'true' : 'false';
   document.getElementById('rm-min-hours').value = r.min_hours !== undefined ? r.min_hours : 1;
+  document.getElementById('rm-cleaning-buffer').value = r.cleaning_buffer !== undefined ? r.cleaning_buffer : 0;
   document.getElementById('rm-sort-order').value = r.sort_order !== undefined ? r.sort_order : 0;
   document.getElementById('rm-photo-url').value = r.photo_url || '';
   amenities = [...(r.amenities || [])];
@@ -2085,6 +2088,7 @@ async function saveRoom() {
     amenities: amenities,
     is_active: document.getElementById('rm-active').value === 'true',
     min_hours: parseFloat(document.getElementById('rm-min-hours').value) || 0,
+    cleaning_buffer: parseInt(document.getElementById('rm-cleaning-buffer').value) || 0,
     sort_order: parseInt(document.getElementById('rm-sort-order').value) || 0,
     photo_url: document.getElementById('rm-photo-url').value,
   };

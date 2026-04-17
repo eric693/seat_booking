@@ -1308,7 +1308,8 @@ class Room(db.Model):
     cover_index = db.Column(db.Integer, default=0)  # 主封面為第幾張
     is_active   = db.Column(db.Boolean, default=True)
     floor       = db.Column(db.String(20))
-    min_hours   = db.Column(db.Float, default=1.0)   # 最低預約時數（0=不限)
+    min_hours        = db.Column(db.Float, default=1.0)   # 最低預約時數（0=不限)
+    cleaning_buffer  = db.Column(db.Integer, default=0)   # 清潔緩衝時間（分鐘）
     sort_order  = db.Column(db.Integer, default=0)
     created_at  = db.Column(db.DateTime, default=tw_now)
     time_config = db.Column(db.Text)
@@ -1350,6 +1351,7 @@ class Room(db.Model):
             'cover_index': self.cover_index or 0,
             'is_active': self.is_active, 'floor': self.floor,
             'min_hours': float(self.min_hours or 1.0),
+            'cleaning_buffer': int(self.cleaning_buffer or 0),
             'sort_order': self.sort_order or 0,
             'time_config': self.time_config or '',
         }
@@ -1720,10 +1722,13 @@ def allowed_file(fn):
 
 
 def check_availability(room_id, date, start_time, end_time, exclude_id=None):
-    """檢查單一時段是否可用（支援多段預約的 segments 展開，含封鎖時段）"""
+    """檢查單一時段是否可用（支援多段預約的 segments 展開，含封鎖時段及清潔緩衝）"""
     import json as _json
     def m(t): h, mn = map(int, t.split(':')); return h*60+mn
     s, e = m(start_time), m(end_time)
+    # 取得該房間的清潔緩衝時間（分鐘）
+    room = Room.query.get(room_id)
+    buffer = int(room.cleaning_buffer or 0) if room else 0
     # 一般預約衝突
     bookings = Booking.query.filter_by(room_id=room_id, date=date).filter(
         Booking.status.in_(['pending', 'confirmed', 'completed'])).all()
@@ -1737,7 +1742,8 @@ def check_availability(room_id, date, start_time, end_time, exclude_id=None):
         if not segs:
             segs = [{'start': b.start_time, 'end': b.end_time}]
         for seg in segs:
-            if not (e <= m(seg['start']) or s >= m(seg['end'])):
+            seg_end_with_buffer = m(seg['end']) + buffer
+            if not (e <= m(seg['start']) or s >= seg_end_with_buffer):
                 return False
     # 封鎖時段衝突（全館 + 指定房間）
     blocked = BlockedSlot.query.filter_by(date=date).filter(
@@ -1759,6 +1765,13 @@ def check_segments_availability(room_id, date, segments, exclude_id=None):
 
 def get_booked_slots(room_id, date):
     import json as _json
+    def _add_min(t, mins):
+        if not mins: return t
+        h, mn = map(int, t.split(':'))
+        total = h * 60 + mn + mins
+        return f'{total//60:02d}:{total%60:02d}'
+    room = Room.query.get(room_id)
+    buffer = int(room.cleaning_buffer or 0) if room else 0
     bookings = Booking.query.filter_by(room_id=room_id, date=date).filter(
         Booking.status.in_(['pending', 'confirmed', 'completed'])).all()
     result = []
@@ -1770,7 +1783,9 @@ def get_booked_slots(room_id, date):
         if not segs:
             segs = [{'start': b.start_time, 'end': b.end_time}]
         for seg in segs:
-            result.append({'start': seg['start'], 'end': seg['end'],
+            result.append({'start': seg['start'],
+                           'end': _add_min(seg['end'], buffer),
+                           'actual_end': seg['end'],
                            'booking_number': b.booking_number})
     # 加入封鎖時段（全館 + 指定房間）
     blocked = BlockedSlot.query.filter_by(date=date).filter(
@@ -3288,6 +3303,7 @@ def admin_add_room():
                  capacity=int(d.get('capacity', 10)), capacity_min=int(d.get('capacity_min', 0)),
                  hourly_rate=int(d.get('hourly_rate', 500)),
                  min_hours=float(d.get('min_hours', 1.0)),
+                 cleaning_buffer=int(d.get('cleaning_buffer', 0)),
                  description=d.get('description',''),
                  amenities=json.dumps(amenities, ensure_ascii=False),
                  floor=d.get('floor',''), photo_url=d.get('photo_url',''),
@@ -3306,8 +3322,8 @@ def admin_update_room(rid):
     room = Room.query.get_or_404(rid)
     d = request.get_json() or {}
     try:
-        for f in ['name','room_type','capacity','capacity_min','hourly_rate','min_hours','description',
-                    'floor','photo_url','is_active','sort_order','time_config']:
+        for f in ['name','room_type','capacity','capacity_min','hourly_rate','min_hours','cleaning_buffer',
+                  'description','floor','photo_url','is_active','sort_order','time_config']:
             if f in d:
                 setattr(room, f, d[f])
         if 'amenities' in d:

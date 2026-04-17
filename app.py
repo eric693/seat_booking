@@ -2064,6 +2064,40 @@ def bookings_by_member():
     return jsonify([b.to_dict() for b in q.all()])
 
 
+@app.route('/api/bookings/<int:bid>/cancel', methods=['POST'])
+def member_cancel_booking(bid):
+    """會員取消自己的預約"""
+    member = _member_session_check()
+    if not member:
+        return jsonify({'error': '請先登入'}), 401
+    b = Booking.query.get_or_404(bid)
+    # 確認是本人的預約
+    is_owner = (
+        (member.phone and b.customer_phone == member.phone) or
+        (member.email and b.customer_email == member.email)
+    )
+    if not is_owner:
+        return jsonify({'error': '無權限取消此預約'}), 403
+    if b.status == 'cancelled':
+        return jsonify({'error': '此預約已取消'}), 400
+    if b.status == 'completed':
+        return jsonify({'error': '已完成的預約無法取消'}), 400
+    b.status = 'cancelled'
+    db.session.commit()
+    # 通知
+    try:
+        if b.line_user_id:
+            push_line(b.line_user_id, [flex_booking_cancel(b)])
+        if b.customer_email:
+            send_email(b.customer_email,
+                       f'【預約取消】{b.room.name if b.room else ""} – {b.date}',
+                       _cancel_email_html(b))
+        send_sms(b.customer_phone, _cancel_sms_body(b))
+    except Exception as e:
+        print(f'[member cancel notify error] {e}')
+    return jsonify({'success': True})
+
+
 @app.route('/api/bookings/check')
 def check_booking():
     phone  = request.args.get('phone')

@@ -3264,8 +3264,10 @@ async function openMyBookings() {
       list.innerHTML = '<div style="text-align:center;padding:40px;color:var(--ink-60);">尚無預約記錄</div>';
       return;
     }
-    const statusMap = { confirmed:'已確認', cancelled:'已取消', completed:'已完成' };
-    list.innerHTML = bookings.map(b => `
+    const statusMap = { pending:'待審核', confirmed:'已確認', cancelled:'已取消', completed:'已完成' };
+    list.innerHTML = bookings.map(b => {
+      const canCancel = b.status === 'pending' || b.status === 'confirmed';
+      return `
       <div style="border:1px solid var(--border);border-radius:8px;padding:14px 16px;margin-bottom:10px;">
         <div style="display:flex;justify-content:space-between;align-items:flex-start;gap:8px;">
           <div>
@@ -3280,10 +3282,30 @@ async function openMyBookings() {
             <div style="font-size:14px;font-weight:700;color:var(--teal);margin-top:4px;">NT$ ${b.total_price?.toLocaleString()}</div>
           </div>
         </div>
-      </div>
-    `).join('');
+        ${canCancel ? `<div style="margin-top:10px;text-align:right;">
+          <button onclick="cancelMemberBooking(${b.id})" style="background:transparent;border:1px solid var(--red);color:var(--red);border-radius:6px;padding:5px 14px;font-size:12px;cursor:pointer;">取消預約</button>
+        </div>` : ''}
+      </div>`;
+    }).join('');
   } catch(e) {
     list.innerHTML = '<div style="color:var(--red);padding:20px;text-align:center;">載入失敗，請稍後再試</div>';
+  }
+}
+
+async function cancelMemberBooking(bid) {
+  if (!confirm('確定要取消此預約？')) return;
+  try {
+    const res = await fetch(`${API}/api/bookings/${bid}/cancel`, {
+      method: 'POST', credentials: 'include'
+    });
+    const data = await res.json();
+    if (res.ok) {
+      loadMemberBookings();
+    } else {
+      alert(data.error || '取消失敗，請稍後再試');
+    }
+  } catch(e) {
+    alert('取消失敗，請稍後再試');
   }
 }
 

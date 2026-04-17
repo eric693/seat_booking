@@ -2785,6 +2785,22 @@ def _handle_booking_flow(uid: str, rtok: str, text: str, lu):
 
 _line_ai_sessions = {}   # { line_user_id: [{'role':..., 'content':...}, ...] }
  
+def _get_qa_rules_text():
+    """取得後台 Q&A 列表，組成 AI 規則文字"""
+    try:
+        qa_items = LineQA.query.filter_by(is_active=True).order_by(
+            LineQA.sort_order, LineQA.id).all()
+        if not qa_items:
+            return ''
+        lines = ['【常見問題與標準回覆（請嚴格依照以下規則回答，不可自行修改或捏造）】']
+        for qa in qa_items:
+            kws = '、'.join(k.strip() for k in qa.keywords.split(',') if k.strip())
+            lines.append(f'・關鍵字「{kws}」→ 回覆：{qa.reply}')
+        return '\n'.join(lines)
+    except Exception:
+        return ''
+
+
 def _get_ai_system_prompt():
     """建立 AI 系統提示，包含空間與預約資訊"""
     try:
@@ -2795,35 +2811,38 @@ def _get_ai_system_prompt():
             f'・{r.name}（{r.room_type}，{r.capacity}人，NT${r.hourly_rate}/hr'
             + (f'，最少{r.min_hours}小時' if r.min_hours > 0 else '')
             + (f'，{r.floor}' if r.floor else '')
-            + f'）\n  {r.description or ""}' 
+            + f'）\n  {r.description or ""}'
             for r in rooms
         ])
     except Exception:
         rooms_info = '（空間資料暫時無法取得）'
- 
+
     site_url = SiteContent.get('site_url', 'https://seat-booking-rlf2.onrender.com')
     liff_url  = os.environ.get('LIFF_URL', 'https://liff.line.me/2009193434-BpOSKuw9')
     service_hours = SiteContent.get('service_hours', '')
     contact_phone = SiteContent.get('contact_phone', '')
- 
+    qa_rules = _get_qa_rules_text()
+
     return f"""你是預約空間的 LINE 官方帳號助理，請用繁體中文、親切口語的方式回覆。
- 
+
 【你能做的事】
 - 介紹各個空間、說明費用、協助了解預約流程
 - 回答使用者問題
- 
+
 【預約方式】
 1. LINE 預約：在此對話直接輸入「預約」即可開始預約流程
 2. 網頁預約：{site_url}（可查看空間照片、選擇時段）
 3. LINE LIFF：{liff_url}
- 
+
 【目前可預約空間】
 {rooms_info}
- 
+
 【服務資訊】
 服務時間：{service_hours}
 聯絡電話：{contact_phone}
- 
+
+{qa_rules}
+
 【回覆規則】
 - 簡潔親切，每則回覆 150 字以內
 - 若使用者想預約，請告訴他輸入「預約」開始
@@ -4689,6 +4708,11 @@ def ai_chat():
     data = request.get_json()
     messages = data.get('messages', [])
     system_prompt = data.get('system', '')
+
+    # 將後台 Q&A 規則注入 system prompt，確保與 LINE bot 回覆一致
+    qa_rules = _get_qa_rules_text()
+    if qa_rules:
+        system_prompt = system_prompt + '\n\n' + qa_rules if system_prompt else qa_rules
 
     # 限制 messages 長度，避免 token 過多
     messages = messages[-10:]  # 最多保留最近 10 則

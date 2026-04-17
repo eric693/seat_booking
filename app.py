@@ -1372,7 +1372,7 @@ class Booking(db.Model):
     total_price    = db.Column(db.Integer, default=0)
     attendees      = db.Column(db.Integer, default=1)
     purpose        = db.Column(db.Text)
-    status         = db.Column(db.String(20), default='confirmed')
+    status         = db.Column(db.String(20), default='pending')
     note           = db.Column(db.Text)
     line_user_id   = db.Column(db.String(100))   # 綁定 LINE userId
     created_at     = db.Column(db.DateTime, default=tw_now)
@@ -1726,7 +1726,7 @@ def check_availability(room_id, date, start_time, end_time, exclude_id=None):
     s, e = m(start_time), m(end_time)
     # 一般預約衝突
     bookings = Booking.query.filter_by(room_id=room_id, date=date).filter(
-        Booking.status.in_(['confirmed', 'completed'])).all()
+        Booking.status.in_(['pending', 'confirmed', 'completed'])).all()
     if exclude_id:
         bookings = [b for b in bookings if b.id != exclude_id]
     for b in bookings:
@@ -1760,7 +1760,7 @@ def check_segments_availability(room_id, date, segments, exclude_id=None):
 def get_booked_slots(room_id, date):
     import json as _json
     bookings = Booking.query.filter_by(room_id=room_id, date=date).filter(
-        Booking.status.in_(['confirmed', 'completed'])).all()
+        Booking.status.in_(['pending', 'confirmed', 'completed'])).all()
     result = []
     for b in bookings:
         segs = []
@@ -3236,7 +3236,7 @@ def admin_floor_status():
         import json as _json
         bookings = Booking.query.filter_by(
             room_id=r.id, date=date_str).filter(
-            Booking.status.in_(['confirmed', 'completed'])).all()
+            Booking.status.in_(['pending', 'confirmed', 'completed'])).all()
         occupied = [False] * 28
         for b in bookings:
             # 展開 segments（多段時段）
@@ -3324,7 +3324,7 @@ def admin_delete_room(rid):
     err = check_admin()
     if err: return err
     room = Room.query.get_or_404(rid)
-    active_bookings = Booking.query.filter_by(room_id=rid, status='confirmed').count()
+    active_bookings = Booking.query.filter(Booking.room_id==rid, Booking.status.in_(['pending','confirmed'])).count()
     if active_bookings > 0:
         return jsonify({'success': False, 'error': f'此會議室有 {active_bookings} 筆待確認預約，請先取消或完成後再刪除。'}), 400
     db.session.delete(room)
@@ -3567,6 +3567,30 @@ def admin_complete_booking(bid):
     return jsonify({'success': True})
 
 
+@app.route('/admin/api/bookings/<int:bid>/confirm', methods=['POST'])
+def admin_confirm_booking(bid):
+    err = check_admin()
+    if err: return err
+    b = Booking.query.get_or_404(bid)
+    if b.status != 'pending':
+        return jsonify({'error': '只有待審核的預約可以確認'}), 400
+    b.status = 'confirmed'
+    db.session.commit()
+    # 發送確認通知
+    try:
+        if b.customer_email:
+            send_email(b.customer_email,
+                       f'【預約確認】{b.room.name} – {b.date}',
+                       _booking_email_html(b))
+    except Exception:
+        pass
+    try:
+        send_sms(b.customer_phone, _booking_sms_body(b))
+    except Exception:
+        pass
+    return jsonify({'success': True})
+
+
 # ─────────────────────────────────────────────
 # Admin — LINE Users
 # ─────────────────────────────────────────────
@@ -3661,17 +3685,22 @@ def admin_get_stats():
         if time_to:   q = q.filter(Booking.start_time <= time_to)
         return q
 
+    pending_base   = apply_range(Booking.query.filter_by(status='pending'))
     confirmed_base = apply_range(Booking.query.filter_by(status='confirmed'))
     cancelled_base = apply_range(Booking.query.filter_by(status='cancelled'))
     completed_base = apply_range(Booking.query.filter_by(status='completed'))
     revenue_base   = apply_range(db.session.query(func.sum(Booking.total_price))
-                        .filter(Booking.status == 'confirmed'))
+                        .filter(Booking.status.in_(['pending', 'confirmed'])))
 
     return jsonify({
-        'total_bookings': confirmed_base.count(),
-        'today_bookings': Booking.query.filter_by(date=tw_today, status='confirmed').count(),
+        'total_bookings': pending_base.count() + confirmed_base.count(),
+        'today_bookings': Booking.query.filter(
+            Booking.date == tw_today,
+            Booking.status.in_(['pending', 'confirmed'])).count(),
         'total_rooms':    Room.query.filter_by(is_active=True).count(),
         'total_revenue':  revenue_base.scalar() or 0,
+        'pending':     pending_base.count(),
+        'confirmed':   confirmed_base.count(),
         'cancelled':   cancelled_base.count(),
         'completed':   completed_base.count(),
         'line_users':  LineUser.query.count(),

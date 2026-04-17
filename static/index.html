@@ -1292,7 +1292,7 @@ footer {
   <div class="modal-box">
     <div class="modal-icon">&#10003;</div>
     <h2 class="modal-title">預約成功！</h2>
-    <p class="modal-sub">您的會議室已確認預約<br>請妥善保存預約編號</p>
+    <p class="modal-sub">您的預約已送出，等待審核確認</p>
     <div class="confirm-table" id="confirmTable"></div>
     <button class="modal-close-btn" onclick="closeSuccess()">完成</button>
   </div>
@@ -2659,7 +2659,7 @@ async function doQuery() {
     const res = await fetch(`${API}/api/bookings/check?phone=${encodeURIComponent(phone)}`);
     const data = await res.json();
     if (res.ok) {
-      const statusMap = { confirmed: '已確認', cancelled: '已取消', completed: '已完成' };
+      const statusMap = { pending: '待審核', confirmed: '已確認', cancelled: '已取消', completed: '已完成' };
       const list = Array.isArray(data) ? data : [data];
       document.getElementById('queryResult').innerHTML = list.map(b => `
         <div class="confirm-table" style="margin-bottom:12px;">
@@ -3274,7 +3274,7 @@ async function openMyBookings() {
             <div style="font-size:12px;color:var(--ink-60);margin-top:2px;">${b.booking_number}</div>
           </div>
           <div style="text-align:right;flex-shrink:0;">
-            <div style="font-size:12px;font-weight:600;color:${b.status==='cancelled'?'var(--red)':b.status==='completed'?'var(--ink-60)':'var(--green)'};">
+            <div style="font-size:12px;font-weight:600;color:${b.status==='cancelled'?'var(--red)':b.status==='completed'?'var(--ink-60)':b.status==='pending'?'#1d4ed8':'var(--green)'};">
               ${statusMap[b.status]||b.status}
             </div>
             <div style="font-size:14px;font-weight:700;color:var(--teal);margin-top:4px;">NT$ ${b.total_price?.toLocaleString()}</div>

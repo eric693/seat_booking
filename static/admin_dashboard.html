@@ -287,6 +287,7 @@ tr:hover td { background: #fafafa; }
   font-size: 12px;
   font-weight: 500;
 }
+.badge-blue  { background: #dbeafe; color: #1d4ed8; }
 .badge-green { background: var(--green-light); color: var(--green); }
 .badge-red { background: var(--red-light); color: var(--red); }
 .badge-gold { background: var(--gold-light); color: #8a6e3e; }
@@ -813,7 +814,7 @@ input[list]::-webkit-calendar-picker-indicator { display: none !important; }
             <div class="filter-group"><span class="filter-lbl">開始時間</span><input type="time" class="filter-input" id="dash-fil-time-from" onchange="loadDashboardBookings()" style="font-size:13px;padding:6px 10px;" step="3600"></div>
             <div class="filter-group"><span class="filter-lbl">結束日期</span><input type="date" class="filter-input" id="dash-fil-date-to" onchange="loadDashboardBookings()" style="font-size:13px;padding:6px 10px;"></div>
             <div class="filter-group"><span class="filter-lbl">結束時間</span><input type="time" class="filter-input" id="dash-fil-time-to" onchange="loadDashboardBookings()" style="font-size:13px;padding:6px 10px;" step="3600"></div>
-            <div class="filter-group"><span class="filter-lbl">狀態</span><select class="filter-select" id="dash-fil-status" onchange="loadDashboardBookings()" style="font-size:13px;padding:6px 10px;"><option value="">全部</option><option value="confirmed">已確認</option><option value="cancelled">已取消</option><option value="completed">已完成</option></select></div>
+            <div class="filter-group"><span class="filter-lbl">狀態</span><select class="filter-select" id="dash-fil-status" onchange="loadDashboardBookings()" style="font-size:13px;padding:6px 10px;"><option value="">全部</option><option value="pending">待審核</option><option value="confirmed">已確認</option><option value="cancelled">已取消</option><option value="completed">已完成</option></select></div>
             <div class="filter-group"><span class="filter-lbl">會議室</span><select class="filter-select" id="dash-fil-room" onchange="loadDashboardBookings()" style="font-size:13px;padding:6px 10px;"><option value="">全部</option></select></div>
             <button class="btn btn-outline btn-sm" onclick="clearDashFilters()">清除篩選</button>
           </div>
@@ -834,7 +835,7 @@ input[list]::-webkit-calendar-picker-indicator { display: none !important; }
         <div class="card-body">
           <div class="filters">
             <div class="filter-group"><span class="filter-lbl">日期</span><input type="date" class="filter-input" id="fil-date" onchange="loadBookings()"></div>
-            <div class="filter-group"><span class="filter-lbl">狀態</span><select class="filter-select" id="fil-status" onchange="loadBookings()"><option value="">全部</option><option value="confirmed">已確認</option><option value="cancelled">已取消</option><option value="completed">已完成</option></select></div>
+            <div class="filter-group"><span class="filter-lbl">狀態</span><select class="filter-select" id="fil-status" onchange="loadBookings()"><option value="">全部</option><option value="pending">待審核</option><option value="confirmed">已確認</option><option value="cancelled">已取消</option><option value="completed">已完成</option></select></div>
             <div class="filter-group"><span class="filter-lbl">會議室</span><select class="filter-select" id="fil-room" onchange="loadBookings()"><option value="">全部</option></select></div>
           </div>
           <div class="tbl-wrap">
@@ -1806,7 +1807,8 @@ async function loadDashboardBookings() {
       <td>${fmtSegments(b)}</td>
       <td>${badgeHtml(b.status)}</td>
       <td><div style="display:flex;gap:4px;flex-wrap:wrap;">
-        ${b.status==='confirmed'?`<button class="btn btn-danger btn-sm" onclick="cancelBooking(${b.id})">取消</button>`:''}
+        ${b.status==='pending'?`<button class="btn btn-outline btn-sm" onclick="confirmBooking(${b.id})" style="border-color:#1d4ed8;color:#1d4ed8;">確認</button>`:''}
+        ${b.status==='confirmed'||b.status==='pending'?`<button class="btn btn-danger btn-sm" onclick="cancelBooking(${b.id})">取消</button>`:''}
         <button class="btn btn-sm" onclick="deleteBooking(${b.id})" style="background:#6b3a2a;color:#fff;border:none;border-radius:4px;cursor:pointer;padding:4px 10px;font-size:12px;">刪除</button>
       </div></td>
     </tr>`).join('');
@@ -1847,6 +1849,7 @@ async function loadBookings() {
       <td>NT$ ${(b.total_price||0).toLocaleString()}</td>
       <td>${badgeHtml(b.status)}</td>
       <td><div style="display:flex;gap:4px;flex-wrap:wrap;">
+        ${b.status === 'pending' ? `<button class="btn btn-outline btn-sm" onclick="confirmBooking(${b.id})" style="border-color:#1d4ed8;color:#1d4ed8;">確認</button><button class="btn btn-danger btn-sm" onclick="cancelBooking(${b.id})">取消</button>` : ''}
         ${b.status === 'confirmed' ? `<button class="btn btn-outline btn-sm" onclick="completeBooking(${b.id})">完成</button><button class="btn btn-danger btn-sm" onclick="cancelBooking(${b.id})">取消</button>` : ''}
         <button class="btn btn-outline btn-sm" onclick="openBookingEditModal(${b.id})" style="border-color:var(--teal);color:var(--teal);">編輯</button>
         <button class="btn btn-danger btn-sm" onclick="deleteBooking(${b.id})" style="opacity:0.7;">刪除</button>
@@ -1917,6 +1920,13 @@ async function saveBookingEdit() {
   } else {
     toast('儲存失敗', 'error');
   }
+}
+
+async function confirmBooking(id) {
+  if (!confirm('確定要審核通過此預約？')) return;
+  const res = await fetch(`/admin/api/bookings/${id}/confirm`, { method: 'POST', headers: H });
+  if (res.ok) { toast('預約已確認'); loadBookings(); loadDashboardBookings(); }
+  else toast('操作失敗', 'error');
 }
 
 async function cancelBooking(id) {
@@ -3259,7 +3269,7 @@ function fmtSegments(b) {
 }
 
 function badgeHtml(status) {
-  const map = {confirmed:['badge-green','已確認'], cancelled:['badge-red','已取消'], completed:['badge-gold','已完成']};
+  const map = {pending:['badge-blue','待審核'], confirmed:['badge-green','已確認'], cancelled:['badge-red','已取消'], completed:['badge-gold','已完成']};
   const [cls, txt] = map[status] || ['badge-gray', status];
   return `<span class="badge ${cls}">${txt}</span>`;
 }

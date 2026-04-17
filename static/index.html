@@ -2108,7 +2108,7 @@ function buildTimeGrid() {
                  ontouchstart="tsTouchStart(event,${i})"
                  ontouchmove="tsTouchMove(event)"
                `}
-          >${timeConfigBlockedSlots.has(i) ? '無開放' : (adminBlockedSlots.has(i) ? '無開放' : (isBlocked ? '已預約' : ''))}</div>
+          >${timeConfigBlockedSlots.has(i) ? '無開放' : (adminBlockedSlots.has(i) ? '無開放' : (cleaningSlots.has(i) ? '清潔中' : (isBlocked ? '已預約' : '')))}</div>
           <div class="time-axis" style="text-align:left;padding-left:8px;padding-right:0;">${endT}</div>
         </div>`;
     }
@@ -2196,7 +2196,7 @@ function tsTouchMove(e) {
   e.preventDefault();
   const touch = e.touches[0];
   const el = document.elementFromPoint(touch.clientX, touch.clientY);
-  if (el && el.classList.contains('ts') && !el.classList.contains('ts-booked') && !el.classList.contains('ts-admin-blocked')) {
+  if (el && el.classList.contains('ts') && !el.classList.contains('ts-booked') && !el.classList.contains('ts-cleaning') && !el.classList.contains('ts-admin-blocked')) {
     const idx = parseInt(el.dataset.slot);
     if (!isNaN(idx)) { dragEnd = idx; renderDrag(); }
   }

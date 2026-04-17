@@ -583,7 +583,7 @@ header {
   color: transparent;
 }
 
-.ts:hover:not(.ts-booked):not(.ts-admin-blocked):not(.ts-selected) {
+.ts:hover:not(.ts-booked):not(.ts-cleaning):not(.ts-admin-blocked):not(.ts-selected) {
   background: var(--teal-light);
   border-color: var(--teal);
   z-index: 1;
@@ -614,6 +614,20 @@ header {
   border-color: #e8a49d;
   cursor: not-allowed;
   color: var(--red);
+  font-size: 10px;
+  font-weight: 600;
+  letter-spacing: 0.02em;
+}
+
+.ts.ts-cleaning {
+  background: repeating-linear-gradient(
+    -45deg,
+    #e8f4f4 0px, #e8f4f4 5px,
+    #c8e6e6 5px, #c8e6e6 10px
+  );
+  border-color: #80b8b8;
+  cursor: not-allowed;
+  color: #2A6B6B;
   font-size: 10px;
   font-weight: 600;
   letter-spacing: 0.02em;
@@ -1944,7 +1958,8 @@ async function selectDate(ds, el) {
   state.startTime = null;
   state.endTime = null;
   selStart = -1; selEnd = -1;
-  blockedSlots = new Set();
+  blockedSlots  = new Set();
+  cleaningSlots = new Set();
 
   document.querySelectorAll('.cal-day').forEach(d => d.classList.remove('selected'));
   el.classList.add('selected');
@@ -1960,6 +1975,7 @@ async function selectDate(ds, el) {
     const data = await res.json();
     bookedSlots = data.booked_slots || [];
     blockedSlots      = new Set();
+    cleaningSlots     = new Set();
     adminBlockedSlots = new Set();
 
     // 處理時段設定：若有 open_periods，把「非開放時間」標記為封鎖
@@ -1969,9 +1985,12 @@ async function selectDate(ds, el) {
     bookedSlots.forEach(b => {
       const s = timeToSlot(b.start);
       const e = timeToSlot(b.end);
+      // actual_end 存在且不同於 end 時，兩者之間為清潔緩衝時間
+      const ae = b.actual_end ? timeToSlot(b.actual_end) : e;
       for (let i = s; i < e; i++) {
         blockedSlots.add(i);
         if (b.blocked) adminBlockedSlots.add(i);
+        else if (i >= ae) cleaningSlots.add(i);
       }
     });
 
@@ -2020,6 +2039,7 @@ function timeToSlot(t) {
 
 let selectedSlots         = new Set();
 let blockedSlots          = new Set();
+let cleaningSlots         = new Set();  // 清潔緩衝時間格
 let adminBlockedSlots     = new Set();
 let timeConfigBlockedSlots = new Set();  // time_config 非開放時段
 let _hasTimeConfig = false;
@@ -2080,7 +2100,7 @@ function buildTimeGrid() {
       html += `
         <div class="time-row">
           <div class="time-axis">${axisLabel}</div>
-          <div class="ts ${timeConfigBlockedSlots.has(i) ? 'ts-admin-blocked' : (adminBlockedSlots.has(i) ? 'ts-admin-blocked' : (isBlocked ? 'ts-booked' : ''))}"
+          <div class="ts ${timeConfigBlockedSlots.has(i) ? 'ts-admin-blocked' : (adminBlockedSlots.has(i) ? 'ts-admin-blocked' : (cleaningSlots.has(i) ? 'ts-cleaning' : (isBlocked ? 'ts-booked' : '')))}"
                data-slot="${i}"
                ${isBlocked ? '' : `
                  onmousedown="tsMouseDown(event,${i})"

@@ -2292,26 +2292,39 @@ def flex_select_slot(room_name: str, date_str: str,
     except Exception:
         date_fmt = date_str
 
-    # 把已占用時段展開成 slot set
-    blocked = set()
+    # 把已占用時段展開成 slot set（區分「已預約」和「清潔中」）
+    booked_set  = set()
+    cleaning_set = set()
     for b in booked:
         sh, sm = map(int, b['start'].split(':'))
         eh, em = map(int, b['end'].split(':'))
         s_idx = (sh * 60 + sm - 8 * 60) // 30
         e_idx = (eh * 60 + em - 8 * 60) // 30
-        for i in range(s_idx, e_idx):
-            blocked.add(i)
+        # actual_end 是真正預約結束，之後到 end 是清潔緩衝
+        ae_idx = e_idx
+        if b.get('actual_end') and b['actual_end'] != b['end']:
+            aeh, aem = map(int, b['actual_end'].split(':'))
+            ae_idx = (aeh * 60 + aem - 8 * 60) // 30
+        for i in range(s_idx, ae_idx):
+            booked_set.add(i)
+        for i in range(ae_idx, e_idx):
+            cleaning_set.add(i)
+    blocked = booked_set | cleaning_set
 
     # 產生時段按鈕（以小時為單位，8:00~22:00 = 14 個整點）
     slot_rows = []
     for h in range(8, 21):
         s_idx = (h - 8) * 2
         e_idx = s_idx + 2
-        is_blocked = any(i in blocked for i in range(s_idx, e_idx))
+        is_cleaning = any(i in cleaning_set and i not in booked_set for i in range(s_idx, e_idx))
+        is_blocked  = any(i in blocked for i in range(s_idx, e_idx))
         start_t = f'{h:02d}:00'
         end_t   = f'{h+1:02d}:00'
         label   = f'{start_t} – {end_t}'
         if is_blocked:
+            tag_text  = '清潔中' if is_cleaning else '已預約'
+            tag_color = '#80B8B8' if is_cleaning else '#DDDDDD'
+            txt_color = '#2A6B6B' if is_cleaning else '#888888'
             slot_rows.append({
                 'type': 'box', 'layout': 'horizontal',
                 'paddingTop': '8px', 'paddingBottom': '8px',
@@ -2319,11 +2332,11 @@ def flex_select_slot(room_name: str, date_str: str,
                     {'type': 'text', 'text': label, 'size': 'sm',
                      'color': '#AAAAAA', 'flex': 3},
                     {'type': 'box', 'layout': 'vertical',
-                     'backgroundColor': '#DDDDDD', 'cornerRadius': '10px',
+                     'backgroundColor': tag_color, 'cornerRadius': '10px',
                      'paddingTop': '2px', 'paddingBottom': '2px',
                      'paddingStart': '8px', 'paddingEnd': '8px', 'flex': 0,
-                     'contents': [{'type': 'text', 'text': '已預約',
-                                   'size': 'xxs', 'color': '#888888'}]},
+                     'contents': [{'type': 'text', 'text': tag_text,
+                                   'size': 'xxs', 'color': txt_color}]},
                 ]
             })
         else:

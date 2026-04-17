@@ -2300,9 +2300,10 @@ def flex_input_date(room_name: str) -> dict:
 
 
 def flex_select_slot(room_name: str, date_str: str,
-                     booked: list, room_id: int) -> dict:
-    """Step 3：選擇時段（顯示可用 / 已占用）"""
-    from datetime import datetime as _dt
+                     booked: list, room_id: int,
+                     advance_minutes: int = 0) -> dict:
+    """Step 3：選擇時段（顯示可用 / 已占用 / 清潔中 / 太早）"""
+    from datetime import datetime as _dt, timezone as _tz, timedelta as _td
     try:
         d = _dt.strptime(date_str, '%Y-%m-%d')
         weekdays = ['一','二','三','四','五','六','日']
@@ -2329,6 +2330,14 @@ def flex_select_slot(room_name: str, date_str: str,
             cleaning_set.add(i)
     blocked = booked_set | cleaning_set
 
+    # 計算提前預約截止時間（台灣 UTC+8）
+    advance_cutoff_min = -1  # 分鐘數（從 00:00 起算），-1 表示不限
+    if advance_minutes > 0:
+        now_tw = _dt.now(_tz.utc) + _td(hours=8)
+        today_str = now_tw.strftime('%Y-%m-%d')
+        if date_str == today_str:
+            advance_cutoff_min = now_tw.hour * 60 + now_tw.minute + advance_minutes
+
     # 產生時段按鈕（以小時為單位，8:00~22:00 = 14 個整點）
     slot_rows = []
     for h in range(8, 21):
@@ -2336,13 +2345,18 @@ def flex_select_slot(room_name: str, date_str: str,
         e_idx = s_idx + 2
         is_cleaning = any(i in cleaning_set and i not in booked_set for i in range(s_idx, e_idx))
         is_blocked  = any(i in blocked for i in range(s_idx, e_idx))
+        # 提前時間檢查：此小時的開始分鐘數 < 截止時間
+        is_too_soon = (advance_cutoff_min >= 0 and h * 60 < advance_cutoff_min)
         start_t = f'{h:02d}:00'
         end_t   = f'{h+1:02d}:00'
         label   = f'{start_t} – {end_t}'
-        if is_blocked:
-            tag_text  = '清潔中' if is_cleaning else '已預約'
-            tag_color = '#80B8B8' if is_cleaning else '#DDDDDD'
-            txt_color = '#2A6B6B' if is_cleaning else '#888888'
+        if is_blocked or is_too_soon:
+            if is_cleaning:
+                tag_text, tag_color, txt_color = '清潔中', '#80B8B8', '#2A6B6B'
+            elif is_too_soon:
+                tag_text, tag_color, txt_color = '太早預約', '#F5D0A9', '#B85C00'
+            else:
+                tag_text, tag_color, txt_color = '已預約', '#DDDDDD', '#888888'
             slot_rows.append({
                 'type': 'box', 'layout': 'horizontal',
                 'paddingTop': '8px', 'paddingBottom': '8px',
@@ -2707,28 +2721,46 @@ def _handle_booking_flow(uid: str, rtok: str, text: str, lu):
             return True
 
         booked = get_booked_slots(sess['room_id'], date_str)
+        _room_adv = int((Room.query.get(sess['room_id']) or Room()).advance_minutes or 0)
         sess['step']  = 'select_slot'
         sess['date']  = date_str
         _save_sess(lu, sess)
         reply_line(rtok, [flex_select_slot(
-            sess['room_name'], date_str, booked, sess['room_id'])])
+            sess['room_name'], date_str, booked, sess['room_id'], _room_adv)])
         return True
 
     # ── Step 3：選時段 ──
     if step == 'select_slot':
         m = _re.match(r'^選時段 (\d{2}:\d{2}) (\d{2}:\d{2})$', text)
         if not m:
+            _room_adv = int((Room.query.get(sess['room_id']) or Room()).advance_minutes or 0)
             booked = get_booked_slots(sess['room_id'], sess['date'])
             reply_line(rtok, [flex_select_slot(
-                sess['room_name'], sess['date'], booked, sess['room_id'])])
+                sess['room_name'], sess['date'], booked, sess['room_id'], _room_adv)])
             return True
         start_t, end_t = m.group(1), m.group(2)
+        room_obj = Room.query.get(sess['room_id'])
+        adv = int((room_obj.advance_minutes or 0) if room_obj else 0)
+        # 提前預約時間檢查
+        if adv > 0:
+            from datetime import timezone as _tz2, timedelta as _td2
+            now_tw = datetime.now(timezone.utc) + timedelta(hours=8)
+            cutoff = now_tw + timedelta(minutes=adv)
+            bk_dt = datetime.strptime(f'{sess["date"]} {start_t}', '%Y-%m-%d %H:%M')
+            if bk_dt < cutoff.replace(tzinfo=None):
+                adv_str = f'{adv // 60} 小時' if adv >= 60 and adv % 60 == 0 else f'{adv} 分鐘'
+                booked = get_booked_slots(sess['room_id'], sess['date'])
+                reply_line(rtok, [
+                    flex_not_found(f'此時段需提前 {adv_str} 預約', '請選擇較晚的時段'),
+                    flex_select_slot(sess['room_name'], sess['date'], booked, sess['room_id'], adv)
+                ])
+                return True
         # 即時衝突檢查
         if not check_availability(sess['room_id'], sess['date'], start_t, end_t):
             booked = get_booked_slots(sess['room_id'], sess['date'])
             reply_line(rtok, [
                 flex_not_found('此時段已被預約', '請選擇其他時段'),
-                flex_select_slot(sess['room_name'], sess['date'], booked, sess['room_id'])
+                flex_select_slot(sess['room_name'], sess['date'], booked, sess['room_id'], adv)
             ])
             return True
         sess['step']       = 'input_name'

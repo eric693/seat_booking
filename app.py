@@ -47,6 +47,24 @@ db = SQLAlchemy(app)
 ADMIN_PASSWORD            = os.environ.get('ADMIN_PASSWORD', 'admin123')
 LINE_CHANNEL_ACCESS_TOKEN = os.environ.get('LINE_CHANNEL_ACCESS_TOKEN', '')
 LINE_CHANNEL_SECRET       = os.environ.get('LINE_CHANNEL_SECRET', '')
+
+# ── 速率限制（in-memory，重啟清空）──
+from collections import defaultdict
+import threading
+_rate_lock   = threading.Lock()
+_rate_store  = defaultdict(list)   # ip -> [timestamp, ...]
+
+def _rate_check(key: str, max_hits: int, window_sec: int) -> bool:
+    """回傳 True 表示允許；False 表示超過限制。"""
+    now = datetime.now(timezone.utc).timestamp()
+    with _rate_lock:
+        hits = [t for t in _rate_store[key] if now - t < window_sec]
+        if len(hits) >= max_hits:
+            _rate_store[key] = hits
+            return False
+        hits.append(now)
+        _rate_store[key] = hits
+        return True
 LINE_PUSH_URL  = 'https://api.line.me/v2/bot/message/push'
 LINE_REPLY_URL = 'https://api.line.me/v2/bot/message/reply'
 SITE_URL       = os.environ.get('SITE_URL', 'https://seat-booking-rlf2.onrender.com')
@@ -1658,6 +1676,9 @@ def get_current_admin():
         return AdminUser.query.get(uid)
     pw = request.headers.get('X-Admin-Password')
     if pw:
+        ip = get_client_ip() or 'unknown'
+        if not _rate_check(f'admin_pw:{ip}', max_hits=10, window_sec=60):
+            return None
         u = AdminUser.query.filter_by(username='admin').first()
         if u and u.check_password(pw):
             return u
@@ -2149,9 +2170,15 @@ def member_cancel_booking(bid):
 
 @app.route('/api/bookings/check')
 def check_booking():
-    phone  = request.args.get('phone')
+    ip = get_client_ip() or 'unknown'
+    if not _rate_check(f'booking_check:{ip}', max_hits=10, window_sec=60):
+        return jsonify({'error': '查詢過於頻繁，請稍後再試'}), 429
+    phone = (request.args.get('phone') or '').strip().replace('-', '').replace(' ', '')
     if not phone:
         return jsonify({'error': '請提供手機號碼'}), 400
+    import re as _re
+    if not _re.match(r'^09\d{8}$', phone):
+        return jsonify({'error': '手機號碼格式不正確'}), 400
     bookings = Booking.query.filter_by(customer_phone=phone)\
         .order_by(Booking.date.desc(), Booking.start_time.desc()).all()
     if not bookings:
@@ -4256,10 +4283,11 @@ def admin_create_account():
     if AdminUser.query.filter_by(username=d['username'].strip()).first():
         return jsonify({'error': '帳號已存在'}), 400
     creator = get_current_admin()
+    allowed_roles = {'staff', 'admin', 'superadmin'}
     u = AdminUser(
         username     = d['username'].strip(),
         display_name = d.get('display_name', '').strip(),
-        role         = d.get('role', 'staff'),
+        role         = d.get('role', 'staff') if d.get('role') in allowed_roles else 'staff',
         is_active    = d.get('is_active', True),
         created_by   = creator.username if creator else 'admin',
     )
@@ -4282,8 +4310,9 @@ def admin_update_account(uid):
     u = AdminUser.query.get_or_404(uid)
     d = request.get_json() or {}
     import json as _j
+    allowed_roles = {'staff', 'admin', 'superadmin'}
     if 'display_name' in d: u.display_name = d['display_name']
-    if 'role' in d: u.role = d['role']
+    if 'role' in d and d['role'] in allowed_roles: u.role = d['role']
     if 'is_active' in d: u.is_active = d['is_active']
     if 'password' in d and d['password']:
         pw = str(d['password']).strip()
@@ -4421,10 +4450,11 @@ def admin_delete_line_qa(qid):
 
 @app.route('/api/chat/session', methods=['POST'])
 def chat_create_session():
+    import re as _re
     d = request.get_json() or {}
     key = d.get('session_key', '')
-    if not key:
-        return jsonify({'error': 'missing session_key'}), 400
+    if not key or len(key) < 20 or not _re.match(r'^[a-zA-Z0-9_\-]+$', key):
+        return jsonify({'error': 'invalid session_key'}), 400
     s = ChatSession.query.filter_by(session_key=key).first()
     if not s:
         s = ChatSession(session_key=key, visitor_name=d.get('visitor_name','訪客'))
@@ -4435,17 +4465,19 @@ def chat_create_session():
 
 @app.route('/api/chat/message', methods=['POST'])
 def chat_save_message():
+    import re as _re
     d = request.get_json() or {}
     key  = d.get('session_key', '')
     role = d.get('role', 'user')
-    content = d.get('content', '').strip()
-    if not key or not content:
-        return jsonify({'error': 'missing fields'}), 400
+    content = (d.get('content') or '').strip()
+    if not key or len(key) < 20 or not _re.match(r'^[a-zA-Z0-9_\-]+$', key):
+        return jsonify({'error': 'invalid session_key'}), 400
+    if not content or len(content) > 2000:
+        return jsonify({'error': 'invalid content'}), 400
+    role = role if role in ('user', 'assistant') else 'user'
     s = ChatSession.query.filter_by(session_key=key).first()
     if not s:
-        s = ChatSession(session_key=key)
-        db.session.add(s)
-        db.session.flush()
+        return jsonify({'error': 'session not found'}), 404
     msg = ChatMessage(session_id=s.id, role=role, content=content)
     s.updated_at = tw_now()
     db.session.add(msg)
@@ -4550,10 +4582,11 @@ def _member_session_check():
 
 @app.route('/api/members/register', methods=['POST'])
 def member_register():
+    import re as _re
     d = request.get_json() or {}
-    name  = (d.get('name') or '').strip()
-    email = (d.get('email') or '').strip().lower()
-    phone = (d.get('phone') or '').strip().replace('-', '').replace(' ', '')
+    name  = (d.get('name') or '').strip()[:50]
+    email = (d.get('email') or '').strip().lower()[:100]
+    phone = (d.get('phone') or '').strip().replace('-', '').replace(' ', '')[:20]
     pw    = (d.get('password') or '').strip()
 
     if not name:
@@ -4562,8 +4595,12 @@ def member_register():
         return jsonify({'error': '密碼至少 6 碼'}), 400
     if not email:
         return jsonify({'error': '請填寫 Email'}), 400
+    if not _re.match(r'^[^\s@]+@[^\s@]+\.[^\s@]+$', email):
+        return jsonify({'error': 'Email 格式不正確'}), 400
     if not phone:
         return jsonify({'error': '請填寫手機號碼'}), 400
+    if not _re.match(r'^09\d{8}$', phone):
+        return jsonify({'error': '手機號碼格式不正確'}), 400
 
     # 唯一性檢查
     try:

@@ -1382,15 +1382,15 @@ footer {
     <div class="auth-panel" id="panel-register">
       <div class="fgroup" style="margin-bottom:14px;">
         <label style="font-size:13px;font-weight:500;">姓名 <span style="color:var(--red);">*</span></label>
-        <input class="finput" type="text" id="reg-name" placeholder="請輸入您的姓名">
+        <input class="finput" type="text" id="reg-name" placeholder="請輸入您的姓名" maxlength="50">
       </div>
       <div class="fgroup" id="reg-email-group" style="margin-bottom:14px;">
         <label id="reg-email-label" style="font-size:13px;font-weight:500;">Email <span style="color:var(--red);">*</span></label>
-        <input class="finput" type="email" id="reg-email" placeholder="your@email.com" autocomplete="email">
+        <input class="finput" type="email" id="reg-email" placeholder="your@email.com" autocomplete="email" maxlength="100">
       </div>
       <div class="fgroup" id="reg-phone-group" style="margin-bottom:14px;">
         <label id="reg-phone-label" style="font-size:13px;font-weight:500;">手機號碼 <span style="color:var(--red);">*</span></label>
-        <input class="finput" type="tel" id="reg-phone" placeholder="0912345678">
+        <input class="finput" type="tel" id="reg-phone" placeholder="0912345678" maxlength="10">
       </div>
       <div class="fgroup" style="margin-bottom:14px;">
         <label style="font-size:13px;font-weight:500;">密碼 <span style="color:var(--red);">*</span> <span style="font-size:11px;color:var(--ink-60);">至少 6 碼</span></label>
@@ -3377,7 +3377,7 @@ async function initChatSession() {
   // Generate or retrieve session key from sessionStorage
   let key = sessionStorage.getItem('chat_session_key');
   if (!key) {
-    key = 'cs_' + Date.now() + '_' + Math.random().toString(36).slice(2, 9);
+    key = 'cs_' + (typeof crypto !== 'undefined' && crypto.randomUUID ? crypto.randomUUID().replace(/-/g,'') : (Date.now().toString(36) + Math.random().toString(36).slice(2) + Math.random().toString(36).slice(2)));
     sessionStorage.setItem('chat_session_key', key);
   }
   _chatSessionKey = key;

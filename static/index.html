@@ -1135,6 +1135,127 @@ footer {
 .auth-divider::before, .auth-divider::after {
   content: ''; flex: 1; height: 1px; background: var(--border);
 }
+
+/* ── 會員中心 ── */
+.mc-overlay {
+  display: none; position: fixed; inset: 0; z-index: 500;
+  background: rgba(0,0,0,0.45); align-items: flex-end; justify-content: center;
+}
+.mc-overlay.open { display: flex; }
+.mc-sheet {
+  background: #fff; width: 100%; max-width: 480px;
+  border-radius: 20px 20px 0 0;
+  padding: 0 0 env(safe-area-inset-bottom,0);
+  max-height: 88vh; overflow-y: auto;
+  animation: slideUp .3s ease;
+}
+@keyframes slideUp { from { transform:translateY(60px); opacity:0; } to { transform:translateY(0); opacity:1; } }
+.mc-header {
+  background: linear-gradient(135deg, var(--teal) 0%, #1a4d4d 100%);
+  color: #fff; padding: 24px 20px 20px; border-radius: 20px 20px 0 0;
+  position: relative;
+}
+.mc-close-btn {
+  position: absolute; top: 14px; right: 16px;
+  background: rgba(255,255,255,0.2); border: none; color: #fff;
+  width: 28px; height: 28px; border-radius: 50%; font-size: 16px;
+  cursor: pointer; display: flex; align-items: center; justify-content: center;
+}
+.mc-avatar-row { display: flex; align-items: center; gap: 14px; margin-bottom: 16px; }
+.mc-avatar {
+  width: 52px; height: 52px; border-radius: 50%;
+  background: rgba(255,255,255,0.25); border: 2px solid rgba(255,255,255,0.6);
+  display: flex; align-items: center; justify-content: center;
+  font-size: 22px; font-weight: 700; color: #fff;
+}
+.mc-user-name { font-size: 18px; font-weight: 700; }
+.mc-user-sub { font-size: 12px; opacity: 0.75; margin-top: 3px; }
+.mc-points-bar {
+  background: rgba(255,255,255,0.15); border-radius: 12px;
+  padding: 10px 16px; display: flex; align-items: center; justify-content: space-between;
+}
+.mc-points-bar .pt-label { font-size: 12px; opacity: 0.85; }
+.mc-points-bar .pt-value { font-size: 22px; font-weight: 700; }
+.mc-points-bar .pt-unit { font-size: 12px; opacity: 0.75; margin-left: 3px; }
+.mc-icon-grid {
+  display: grid; grid-template-columns: repeat(4, 1fr);
+  gap: 0; border-bottom: 1px solid var(--border);
+}
+.mc-icon-btn {
+  display: flex; flex-direction: column; align-items: center; gap: 6px;
+  padding: 18px 8px 14px; cursor: pointer; transition: background .15s;
+  border: none; background: none; position: relative;
+}
+.mc-icon-btn:hover { background: var(--paper); }
+.mc-icon-btn:active { background: var(--gold-light); }
+.mc-icon { font-size: 26px; line-height: 1; }
+.mc-label { font-size: 11px; color: var(--ink); font-weight: 500; }
+.mc-badge {
+  position: absolute; top: 12px; right: calc(50% - 20px);
+  background: var(--red); color: #fff; border-radius: 10px;
+  font-size: 10px; font-weight: 700; padding: 1px 5px; min-width: 16px;
+  text-align: center; line-height: 16px; height: 16px;
+}
+.mc-panel { display: none; padding: 0 16px 16px; }
+.mc-panel.open { display: block; }
+.mc-panel-title {
+  font-size: 15px; font-weight: 700; padding: 16px 0 12px;
+  display: flex; align-items: center; gap: 8px; border-bottom: 1px solid var(--border); margin-bottom: 12px;
+}
+.mc-panel-back {
+  background: none; border: none; color: var(--teal); font-size: 13px;
+  cursor: pointer; display: flex; align-items: center; gap: 4px; padding: 0;
+}
+/* 優惠券卡片 */
+.coupon-card {
+  border: 1.5px dashed var(--gold); border-radius: 12px;
+  padding: 14px 16px; margin-bottom: 10px; position: relative;
+  background: linear-gradient(135deg, #fffdf5 0%, #fff8e8 100%);
+  display: flex; gap: 16px; align-items: center;
+}
+.coupon-card.used { border-color: var(--border); background: var(--paper); opacity: 0.7; }
+.coupon-discount {
+  font-size: 22px; font-weight: 800; color: var(--gold); min-width: 56px; text-align: center; line-height: 1;
+}
+.coupon-discount small { font-size: 12px; font-weight: 500; display: block; color: var(--ink-60); margin-top: 2px; }
+.coupon-info { flex: 1; }
+.coupon-name { font-size: 14px; font-weight: 700; margin-bottom: 2px; }
+.coupon-desc { font-size: 11px; color: var(--ink-60); margin-bottom: 4px; }
+.coupon-meta { font-size: 10px; color: var(--ink-60); }
+.coupon-used-tag {
+  position: absolute; top: 10px; right: 10px;
+  background: var(--ink-60); color: #fff; border-radius: 6px;
+  font-size: 10px; padding: 2px 7px; font-weight: 600;
+}
+.coupon-claim-row {
+  display: flex; gap: 8px; margin-bottom: 16px; align-items: center;
+}
+.coupon-claim-row input { flex: 1; }
+/* 點數列表 */
+.pt-row {
+  display: flex; align-items: center; justify-content: space-between;
+  padding: 11px 0; border-bottom: 1px solid var(--border);
+}
+.pt-row:last-child { border-bottom: none; }
+.pt-row-info { font-size: 13px; }
+.pt-row-date { font-size: 11px; color: var(--ink-60); margin-top: 2px; }
+.pt-earn { color: var(--green); font-weight: 700; font-size: 15px; }
+.pt-spend { color: var(--red); font-weight: 700; font-size: 15px; }
+.pt-adjust { color: var(--teal); font-weight: 700; font-size: 15px; }
+/* 消費紀錄 */
+.consumption-row {
+  padding: 12px 0; border-bottom: 1px solid var(--border);
+  display: flex; gap: 12px; align-items: flex-start;
+}
+.consumption-row:last-child { border-bottom: none; }
+.cr-status {
+  font-size: 10px; font-weight: 700; padding: 3px 8px; border-radius: 20px;
+  white-space: nowrap; margin-top: 2px;
+}
+.cr-status.confirmed { background: var(--green-light); color: var(--green); }
+.cr-status.pending   { background: var(--gold-light);  color: #8a6a1e; }
+.cr-status.cancelled { background: var(--red-light);   color: var(--red); }
+.cr-status.completed { background: var(--teal-light);  color: var(--teal); }
 </style>
 </head>
 <body>
@@ -1161,7 +1282,7 @@ footer {
             <div class="md-name" id="dd-name">—</div>
             <div class="md-email" id="dd-email">—</div>
           </div>
-          <div class="member-dropdown-item" onclick="openMyBookings()">我的預約記錄</div>
+          <div class="member-dropdown-item" onclick="openMemberCenter()">🏠 會員中心</div>
           <div class="member-dropdown-item" onclick="openMemberProfile()">帳號設定</div>
           <div class="member-dropdown-item danger" onclick="memberLogout()">登出</div>
         </div>
@@ -1530,6 +1651,102 @@ footer {
       <button class="book-btn" style="margin:0;background:var(--ink-60);" onclick="document.getElementById('myBookingsModal').classList.remove('active')">關閉</button>
     </div>
     <button onclick="document.getElementById('myBookingsModal').classList.remove('active')" style="position:absolute;top:16px;right:20px;background:none;border:none;font-size:22px;color:var(--ink-60);cursor:pointer;">×</button>
+  </div>
+</div>
+
+<!-- ── 會員中心 Modal ── -->
+<div class="mc-overlay" id="mcOverlay" onclick="handleMcOverlayClick(event)">
+  <div class="mc-sheet" id="mcSheet">
+
+    <!-- Header -->
+    <div class="mc-header">
+      <button class="mc-close-btn" onclick="closeMemberCenter()">×</button>
+      <div class="mc-avatar-row">
+        <div class="mc-avatar" id="mc-avatar-letter">我</div>
+        <div>
+          <div class="mc-user-name" id="mc-user-name">載入中...</div>
+          <div class="mc-user-sub" id="mc-user-sub">會員</div>
+        </div>
+      </div>
+      <div class="mc-points-bar">
+        <div class="pt-label">我的點數</div>
+        <div style="display:flex;align-items:baseline;gap:4px;">
+          <div class="pt-value" id="mc-points-val">—</div>
+          <div class="pt-unit">點</div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Icon Grid -->
+    <div class="mc-icon-grid" id="mc-icon-grid">
+      <button class="mc-icon-btn" onclick="openMcPanel('coupons')">
+        <div class="mc-icon">🎟️</div>
+        <div class="mc-label">優惠券</div>
+        <span class="mc-badge" id="mc-badge-coupons" style="display:none;"></span>
+      </button>
+      <button class="mc-icon-btn" onclick="openMcPanel('points')">
+        <div class="mc-icon">💰</div>
+        <div class="mc-label">點數專區</div>
+      </button>
+      <button class="mc-icon-btn" onclick="openMcPanel('consumption')">
+        <div class="mc-icon">🧾</div>
+        <div class="mc-label">消費紀錄</div>
+      </button>
+      <button class="mc-icon-btn" onclick="openMcPanel('bookings')">
+        <div class="mc-icon">📅</div>
+        <div class="mc-label">預約系統</div>
+      </button>
+    </div>
+
+    <!-- 子面板：優惠券 -->
+    <div class="mc-panel" id="mc-panel-coupons">
+      <div class="mc-panel-title">
+        <button class="mc-panel-back" onclick="closeMcPanel()">‹ 返回</button>
+        🎟️ 我的優惠券
+      </div>
+      <div class="coupon-claim-row">
+        <input class="finput" type="text" id="mc-coupon-code" placeholder="輸入優惠碼領取" style="text-transform:uppercase;font-size:13px;">
+        <button class="book-btn" style="margin:0;padding:10px 16px;font-size:13px;" onclick="claimCoupon()">領取</button>
+      </div>
+      <div id="mc-coupons-list"><div style="text-align:center;padding:30px;color:var(--ink-60);">載入中...</div></div>
+    </div>
+
+    <!-- 子面板：點數專區 -->
+    <div class="mc-panel" id="mc-panel-points">
+      <div class="mc-panel-title">
+        <button class="mc-panel-back" onclick="closeMcPanel()">‹ 返回</button>
+        💰 點數專區
+      </div>
+      <div style="background:linear-gradient(135deg,var(--teal),#1a4d4d);border-radius:12px;padding:18px 20px;color:#fff;margin-bottom:16px;display:flex;justify-content:space-between;align-items:center;">
+        <div>
+          <div style="font-size:12px;opacity:0.8;margin-bottom:4px;">目前點數餘額</div>
+          <div style="font-size:32px;font-weight:800;" id="mc-pts-balance">—</div>
+          <div style="font-size:11px;opacity:0.7;margin-top:4px;">每消費 NT$10 獲得 1 點</div>
+        </div>
+        <div style="font-size:40px;opacity:0.4;">💎</div>
+      </div>
+      <div style="font-size:13px;font-weight:600;margin-bottom:8px;color:var(--ink-60);">點數明細</div>
+      <div id="mc-points-list"><div style="text-align:center;padding:30px;color:var(--ink-60);">載入中...</div></div>
+    </div>
+
+    <!-- 子面板：消費紀錄 -->
+    <div class="mc-panel" id="mc-panel-consumption">
+      <div class="mc-panel-title">
+        <button class="mc-panel-back" onclick="closeMcPanel()">‹ 返回</button>
+        🧾 消費紀錄
+      </div>
+      <div id="mc-consumption-list"><div style="text-align:center;padding:30px;color:var(--ink-60);">載入中...</div></div>
+    </div>
+
+    <!-- 子面板：預約系統 -->
+    <div class="mc-panel" id="mc-panel-bookings">
+      <div class="mc-panel-title">
+        <button class="mc-panel-back" onclick="closeMcPanel()">‹ 返回</button>
+        📅 我的預約
+      </div>
+      <div id="mc-bookings-list"><div style="text-align:center;padding:30px;color:var(--ink-60);">載入中...</div></div>
+    </div>
+
   </div>
 </div>
 
@@ -3407,6 +3624,221 @@ async function cancelMemberBooking(bid) {
   }
 }
 
+
+// ── 會員中心 ──────────────────────────────────────────────
+
+function openMemberCenter() {
+  document.getElementById('member-dropdown')?.classList.remove('open');
+  const m = _currentMember;
+  if (!m) { openAuthModal(); return; }
+  // 填入 header 資訊
+  const initial = (m.name || '我')[0].toUpperCase();
+  document.getElementById('mc-avatar-letter').textContent = initial;
+  document.getElementById('mc-user-name').textContent = m.name || '會員';
+  document.getElementById('mc-user-sub').textContent = m.email || m.phone || '';
+  document.getElementById('mc-points-val').textContent = (m.points ?? '—');
+  // 顯示 overlay，重置到 icon grid
+  closeMcPanel();
+  document.getElementById('mcOverlay').classList.add('open');
+  // 背景預載優惠券數量
+  _loadMcCouponBadge();
+}
+
+function closeMemberCenter() {
+  document.getElementById('mcOverlay').classList.remove('open');
+  closeMcPanel();
+}
+
+function handleMcOverlayClick(e) {
+  if (e.target === document.getElementById('mcOverlay')) closeMemberCenter();
+}
+
+function openMcPanel(name) {
+  document.getElementById('mc-icon-grid').style.display = 'none';
+  document.querySelectorAll('.mc-panel').forEach(p => p.classList.remove('open'));
+  const panel = document.getElementById(`mc-panel-${name}`);
+  if (panel) panel.classList.add('open');
+  // 載入對應資料
+  if (name === 'coupons')     loadMcCoupons();
+  if (name === 'points')      loadMcPoints();
+  if (name === 'consumption') loadMcConsumption();
+  if (name === 'bookings')    loadMcBookings();
+}
+
+function closeMcPanel() {
+  document.getElementById('mc-icon-grid').style.display = '';
+  document.querySelectorAll('.mc-panel').forEach(p => p.classList.remove('open'));
+}
+
+async function _loadMcCouponBadge() {
+  try {
+    const res = await fetch(`${API}/api/member/coupons`, { credentials: 'include' });
+    if (!res.ok) return;
+    const coupons = await res.json();
+    const unused = coupons.filter(c => !c.is_used && c.is_active).length;
+    const badge = document.getElementById('mc-badge-coupons');
+    if (unused > 0) { badge.textContent = unused; badge.style.display = 'block'; }
+    else badge.style.display = 'none';
+  } catch(e) {}
+}
+
+async function loadMcCoupons() {
+  const el = document.getElementById('mc-coupons-list');
+  el.innerHTML = '<div style="text-align:center;padding:30px;color:var(--ink-60);">載入中...</div>';
+  try {
+    const res = await fetch(`${API}/api/member/coupons`, { credentials: 'include' });
+    const coupons = await res.json();
+    if (!Array.isArray(coupons) || !coupons.length) {
+      el.innerHTML = '<div style="text-align:center;padding:30px;color:var(--ink-60);">尚無優惠券，輸入優惠碼立即領取！</div>';
+      return;
+    }
+    el.innerHTML = coupons.map(c => {
+      const discStr = c.discount_type === 'percent' ? `${c.discount_value}%<small>折扣</small>` : `$${c.discount_value}<small>折抵</small>`;
+      const expStr = c.end_date ? `有效期至 ${c.end_date}` : '無使用期限';
+      const minStr = c.min_spend ? `滿 NT$${c.min_spend} 可用` : '無最低消費限制';
+      const usedCls = c.is_used ? ' used' : '';
+      return `<div class="coupon-card${usedCls}">
+        <div class="coupon-discount">${discStr}</div>
+        <div class="coupon-info">
+          <div class="coupon-name">${c.name}</div>
+          <div class="coupon-desc">${c.description || ''}</div>
+          <div class="coupon-meta">${minStr} &nbsp;·&nbsp; ${expStr}</div>
+        </div>
+        ${c.is_used ? '<div class="coupon-used-tag">已使用</div>' : ''}
+      </div>`;
+    }).join('');
+  } catch(e) {
+    el.innerHTML = '<div style="color:var(--red);text-align:center;padding:20px;">載入失敗</div>';
+  }
+}
+
+async function claimCoupon() {
+  const code = document.getElementById('mc-coupon-code').value.trim().toUpperCase();
+  if (!code) return;
+  try {
+    const res = await fetch(`${API}/api/member/coupons/claim`, {
+      method: 'POST', credentials: 'include',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ code })
+    });
+    const data = await res.json();
+    if (data.success) {
+      document.getElementById('mc-coupon-code').value = '';
+      alert(`✅ 已成功領取「${data.coupon.name}」！`);
+      loadMcCoupons();
+      _loadMcCouponBadge();
+    } else {
+      alert(data.error || '領取失敗');
+    }
+  } catch(e) {
+    alert('網路錯誤，請稍後再試');
+  }
+}
+
+async function loadMcPoints() {
+  const listEl = document.getElementById('mc-points-list');
+  const balEl  = document.getElementById('mc-pts-balance');
+  listEl.innerHTML = '<div style="text-align:center;padding:20px;color:var(--ink-60);">載入中...</div>';
+  try {
+    const res = await fetch(`${API}/api/member/points`, { credentials: 'include' });
+    const data = await res.json();
+    balEl.textContent = (data.balance ?? 0).toLocaleString();
+    // 同步更新 header 點數
+    document.getElementById('mc-points-val').textContent = data.balance ?? 0;
+    const txs = data.transactions || [];
+    if (!txs.length) {
+      listEl.innerHTML = '<div style="text-align:center;padding:20px;color:var(--ink-60);">尚無點數記錄</div>';
+      return;
+    }
+    listEl.innerHTML = txs.map(t => {
+      const sign = t.points > 0 ? '+' : '';
+      const cls = t.type === 'earn' ? 'pt-earn' : t.type === 'spend' ? 'pt-spend' : 'pt-adjust';
+      return `<div class="pt-row">
+        <div>
+          <div class="pt-row-info">${t.description || (t.type === 'earn' ? '消費獲得' : t.type === 'spend' ? '點數使用' : '點數調整')}</div>
+          <div class="pt-row-date">${t.created_at}</div>
+        </div>
+        <div class="${cls}">${sign}${t.points} 點</div>
+      </div>`;
+    }).join('');
+  } catch(e) {
+    listEl.innerHTML = '<div style="color:var(--red);text-align:center;padding:20px;">載入失敗</div>';
+  }
+}
+
+async function loadMcConsumption() {
+  const el = document.getElementById('mc-consumption-list');
+  el.innerHTML = '<div style="text-align:center;padding:30px;color:var(--ink-60);">載入中...</div>';
+  try {
+    const res = await fetch(`${API}/api/member/consumption`, { credentials: 'include' });
+    const records = await res.json();
+    if (!Array.isArray(records) || !records.length) {
+      el.innerHTML = '<div style="text-align:center;padding:30px;color:var(--ink-60);">尚無消費記錄</div>';
+      return;
+    }
+    const statusMap = { pending:'待審核', confirmed:'已確認', cancelled:'已取消', completed:'已完成' };
+    el.innerHTML = records.map(r => `
+      <div class="consumption-row">
+        <div style="flex:1;">
+          <div style="font-weight:700;font-size:14px;">${r.room}</div>
+          <div style="font-size:12px;color:var(--ink-60);margin-top:3px;">${r.date} &nbsp;${r.start_time}–${r.end_time}</div>
+          <div style="font-size:11px;color:var(--ink-60);margin-top:2px;">${r.booking_number}</div>
+        </div>
+        <div style="text-align:right;flex-shrink:0;">
+          <div class="cr-status ${r.status}">${statusMap[r.status]||r.status}</div>
+          <div style="font-size:15px;font-weight:700;color:var(--teal);margin-top:4px;">NT$ ${(r.total_price||0).toLocaleString()}</div>
+        </div>
+      </div>`).join('');
+  } catch(e) {
+    el.innerHTML = '<div style="color:var(--red);text-align:center;padding:20px;">載入失敗</div>';
+  }
+}
+
+async function loadMcBookings() {
+  const el = document.getElementById('mc-bookings-list');
+  el.innerHTML = '<div style="text-align:center;padding:30px;color:var(--ink-60);">載入中...</div>';
+  try {
+    const res = await fetch(`${API}/api/bookings/by-member`, { credentials: 'include' });
+    if (!res.ok) throw new Error();
+    const bookings = await res.json();
+    if (!bookings.length) {
+      el.innerHTML = '<div style="text-align:center;padding:30px;color:var(--ink-60);">尚無預約記錄</div>';
+      return;
+    }
+    const statusMap = { pending:'待審核', confirmed:'已確認', cancelled:'已取消', completed:'已完成' };
+    el.innerHTML = bookings.map(b => {
+      const canCancel = b.status === 'pending' || b.status === 'confirmed';
+      return `<div style="border:1px solid var(--border);border-radius:10px;padding:14px 16px;margin-bottom:10px;">
+        <div style="display:flex;justify-content:space-between;align-items:flex-start;gap:8px;">
+          <div>
+            <div style="font-weight:700;font-size:14px;">${b.room_name}</div>
+            <div style="font-size:12px;color:var(--ink-60);margin-top:3px;">${b.date} &nbsp;${b.start_time}–${b.end_time}</div>
+            <div style="font-size:11px;color:var(--ink-60);margin-top:2px;">${b.booking_number}</div>
+          </div>
+          <div style="text-align:right;flex-shrink:0;">
+            <div class="cr-status ${b.status}">${statusMap[b.status]||b.status}</div>
+            <div style="font-size:15px;font-weight:700;color:var(--teal);margin-top:4px;">NT$ ${(b.total_price||0).toLocaleString()}</div>
+          </div>
+        </div>
+        ${canCancel ? `<div style="margin-top:10px;text-align:right;">
+          <button onclick="cancelMcBooking(${b.id})" style="background:transparent;border:1px solid var(--red);color:var(--red);border-radius:6px;padding:5px 14px;font-size:12px;cursor:pointer;">取消預約</button>
+        </div>` : ''}
+      </div>`;
+    }).join('');
+  } catch(e) {
+    el.innerHTML = '<div style="color:var(--red);text-align:center;padding:20px;">載入失敗</div>';
+  }
+}
+
+async function cancelMcBooking(bid) {
+  if (!confirm('確定要取消此預約？')) return;
+  try {
+    const res = await fetch(`${API}/api/bookings/${bid}/cancel`, { method: 'POST', credentials: 'include' });
+    const data = await res.json();
+    if (res.ok) loadMcBookings();
+    else alert(data.error || '取消失敗');
+  } catch(e) { alert('網路錯誤，請稍後再試'); }
+}
 
 // ── CHAT SYNC TO BACKEND ──────────────────────────────────
 let _chatSessionKey = null;

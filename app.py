@@ -1601,6 +1601,7 @@ class Member(db.Model):
     reset_token           = db.Column(db.String(100))
     reset_token_expires   = db.Column(db.DateTime)
     line_user_id          = db.Column(db.String(100))
+    points                = db.Column(db.Integer, default=0)
     created_at            = db.Column(db.DateTime, default=tw_now)
     last_login            = db.Column(db.DateTime)
 
@@ -1618,9 +1619,66 @@ class Member(db.Model):
             'is_verified_phone': self.is_verified_phone,
             'is_blocked': self.is_blocked,
             'block_reason': self.block_reason or '',
+            'points': self.points or 0,
             'created_at': self.created_at.strftime('%Y-%m-%d %H:%M') if self.created_at else '',
             'last_login': self.last_login.strftime('%Y-%m-%d %H:%M') if self.last_login else '',
         }
+
+
+class Coupon(db.Model):
+    __tablename__ = 'coupons'
+    id             = db.Column(db.Integer, primary_key=True)
+    code           = db.Column(db.String(50), unique=True, nullable=False)
+    name           = db.Column(db.String(100), nullable=False)
+    description    = db.Column(db.Text, default='')
+    discount_type  = db.Column(db.String(20), default='fixed')   # 'fixed' | 'percent'
+    discount_value = db.Column(db.Float, default=0)
+    min_spend      = db.Column(db.Float, default=0)
+    max_uses       = db.Column(db.Integer, default=0)
+    used_count     = db.Column(db.Integer, default=0)
+    start_date     = db.Column(db.String(20))
+    end_date       = db.Column(db.String(20))
+    is_active      = db.Column(db.Boolean, default=True)
+    created_at     = db.Column(db.DateTime, default=tw_now)
+
+    def to_dict(self):
+        return {
+            'id': self.id, 'code': self.code, 'name': self.name,
+            'description': self.description or '',
+            'discount_type': self.discount_type,
+            'discount_value': self.discount_value,
+            'min_spend': self.min_spend or 0,
+            'max_uses': self.max_uses or 0,
+            'used_count': self.used_count or 0,
+            'start_date': self.start_date or '',
+            'end_date': self.end_date or '',
+            'is_active': self.is_active,
+            'created_at': self.created_at.strftime('%Y-%m-%d') if self.created_at else '',
+        }
+
+
+class MemberCoupon(db.Model):
+    __tablename__ = 'member_coupons'
+    id         = db.Column(db.Integer, primary_key=True)
+    member_id  = db.Column(db.Integer, db.ForeignKey('members.id'), nullable=False)
+    coupon_id  = db.Column(db.Integer, db.ForeignKey('coupons.id'), nullable=False)
+    is_used    = db.Column(db.Boolean, default=False)
+    used_at    = db.Column(db.DateTime)
+    booking_id = db.Column(db.Integer)
+    created_at = db.Column(db.DateTime, default=tw_now)
+
+
+class PointTransaction(db.Model):
+    __tablename__ = 'point_transactions'
+    id          = db.Column(db.Integer, primary_key=True)
+    member_id   = db.Column(db.Integer, db.ForeignKey('members.id'), nullable=False)
+    type        = db.Column(db.String(20), default='earn')  # earn | spend | adjust
+    points      = db.Column(db.Integer, default=0)
+    description = db.Column(db.String(200), default='')
+    booking_id  = db.Column(db.Integer)
+    created_at  = db.Column(db.DateTime, default=tw_now)
+
+
 class ChatSession(db.Model):
     __tablename__ = 'chat_sessions'
     id           = db.Column(db.Integer, primary_key=True)
@@ -3873,6 +3931,21 @@ def admin_confirm_booking(bid):
         return jsonify({'error': '只有待審核的預約可以確認'}), 400
     b.status = 'confirmed'
     db.session.commit()
+    # 點數累積：每 NT$10 得 1 點
+    try:
+        earned = max(0, (b.total_price or 0) // 10)
+        if earned > 0:
+            member = Member.query.filter_by(phone=b.customer_phone).first()
+            if not member and b.customer_email:
+                member = Member.query.filter_by(email=b.customer_email).first()
+            if member:
+                member.points = (member.points or 0) + earned
+                db.session.add(PointTransaction(
+                    member_id=member.id, type='earn', points=earned,
+                    description=f'預約確認 #{b.booking_number}', booking_id=b.id))
+                db.session.commit()
+    except Exception as _pe:
+        print(f'[points earn error] {_pe}')
     # 發送確認通知
     try:
         if b.line_user_id:
@@ -4195,6 +4268,7 @@ with app.app_context():
                 'last_login':             f'ALTER TABLE members ADD COLUMN last_login {_ts}',
                 'is_verified_phone':      'ALTER TABLE members ADD COLUMN is_verified_phone BOOLEAN DEFAULT FALSE',
                 'block_reason':           "ALTER TABLE members ADD COLUMN block_reason VARCHAR(200) DEFAULT ''",
+                'points':                 'ALTER TABLE members ADD COLUMN points INTEGER DEFAULT 0',
             }
             for col, sql in _member_cols.items():
                 if col not in _mb_cols:
@@ -5128,6 +5202,170 @@ def ai_chat():
 def health_check():
     
     return jsonify({'status': 'ok', 'time': datetime.now().strftime('%Y-%m-%d %H:%M:%S')}), 200
+
+
+# ─────────────────────────────────────────────
+# Member — 優惠券 / 點數 / 消費紀錄
+# ─────────────────────────────────────────────
+
+def _get_current_member():
+    mid = session.get('member_id')
+    if not mid: return None
+    return Member.query.get(mid)
+
+@app.route('/api/member/coupons', methods=['GET'])
+def member_get_coupons():
+    m = _get_current_member()
+    if not m: return jsonify({'error': '請先登入'}), 401
+    mcs = MemberCoupon.query.filter_by(member_id=m.id).order_by(MemberCoupon.created_at.desc()).all()
+    result = []
+    for mc in mcs:
+        c = Coupon.query.get(mc.coupon_id)
+        if not c: continue
+        result.append({**c.to_dict(), 'is_used': mc.is_used,
+                       'used_at': mc.used_at.strftime('%Y-%m-%d') if mc.used_at else '',
+                       'claimed_at': mc.created_at.strftime('%Y-%m-%d') if mc.created_at else ''})
+    return jsonify(result)
+
+@app.route('/api/member/coupons/claim', methods=['POST'])
+def member_claim_coupon():
+    m = _get_current_member()
+    if not m: return jsonify({'error': '請先登入'}), 401
+    code = (request.get_json() or {}).get('code', '').strip().upper()
+    c = Coupon.query.filter_by(code=code, is_active=True).first()
+    if not c: return jsonify({'error': '優惠碼不存在或已停用'}), 404
+    today = tw_now().strftime('%Y-%m-%d')
+    if c.start_date and today < c.start_date: return jsonify({'error': '優惠券尚未開始'}), 400
+    if c.end_date and today > c.end_date: return jsonify({'error': '優惠券已過期'}), 400
+    if MemberCoupon.query.filter_by(member_id=m.id, coupon_id=c.id).first():
+        return jsonify({'error': '您已領取此優惠券'}), 400
+    if c.max_uses and c.used_count >= c.max_uses: return jsonify({'error': '優惠券已達使用上限'}), 400
+    db.session.add(MemberCoupon(member_id=m.id, coupon_id=c.id))
+    db.session.commit()
+    return jsonify({'success': True, 'coupon': c.to_dict()})
+
+@app.route('/api/member/points', methods=['GET'])
+def member_get_points():
+    m = _get_current_member()
+    if not m: return jsonify({'error': '請先登入'}), 401
+    txs = PointTransaction.query.filter_by(member_id=m.id).order_by(PointTransaction.created_at.desc()).limit(50).all()
+    return jsonify({
+        'balance': m.points or 0,
+        'transactions': [{'id': t.id, 'type': t.type, 'points': t.points,
+                          'description': t.description,
+                          'created_at': t.created_at.strftime('%Y-%m-%d %H:%M') if t.created_at else ''} for t in txs]
+    })
+
+@app.route('/api/member/consumption', methods=['GET'])
+def member_get_consumption():
+    m = _get_current_member()
+    if not m: return jsonify({'error': '請先登入'}), 401
+    cond = []
+    if m.phone: cond.append(Booking.customer_phone == m.phone)
+    if m.email: cond.append(Booking.customer_email == m.email)
+    if not cond: return jsonify([])
+    from sqlalchemy import or_
+    bookings = Booking.query.filter(or_(*cond)).order_by(Booking.created_at.desc()).limit(50).all()
+    result = []
+    for b in bookings:
+        result.append({'id': b.id, 'booking_number': b.booking_number,
+                       'room': b.room.name if b.room else '', 'date': b.date,
+                       'start_time': b.start_time, 'end_time': b.end_time,
+                       'total_price': b.total_price, 'status': b.status,
+                       'created_at': b.created_at.strftime('%Y-%m-%d %H:%M') if b.created_at else ''})
+    return jsonify(result)
+
+# ─────────────────────────────────────────────
+# Admin — 優惠券管理
+# ─────────────────────────────────────────────
+
+@app.route('/admin/api/coupons', methods=['GET'])
+def admin_get_coupons():
+    err = check_admin()
+    if err: return err
+    coupons = Coupon.query.order_by(Coupon.created_at.desc()).all()
+    result = []
+    for c in coupons:
+        d = c.to_dict()
+        d['claimed_count'] = MemberCoupon.query.filter_by(coupon_id=c.id).count()
+        result.append(d)
+    return jsonify(result)
+
+@app.route('/admin/api/coupons', methods=['POST'])
+def admin_create_coupon():
+    err = check_admin()
+    if err: return err
+    d = request.get_json() or {}
+    code = d.get('code', '').strip().upper()
+    if not code or not d.get('name'):
+        return jsonify({'error': '請填寫優惠碼與名稱'}), 400
+    if Coupon.query.filter_by(code=code).first():
+        return jsonify({'error': '優惠碼已存在'}), 400
+    c = Coupon(
+        code=code, name=d['name'],
+        description=d.get('description', ''),
+        discount_type=d.get('discount_type', 'fixed'),
+        discount_value=float(d.get('discount_value', 0)),
+        min_spend=float(d.get('min_spend', 0)),
+        max_uses=int(d.get('max_uses', 0)),
+        start_date=d.get('start_date') or None,
+        end_date=d.get('end_date') or None,
+        is_active=bool(d.get('is_active', True)),
+    )
+    db.session.add(c)
+    db.session.commit()
+    return jsonify({'success': True, 'coupon': c.to_dict()})
+
+@app.route('/admin/api/coupons/<int:cid>', methods=['PATCH'])
+def admin_update_coupon(cid):
+    err = check_admin()
+    if err: return err
+    c = Coupon.query.get_or_404(cid)
+    d = request.get_json() or {}
+    for f in ['name','description','discount_type','discount_value','min_spend','max_uses','start_date','end_date','is_active']:
+        if f in d: setattr(c, f, d[f])
+    db.session.commit()
+    return jsonify({'success': True, 'coupon': c.to_dict()})
+
+@app.route('/admin/api/coupons/<int:cid>', methods=['DELETE'])
+def admin_delete_coupon(cid):
+    err = check_admin()
+    if err: return err
+    c = Coupon.query.get_or_404(cid)
+    MemberCoupon.query.filter_by(coupon_id=c.id).delete()
+    db.session.delete(c)
+    db.session.commit()
+    return jsonify({'success': True})
+
+@app.route('/admin/api/coupons/<int:cid>/issue', methods=['POST'])
+def admin_issue_coupon(cid):
+    err = check_admin()
+    if err: return err
+    c = Coupon.query.get_or_404(cid)
+    d = request.get_json() or {}
+    member_ids = d.get('member_ids', [])
+    members = Member.query.filter(Member.id.in_(member_ids)).all() if member_ids else Member.query.all()
+    issued = 0
+    for m in members:
+        if not MemberCoupon.query.filter_by(member_id=m.id, coupon_id=c.id).first():
+            db.session.add(MemberCoupon(member_id=m.id, coupon_id=c.id))
+            issued += 1
+    db.session.commit()
+    return jsonify({'success': True, 'issued': issued})
+
+@app.route('/admin/api/members/<int:mid>/points', methods=['POST'])
+def admin_adjust_points(mid):
+    err = check_admin()
+    if err: return err
+    m = Member.query.get_or_404(mid)
+    d = request.get_json() or {}
+    pts = int(d.get('points', 0))
+    desc = d.get('description', '後台調整')
+    if pts == 0: return jsonify({'error': '點數不可為 0'}), 400
+    m.points = max(0, (m.points or 0) + pts)
+    db.session.add(PointTransaction(member_id=m.id, type='adjust', points=pts, description=desc))
+    db.session.commit()
+    return jsonify({'success': True, 'balance': m.points})
 
 
 if __name__ == '__main__':

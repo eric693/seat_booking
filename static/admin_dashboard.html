@@ -396,6 +396,28 @@ input[list]::-webkit-calendar-picker-indicator { display: none !important; }
   justify-content: flex-end;
 }
 
+.modal-overlay {
+  position: fixed; inset: 0; background: rgba(0,0,0,0.5);
+  z-index: 300; display: flex; align-items: center; justify-content: center;
+  backdrop-filter: blur(4px);
+}
+.modal-panel {
+  background: #fff; border-radius: 12px; width: 92%; max-height: 90vh;
+  overflow-y: auto; box-shadow: 0 20px 60px rgba(0,0,0,0.2);
+}
+.modal-header {
+  padding: 20px 24px 16px; border-bottom: 1px solid var(--border);
+  display: flex; align-items: center; justify-content: space-between;
+}
+.modal-header h3 { font-family:'DM Serif Display',serif; font-size: 20px; }
+.modal-close {
+  background: none; border: none; font-size: 22px; color: var(--ink-60);
+  cursor: pointer; padding: 0; width: 30px; height: 30px;
+  display: flex; align-items: center; justify-content: center;
+}
+.modal-body { padding: 20px 24px; }
+.modal-footer { padding: 16px 24px; border-top: 1px solid var(--border); margin-top: 0; }
+
 /* ── FORM ── */
 .fg { margin-bottom: 18px; }
 .fg label {
@@ -714,6 +736,9 @@ input[list]::-webkit-calendar-picker-indicator { display: none !important; }
     </div>
     <div class="nav-item" onclick="showPage('members',this)">
       <span class="nav-icon"><svg width="16" height="16" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><circle cx="5" cy="5" r="2.5"/><path d="M1 14c0-2.8 2.2-5 5-5"/><circle cx="11.5" cy="7" r="2"/><path d="M9 14c0-1.7 1.1-3 2.5-3s2.5 1.3 2.5 3"/><path d="M14 10l-1 1-2-2" stroke-linecap="round" stroke-linejoin="round"/></svg></span> 會員管理
+    </div>
+    <div class="nav-item" onclick="showPage('coupons',this)">
+      <span class="nav-icon">🎟️</span> 優惠券管理
     </div>
     <div class="nav-item" onclick="showPage('chat',this)" id="nav-chat">
       <span class="nav-icon"><svg width="16" height="16" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M14 2H2a1 1 0 00-1 1v8a1 1 0 001 1h3l2 2 2-2h5a1 1 0 001-1V3a1 1 0 00-1-1z"/><path d="M5 6h6M5 9h4"/></svg></span> 聊天記錄
@@ -1115,6 +1140,62 @@ input[list]::-webkit-calendar-picker-indicator { display: none !important; }
       </div>
     </div>
 
+
+    <!-- ── COUPONS ── -->
+    <div class="page" id="page-coupons">
+      <div class="card" style="margin-bottom:20px;">
+        <div class="card-head">
+          <h2 class="card-title">優惠券管理</h2>
+          <button class="btn btn-primary" onclick="openCouponModal()">＋ 新增優惠券</button>
+        </div>
+        <div class="table-wrap">
+          <table class="data-table" id="coupon-table">
+            <thead><tr>
+              <th>優惠碼</th><th>名稱</th><th>折扣</th><th>最低消費</th>
+              <th>使用上限/已用</th><th>有效期</th><th>狀態</th><th>已領取</th><th>操作</th>
+            </tr></thead>
+            <tbody id="coupon-tbody"></tbody>
+          </table>
+        </div>
+      </div>
+    </div>
+
+    <!-- ── COUPON MODAL ── -->
+    <div class="modal-overlay" id="couponModal" style="display:none;">
+      <div class="modal-panel" style="max-width:520px;">
+        <div class="modal-header">
+          <h3 id="coupon-modal-title">新增優惠券</h3>
+          <button class="modal-close" onclick="closeCouponModal()">×</button>
+        </div>
+        <div class="modal-body">
+          <input type="hidden" id="coupon-edit-id">
+          <div class="form-grid" style="grid-template-columns:1fr 1fr;">
+            <div class="fg" style="grid-column:1/-1;"><label>優惠碼 <span style="color:var(--red)">*</span></label><input class="finput" type="text" id="cp-code" placeholder="SUMMER2026" style="text-transform:uppercase;"></div>
+            <div class="fg" style="grid-column:1/-1;"><label>優惠名稱 <span style="color:var(--red)">*</span></label><input class="finput" type="text" id="cp-name" placeholder="夏日優惠"></div>
+            <div class="fg" style="grid-column:1/-1;"><label>描述說明</label><input class="finput" type="text" id="cp-desc" placeholder="預約享折扣"></div>
+            <div class="fg"><label>折扣類型</label>
+              <select class="fselect" id="cp-type" onchange="updateCouponTypeLabel()">
+                <option value="fixed">固定金額（NT$）</option>
+                <option value="percent">百分比（%）</option>
+              </select>
+            </div>
+            <div class="fg"><label id="cp-value-label">折扣金額（NT$）</label><input class="finput" type="number" id="cp-value" placeholder="100" min="1"></div>
+            <div class="fg"><label>最低消費（NT$，0=不限）</label><input class="finput" type="number" id="cp-min-spend" placeholder="0" min="0"></div>
+            <div class="fg"><label>使用上限（0=不限）</label><input class="finput" type="number" id="cp-max-uses" placeholder="0" min="0"></div>
+            <div class="fg"><label>開始日期</label><input class="finput" type="date" id="cp-start"></div>
+            <div class="fg"><label>結束日期</label><input class="finput" type="date" id="cp-end"></div>
+            <div class="fg"><label>狀態</label><select class="fselect" id="cp-active"><option value="true">啟用</option><option value="false">停用</option></select></div>
+          </div>
+          <hr style="margin:16px 0;">
+          <div style="font-weight:600;font-size:14px;margin-bottom:10px;">發放給會員</div>
+          <button class="btn btn-outline" id="issue-all-btn" style="display:none;" onclick="issueCouponAll()">📨 發放給所有會員</button>
+        </div>
+        <div class="modal-footer">
+          <button class="btn btn-outline" onclick="closeCouponModal()">取消</button>
+          <button class="btn btn-primary" onclick="saveCoupon()">儲存</button>
+        </div>
+      </div>
+    </div>
 
     <!-- ── MEMBERS ── -->
     <div class="page" id="page-members">
@@ -1723,7 +1804,7 @@ function showPage(id, navEl) {
   document.getElementById(`page-${id}`).classList.add('active');
   document.querySelectorAll('.nav-item').forEach(n => n.classList.remove('active'));
   if (navEl) navEl.classList.add('active');
-  const titles = { dashboard:'儀表板', bookings:'預約管理', rooms:'會議室管理', content:'文字內容編輯', photos:'照片管理', formfields:'表單欄位管理', blocked:'封鎖時段管理', lineusers:'LINE 用戶管理', members:'會員管理', chat:'聊天記錄', lineqa:'QA 問答設定', payment:'付款設定', accounts:'帳號管理', logs:'登入紀錄' };
+  const titles = { dashboard:'儀表板', bookings:'預約管理', rooms:'會議室管理', content:'文字內容編輯', photos:'照片管理', formfields:'表單欄位管理', blocked:'封鎖時段管理', lineusers:'LINE 用戶管理', members:'會員管理', coupons:'優惠券管理', chat:'聊天記錄', lineqa:'QA 問答設定', payment:'付款設定', accounts:'帳號管理', logs:'登入紀錄' };
   document.getElementById('topbarTitle').textContent = titles[id] || '';
   switch(id) {
     case 'dashboard': initFloorDate(); loadDashboard(); loadFloorStatus(); break;
@@ -1736,6 +1817,7 @@ function showPage(id, navEl) {
     case 'accounts':  loadAccounts(); break;
     case 'lineusers':  loadLineUsers(); break;
     case 'members':    loadMembers(); break;
+    case 'coupons':    loadCoupons(); break;
     case 'chat':       loadChatSessions(); break;
     case 'lineqa':     loadLineQA(); break;
     case 'payment':   loadPaymentSettings(); break;
@@ -3719,6 +3801,127 @@ async function openMemberBookings(mid, name) {
   }
 }
 
+// ── COUPONS ──────────────────────────────────────────────
+
+async function loadCoupons() {
+  const tbody = document.getElementById('coupon-tbody');
+  tbody.innerHTML = '<tr><td colspan="9" style="text-align:center;padding:30px;color:var(--ink-60);">載入中...</td></tr>';
+  try {
+    const res = await fetch('/admin/api/coupons', { headers: H });
+    const coupons = await res.json();
+    if (!Array.isArray(coupons) || !coupons.length) {
+      tbody.innerHTML = '<tr><td colspan="9" style="text-align:center;padding:30px;color:var(--ink-60);">尚無優惠券</td></tr>';
+      return;
+    }
+    tbody.innerHTML = coupons.map(c => {
+      const discStr = c.discount_type === 'percent' ? `${c.discount_value}%` : `NT$${c.discount_value}`;
+      const minStr  = c.min_spend ? `NT$${c.min_spend}` : '不限';
+      const usesStr = c.max_uses  ? `${c.max_uses} / ${c.used_count||0}` : `不限 / ${c.used_count||0}`;
+      const dateStr = [c.start_date||'', c.end_date||''].filter(Boolean).join(' ~ ') || '無限制';
+      const statusTag = c.is_active
+        ? '<span style="color:var(--green);font-weight:600;">啟用</span>'
+        : '<span style="color:var(--ink-60);">停用</span>';
+      return `<tr>
+        <td><code style="font-size:12px;background:var(--gold-light);padding:2px 6px;border-radius:4px;">${c.code}</code></td>
+        <td>${c.name}</td><td>${discStr}</td><td>${minStr}</td><td>${usesStr}</td>
+        <td style="font-size:12px;">${dateStr}</td><td>${statusTag}</td>
+        <td>${c.claimed_count||0} 人</td>
+        <td>
+          <button class="btn btn-outline btn-sm" onclick="openCouponModal(${c.id})">編輯</button>
+          <button class="btn btn-sm" style="background:var(--red-light);color:var(--red);margin-left:4px;" onclick="deleteCoupon(${c.id})">刪除</button>
+        </td>
+      </tr>`;
+    }).join('');
+  } catch(e) {
+    tbody.innerHTML = '<tr><td colspan="9" style="text-align:center;padding:30px;color:var(--red);">載入失敗</td></tr>';
+  }
+}
+
+function openCouponModal(id) {
+  document.getElementById('coupon-edit-id').value = id || '';
+  document.getElementById('coupon-modal-title').textContent = id ? '編輯優惠券' : '新增優惠券';
+  document.getElementById('issue-all-btn').style.display = id ? 'inline-block' : 'none';
+  if (!id) {
+    ['cp-code','cp-name','cp-desc','cp-value','cp-min-spend','cp-max-uses','cp-start','cp-end'].forEach(i => {
+      const el = document.getElementById(i); if(el) el.value = '';
+    });
+    document.getElementById('cp-type').value = 'fixed';
+    document.getElementById('cp-active').value = 'true';
+    updateCouponTypeLabel();
+    document.getElementById('couponModal').style.display = 'flex';
+    return;
+  }
+  fetch('/admin/api/coupons', { headers: H }).then(r => r.json()).then(coupons => {
+    const c = (Array.isArray(coupons) ? coupons : []).find(x => x.id == id);
+    if (!c) return;
+    document.getElementById('cp-code').value      = c.code || '';
+    document.getElementById('cp-name').value      = c.name || '';
+    document.getElementById('cp-desc').value      = c.description || '';
+    document.getElementById('cp-type').value      = c.discount_type || 'fixed';
+    document.getElementById('cp-value').value     = c.discount_value || '';
+    document.getElementById('cp-min-spend').value = c.min_spend || 0;
+    document.getElementById('cp-max-uses').value  = c.max_uses || 0;
+    document.getElementById('cp-start').value     = c.start_date || '';
+    document.getElementById('cp-end').value       = c.end_date || '';
+    document.getElementById('cp-active').value    = c.is_active ? 'true' : 'false';
+    updateCouponTypeLabel();
+    document.getElementById('couponModal').style.display = 'flex';
+  });
+}
+
+function closeCouponModal() { document.getElementById('couponModal').style.display = 'none'; }
+
+function updateCouponTypeLabel() {
+  const t = document.getElementById('cp-type').value;
+  document.getElementById('cp-value-label').textContent = t === 'percent' ? '折扣百分比（%）' : '折扣金額（NT$）';
+}
+
+async function saveCoupon() {
+  const id    = document.getElementById('coupon-edit-id').value;
+  const code  = document.getElementById('cp-code').value.trim().toUpperCase();
+  const name  = document.getElementById('cp-name').value.trim();
+  const value = parseFloat(document.getElementById('cp-value').value);
+  if (!code || !name)        { alert('優惠碼和名稱為必填'); return; }
+  if (!value || value <= 0)  { alert('請輸入有效的折扣值'); return; }
+  const payload = {
+    code, name,
+    description:   document.getElementById('cp-desc').value.trim(),
+    discount_type: document.getElementById('cp-type').value,
+    discount_value: value,
+    min_spend: parseInt(document.getElementById('cp-min-spend').value) || 0,
+    max_uses:  parseInt(document.getElementById('cp-max-uses').value)  || 0,
+    start_date: document.getElementById('cp-start').value || null,
+    end_date:   document.getElementById('cp-end').value   || null,
+    is_active: document.getElementById('cp-active').value === 'true',
+  };
+  const url    = id ? `/admin/api/coupons/${id}` : '/admin/api/coupons';
+  const method = id ? 'PATCH' : 'POST';
+  try {
+    const res  = await fetch(url, { method, headers: H, body: JSON.stringify(payload) });
+    const data = await res.json();
+    if (data.success || data.coupon) { closeCouponModal(); loadCoupons(); }
+    else alert(data.error || '儲存失敗');
+  } catch(e) { alert('網路錯誤'); }
+}
+
+async function deleteCoupon(id) {
+  if (!confirm('確定要刪除此優惠券？已領取的紀錄也會一併刪除。')) return;
+  const res  = await fetch(`/admin/api/coupons/${id}`, { method: 'DELETE', headers: H });
+  const data = await res.json();
+  if (data.success) loadCoupons();
+  else alert(data.error || '刪除失敗');
+}
+
+async function issueCouponAll() {
+  const id = document.getElementById('coupon-edit-id').value;
+  if (!id) return;
+  if (!confirm('確定要將此優惠券發放給所有會員？')) return;
+  const res  = await fetch(`/admin/api/coupons/${id}/issue`, { method: 'POST', headers: H });
+  const data = await res.json();
+  if (data.success) alert(`✅ 已成功發放給 ${data.issued||0} 位會員`);
+  else alert(data.error || '發放失敗');
+}
+
 function clearMemberFilters() {
   ['member-search','member-fil-status'].forEach(id => { const el = document.getElementById(id); if (el) el.value = ''; });
   loadMembers();
@@ -4194,6 +4397,7 @@ function applyPermissions(perms) {
     'blocked':    "showPage('blocked'",
     'lineusers':  "showPage('lineusers'",
     'members':    "showPage('members'",
+    'coupons':    "showPage('coupons'",
     'chat':       "showPage('chat'",
     'lineqa':     "showPage('lineqa'",
     'accounts':   "showPage('accounts'",

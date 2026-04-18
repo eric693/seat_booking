@@ -3012,7 +3012,7 @@ function closeAuthModal() {
 
 document.addEventListener('DOMContentLoaded', () => {
   document.getElementById('authModal')?.addEventListener('click', function(e) {
-    if (e.target === this) closeAuthModal();
+    if (e.target === this) document.getElementById('authModal').classList.remove('active');
   });
   document.getElementById('memberProfileModal')?.addEventListener('click', function(e) {
     if (e.target === this) this.classList.remove('active');

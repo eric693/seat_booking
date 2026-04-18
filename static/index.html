@@ -1855,6 +1855,7 @@ async function loadRooms() {
           data-rate="${r.hourly_rate}"
           data-type="${esc(r.room_type)}"
           data-min-hours="${r.min_hours || 1}"
+          data-advance-minutes="${r.advance_minutes || 0}"
           onclick="selectRoom(this)">
           <div class="selected-check">&#10003;</div>
           ${photoHTML}
@@ -1906,7 +1907,8 @@ function selectRoom(el) {
   const name     = el.dataset.name;
   const rate     = parseFloat(el.dataset.rate);
   const type     = el.dataset.type;
-  const minHours = parseFloat(el.dataset.minHours) || 1; // ★ 讀取最低時數
+  const minHours = parseFloat(el.dataset.minHours) || 1;
+  const advanceMinutes = parseInt(el.dataset.advanceMinutes) || 0;
 
   document.querySelectorAll('.room-card').forEach(c => c.classList.remove('selected'));
   el.classList.add('selected');
@@ -1915,8 +1917,8 @@ function selectRoom(el) {
   state.room     = name;
   state.roomRate = rate;
   state.roomType = type;
-  state.minHours = minHours; // ★ 存入 state
-  state.advanceMinutes = 0;
+  state.minHours = minHours;
+  state.advanceMinutes = advanceMinutes;
   state.date     = null;
   state.startTime = null;
   state.endTime   = null;
@@ -1967,17 +1969,28 @@ function renderCal() {
   for (let i = firstDay - 1; i >= 0; i--)
     html += `<div class="cal-day other">${prevDays - i}</div>`;
 
+  // 計算提前預約截止時間（ms，以台灣時間牆鐘為基準）
+  const _advMs = state.advanceMinutes > 0
+    ? (Date.now() + 8 * 3600000) + state.advanceMinutes * 60000
+    : 0;
+  // 當日最後時段：SLOT_START_HOUR + (SLOT_COUNT-1)/2 小時，(SLOT_COUNT-1)%2 ? 30 : 0 分
+  const _lastSlotH = SLOT_START_HOUR + Math.floor((SLOT_COUNT - 1) / 2);
+  const _lastSlotM = (SLOT_COUNT - 1) % 2 === 0 ? 0 : 30;
+
   for (let d = 1; d <= daysInMonth; d++) {
     const dt = new Date(y, m, d);
     const isToday = dt.toDateString() === today.toDateString();
     const isPast = dt < today;
     const ds = `${y}-${String(m+1).padStart(2,'0')}-${String(d).padStart(2,'0')}`;
     const isSel = state.date === ds;
+    // 整天被提前限制封鎖：當日最後時段的台灣時間 < 截止時間
+    const isAdvBlocked = _advMs > 0 &&
+      Date.UTC(y, m, d, _lastSlotH, _lastSlotM, 0) < _advMs;
     let cls = 'cal-day';
     if (isToday) cls += ' today';
-    if (isPast) cls += ' disabled';
+    if (isPast || isAdvBlocked) cls += ' disabled';
     if (isSel) cls += ' selected';
-    const click = !isPast ? `onclick="selectDate('${ds}', this)"` : '';
+    const click = (!isPast && !isAdvBlocked) ? `onclick="selectDate('${ds}', this)"` : '';
     html += `<div class="${cls}" ${click}>${d}</div>`;
   }
 
@@ -2017,17 +2030,17 @@ async function selectDate(ds, el) {
     cleaningSlots     = new Set();
     adminBlockedSlots = new Set();
 
-    // 提前預約限制：今日才需鎖格
+    // 提前預約限制：用完整日期時間比較，跨日情況也正確
     const advMin = data.advance_minutes || 0;
     state.advanceMinutes = advMin;
     if (advMin > 0) {
-      const nowTw = new Date(Date.now() + 8 * 3600000); // UTC+8
-      const todayStr = nowTw.toISOString().slice(0, 10);
-      if (ds === todayStr) {
-        const cutoffMin = nowTw.getUTCHours() * 60 + nowTw.getUTCMinutes() + advMin;
-        for (let i = 0; i < SLOT_COUNT; i++) {
-          const slotMin = (SLOT_START_HOUR + Math.floor(i / 2)) * 60 + (i % 2 === 0 ? 0 : 30);
-          if (slotMin < cutoffMin) blockedSlots.add(i);
+      const cutoffTwMs = (Date.now() + 8 * 3600000) + advMin * 60000;
+      const [_dy, _dm, _dd] = ds.split('-').map(Number);
+      for (let i = 0; i < SLOT_COUNT; i++) {
+        const slotH = SLOT_START_HOUR + Math.floor(i / 2);
+        const slotM = (i % 2 === 0) ? 0 : 30;
+        if (Date.UTC(_dy, _dm - 1, _dd, slotH, slotM, 0) < cutoffTwMs) {
+          blockedSlots.add(i);
         }
       }
     }
@@ -2548,19 +2561,19 @@ async function submitBooking() {
   }
   if (!validateFormFields()) return;
 
-  // ★ 送出時再次檢查提前預約限制（防止選完時段後等太久才送出）
+  // ★ 送出時再次檢查提前預約限制（完整日期時間比較，跨日也正確）
   const _advMin = state.advanceMinutes || 0;
   if (_advMin > 0 && state.date && state.startTime) {
-    const _nowTw = new Date(Date.now() + 8 * 3600000);
-    const _todayStr = _nowTw.toISOString().slice(0, 10);
-    if (state.date === _todayStr) {
-      const _cutoffMin = _nowTw.getUTCHours() * 60 + _nowTw.getUTCMinutes() + _advMin;
-      const [_sh, _sm] = state.startTime.split(':').map(Number);
-      if (_sh * 60 + _sm < _cutoffMin) {
-        const _advStr = _advMin >= 60 && _advMin % 60 === 0 ? `${_advMin/60} 小時` : `${_advMin} 分鐘`;
-        alert(`此會議室需提前 ${_advStr} 預約，請重新選擇較晚的時段。`);
-        return;
-      }
+    const _cutoffTwMs = (Date.now() + 8 * 3600000) + _advMin * 60000;
+    const [_sy, _smo, _sd] = state.date.split('-').map(Number);
+    const [_sh, _sm] = state.startTime.split(':').map(Number);
+    if (Date.UTC(_sy, _smo - 1, _sd, _sh, _sm, 0) < _cutoffTwMs) {
+      const _h = Math.floor(_advMin / 60), _m2 = _advMin % 60;
+      const _advStr = _h > 0 && _m2 === 0 ? `${_h} 小時` : _h > 0 ? `${_h} 小時 ${_m2} 分鐘` : `${_m2} 分鐘`;
+      const _cutoffDate = new Date(_cutoffTwMs - 8 * 3600000);
+      const _cutoffDisp = _cutoffDate.toISOString().slice(0,16).replace('T',' ');
+      alert(`此會議室需提前 ${_advStr} 預約。\n最早可預約時段：${_cutoffDisp}（台灣時間）`);
+      return;
     }
   }
 

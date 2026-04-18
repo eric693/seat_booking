@@ -1599,7 +1599,19 @@ input[list]::-webkit-calendar-picker-indicator { display: none !important; }
       <div class="fg"><label>每小時費率（NT$）</label><input class="finput" type="number" id="rm-rate" placeholder="500" min="0"></div>
       <div class="fg"><label>最低預約時數 <span>（0 = 不限）</span></label><div style="display:flex;align-items:center;gap:8px;"><input class="finput" type="number" id="rm-min-hours" placeholder="1" min="0" step="0.5" style="flex:1;"><span style="color:var(--ink-60);white-space:nowrap;">小時</span></div></div>
       <div class="fg"><label>清潔緩衝時間 <span>（每筆預約結束後保留的清潔時間，0 = 不限）</span></label><div style="display:flex;align-items:center;gap:8px;"><input class="finput" type="number" id="rm-cleaning-buffer" placeholder="0" min="0" step="5" style="flex:1;"><span style="color:var(--ink-60);white-space:nowrap;">分鐘</span></div></div>
-      <div class="fg"><label>最短提前預約時間 <span>（需提前幾分鐘才可線上預約，避免現場與線上衝突，0 = 不限）</span></label><div style="display:flex;align-items:center;gap:8px;"><input class="finput" type="number" id="rm-advance-minutes" placeholder="0" min="0" step="30" style="flex:1;"><span style="color:var(--ink-60);white-space:nowrap;">分鐘</span></div></div>
+      <div class="fg" style="grid-column:1/-1;">
+        <div style="display:flex;align-items:center;gap:10px;margin-bottom:10px;">
+          <input type="checkbox" id="rm-advance-enabled" style="width:16px;height:16px;cursor:pointer;accent-color:var(--teal);" onchange="toggleAdvanceMinutes()">
+          <label for="rm-advance-enabled" style="font-weight:600;cursor:pointer;font-size:14px;">開啟最短提前預約時間限制</label>
+        </div>
+        <div id="rm-advance-wrap" style="display:none;background:#f8fafa;border:1px solid #d0e4e4;border-radius:8px;padding:14px 16px;">
+          <div style="display:flex;align-items:center;gap:8px;margin-bottom:8px;">
+            <input class="finput" type="number" id="rm-advance-minutes" placeholder="30" min="1" step="30" style="flex:1;max-width:160px;">
+            <span style="color:var(--ink-60);white-space:nowrap;">分鐘</span>
+          </div>
+          <div style="font-size:12px;color:var(--ink-60);line-height:1.6;">從現在起，至少幾分鐘後的時段才可線上預約。<br>例：設定 <strong>480 分鐘</strong>，現在是 16:00，則最早可預約 <strong>隔日 00:00</strong> 以後的時段。</div>
+        </div>
+      </div>
       <div class="fg"><label>樓層</label><input class="finput" type="text" id="rm-floor" placeholder="例：3F"></div>
       <div class="fg"><label>前台顯示順序 <span>（數字越小越前面，0=自動）</span></label><input class="finput" type="number" id="rm-sort-order" placeholder="0" min="0" style="width:120px;"></div>
       <div class="fg"><label>狀態</label><select class="fselect" id="rm-active"><option value="true">啟用</option><option value="false">停用</option></select></div>
@@ -2094,7 +2106,9 @@ function openRoomModal() {
   document.getElementById('rm-active').value = 'true';
   document.getElementById('rm-min-hours').value = '1';
   document.getElementById('rm-cleaning-buffer').value = '0';
-  document.getElementById('rm-advance-minutes').value = '0';
+  document.getElementById('rm-advance-enabled').checked = false;
+  document.getElementById('rm-advance-wrap').style.display = 'none';
+  document.getElementById('rm-advance-minutes').value = '';
   document.getElementById('rm-sort-order').value = '0';
   document.getElementById('rm-photo-url').value = '';
   document.getElementById('currentPhotoRow').style.display = 'none';
@@ -2118,7 +2132,10 @@ function editRoom(id) {
   document.getElementById('rm-active').value = r.is_active ? 'true' : 'false';
   document.getElementById('rm-min-hours').value = r.min_hours !== undefined ? r.min_hours : 1;
   document.getElementById('rm-cleaning-buffer').value = r.cleaning_buffer !== undefined ? r.cleaning_buffer : 0;
-  document.getElementById('rm-advance-minutes').value = r.advance_minutes !== undefined ? r.advance_minutes : 0;
+  const _adv = r.advance_minutes || 0;
+  document.getElementById('rm-advance-enabled').checked = _adv > 0;
+  document.getElementById('rm-advance-wrap').style.display = _adv > 0 ? 'block' : 'none';
+  document.getElementById('rm-advance-minutes').value = _adv > 0 ? _adv : '';
   document.getElementById('rm-sort-order').value = r.sort_order !== undefined ? r.sort_order : 0;
   document.getElementById('rm-photo-url').value = r.photo_url || '';
   amenities = [...(r.amenities || [])];
@@ -2183,7 +2200,8 @@ async function saveRoom() {
     is_active: document.getElementById('rm-active').value === 'true',
     min_hours: parseFloat(document.getElementById('rm-min-hours').value) || 0,
     cleaning_buffer: parseInt(document.getElementById('rm-cleaning-buffer').value) || 0,
-    advance_minutes: parseInt(document.getElementById('rm-advance-minutes').value) || 0,
+    advance_minutes: document.getElementById('rm-advance-enabled').checked
+      ? (parseInt(document.getElementById('rm-advance-minutes').value) || 0) : 0,
     sort_order: parseInt(document.getElementById('rm-sort-order').value) || 0,
     photo_url: document.getElementById('rm-photo-url').value,
   };
@@ -3935,6 +3953,12 @@ function applyQaExample(idx) {
   document.getElementById('qa-keywords').scrollIntoView({ behavior: 'smooth', block: 'center' });
   document.getElementById('qa-keywords').focus();
   toast('範例已套用，修改後按「+ 新增」儲存', 'success');
+}
+
+function toggleAdvanceMinutes() {
+  const enabled = document.getElementById('rm-advance-enabled').checked;
+  document.getElementById('rm-advance-wrap').style.display = enabled ? 'block' : 'none';
+  if (!enabled) document.getElementById('rm-advance-minutes').value = '';
 }
 
 function clearQAFilters() {

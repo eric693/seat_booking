@@ -2877,7 +2877,7 @@ def _handle_booking_flow(uid: str, rtok: str, text: str, lu):
 
         # 通知
         try:
-            push_line(uid, [flex_booking_confirm(booking)])
+            reply_line(rtok, [flex_booking_confirm(booking)])
             for aid in admin_line_ids():
                 push_line(aid, [flex_admin_notify(booking)])
             if booking.customer_email:

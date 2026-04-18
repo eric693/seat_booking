@@ -2031,6 +2031,10 @@ def create_booking():
             lu = LineUser.query.filter_by(phone=data['phone']).first()
             if lu:
                 line_uid = lu.line_user_id
+                # 同步 Member.line_user_id（若尚未綁定）
+                _m = Member.query.get(session.get('member_id'))
+                if _m and not _m.line_user_id:
+                    _m.line_user_id = line_uid
         if line_uid and data.get('phone'):
             _lu = LineUser.query.filter_by(line_user_id=line_uid).first()
             if _lu and not _lu.phone:
@@ -3298,12 +3302,18 @@ def _handle_line_text(uid, rtok, text):
         member.line_user_id = uid
         if is_phone:
             lu.phone = identifier
-            # 同步更新相關預約
             Booking.query.filter_by(customer_phone=identifier, line_user_id=None).update(
+                {'line_user_id': uid})
+        else:
+            # Email 綁定：同步手機號到 LineUser（若會員有手機）
+            if member.phone and not lu.phone:
+                lu.phone = member.phone
+            # 回補相關預約的 line_user_id
+            Booking.query.filter_by(customer_email=identifier, line_user_id=None).update(
                 {'line_user_id': uid})
         db.session.commit()
 
-        display = identifier if is_email else identifier
+        display = member.phone or identifier
         reply_line(rtok, [flex_bind_success(display)])
         return
 

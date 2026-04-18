@@ -97,7 +97,7 @@ header {
 .hero {
   background: var(--hero-bg);
   color: var(--white);
-  padding: 48px 40px 56px;
+  padding: 48px 0 56px;
   position: relative;
   overflow: hidden;
 }
@@ -112,6 +112,7 @@ header {
 .hero-inner {
   max-width: 1300px;
   margin: 0 auto;
+  padding: 0 40px;
   position: relative;
   z-index: 1;
   display: grid;
@@ -1034,9 +1035,10 @@ footer {
   .rooms-grid { grid-template-columns: 1fr; }
   .form-grid { grid-template-columns: 1fr; }
   .fgroup.full { grid-column: 1; }
-  .header-inner, .hero { padding-left: 20px; padding-right: 20px; }
+  .header-inner { padding-left: 20px; padding-right: 20px; }
   .page-wrapper { padding: 32px 20px 60px; }
-  .hero { padding: 52px 20px 60px; }
+  .hero { padding: 52px 0 60px; }
+  .hero-inner { padding: 0 20px; }
 }
 
 /* ── MEMBER AUTH ── */

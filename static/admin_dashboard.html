@@ -2719,9 +2719,11 @@ async function confirmCrop() {
       origObjUrl = URL.createObjectURL(rawBlob);
     }
     const origImg2 = new Image();
+    origImg2.crossOrigin = 'anonymous';
     origImg2.src = origObjUrl;
-    await new Promise(res => { origImg2.onload = res; origImg2.onerror = res; });
+    await new Promise((res, rej) => { origImg2.onload = res; origImg2.onerror = () => rej(new Error('原始圖片載入失敗')); });
     URL.revokeObjectURL(origObjUrl);
+    if (!origImg2.naturalWidth) throw new Error('無法取得原始圖片尺寸');
     const scaleX2 = origImg2.naturalWidth / _dispW, scaleY2 = origImg2.naturalHeight / _dispH;
     const sx2 = Math.round(b.x * scaleX2), sy2 = Math.round(b.y * scaleY2);
     const sw2 = Math.round(b.w * scaleX2), sh2 = Math.round(b.h * scaleY2);
@@ -2733,7 +2735,8 @@ async function confirmCrop() {
     const formData = new FormData(); formData.append('photo', blob, 'cropped.jpg');
     const upRes = await fetch('/admin/api/rooms/' + state.roomId + '/photos', { method: 'POST', headers: H, body: formData });
     if (!upRes.ok) throw new Error('上傳失敗');
-    await fetch('/admin/api/rooms/' + state.roomId + '/photos/' + state.photoIdx, { method: 'DELETE', headers: H });
+    const delRes = await fetch('/admin/api/rooms/' + state.roomId + '/photos/' + state.photoIdx, { method: 'DELETE', headers: H });
+    if (!delRes.ok) throw new Error('舊照片刪除失敗');
     toast('裁切完成', 'success'); loadPhotos();
   } catch(e) { toast('裁切上傳失敗：' + e.message, 'error'); }
   document.getElementById('cropConfirmBtn').disabled = false;

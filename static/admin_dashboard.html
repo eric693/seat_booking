@@ -1158,6 +1158,19 @@ input[list]::-webkit-calendar-picker-indicator { display: none !important; }
       </div>
     </div>
 
+    <!-- Member Bookings Modal -->
+    <div class="modal" id="memberBookingsModal">
+      <div class="modal-box" style="max-width:680px;padding:32px 36px;max-height:85vh;overflow-y:auto;">
+        <h3 style="font-family:'DM Serif Display',serif;font-size:22px;margin-bottom:4px;" id="memberBookingsTitle">預約記錄</h3>
+        <p id="memberBookingsCount" style="font-size:13px;color:var(--ink-60);margin-bottom:20px;"></p>
+        <div id="memberBookingsList"></div>
+        <div style="margin-top:20px;text-align:right;">
+          <button class="btn btn-outline" onclick="document.getElementById('memberBookingsModal').classList.remove('show')">關閉</button>
+        </div>
+        <button onclick="document.getElementById('memberBookingsModal').classList.remove('show')" style="position:absolute;top:16px;right:20px;background:none;border:none;font-size:22px;color:var(--ink-60);cursor:pointer;">×</button>
+      </div>
+    </div>
+
     <!-- Block Member Modal -->
     <div class="modal" id="blockMemberModal">
       <div class="modal-box" style="max-width:420px;padding:36px;">
@@ -3549,6 +3562,48 @@ setInterval(() => {
 }, 15000);
 
 // ── MEMBERS ──────────────────────────────────────────
+async function openMemberBookings(mid, name) {
+  const modal = document.getElementById('memberBookingsModal');
+  const list  = document.getElementById('memberBookingsList');
+  const title = document.getElementById('memberBookingsTitle');
+  const count = document.getElementById('memberBookingsCount');
+  title.textContent = `${name} 的預約記錄`;
+  count.textContent = '載入中...';
+  list.innerHTML = '';
+  modal.classList.add('show');
+  try {
+    const res = await fetch(`/admin/api/members/${mid}/bookings`, { headers: H });
+    const bookings = await res.json();
+    if (!bookings.length) {
+      count.textContent = '尚無預約記錄';
+      list.innerHTML = '<p style="text-align:center;color:var(--ink-60);padding:30px 0;">此會員尚未有任何預約</p>';
+      return;
+    }
+    count.textContent = `共 ${bookings.length} 筆`;
+    const statusLabel = { pending:'待審核', confirmed:'已確認', cancelled:'已取消', completed:'已完成' };
+    const statusColor = { pending:'var(--gold)', confirmed:'var(--teal)', cancelled:'var(--red)', completed:'var(--ink-60)' };
+    list.innerHTML = bookings.map(b => `
+      <div style="border:1px solid var(--border);border-radius:8px;padding:14px 16px;margin-bottom:10px;">
+        <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:6px;">
+          <span style="font-weight:700;font-size:13px;">${b.booking_number}</span>
+          <span style="font-size:12px;font-weight:600;color:${statusColor[b.status]||'var(--ink)'};">${statusLabel[b.status]||b.status}</span>
+        </div>
+        <div style="font-size:13px;color:var(--ink-60);display:grid;grid-template-columns:1fr 1fr;gap:4px 16px;">
+          <span>🏢 ${b.room_name||'—'}</span>
+          <span>📅 ${b.date}</span>
+          <span>🕐 ${b.start_time}–${b.end_time}</span>
+          <span>💰 NT$${b.total_price||0}</span>
+          ${b.attendees ? `<span>👥 ${b.attendees} 人</span>` : ''}
+          ${b.purpose  ? `<span>📋 ${b.purpose}</span>` : ''}
+        </div>
+        ${b.note ? `<div style="font-size:12px;color:var(--ink-60);margin-top:6px;padding-top:6px;border-top:1px solid var(--border);">備註：${b.note}</div>` : ''}
+      </div>`).join('');
+  } catch(e) {
+    count.textContent = '';
+    list.innerHTML = '<p style="color:var(--red);text-align:center;">載入失敗</p>';
+  }
+}
+
 async function loadMembers() {
   const q = document.getElementById('member-search')?.value.trim() || '';
   const tbody = document.getElementById('member-tbody');
@@ -3589,6 +3644,7 @@ async function loadMembers() {
         <td style="font-size:12px;color:var(--ink-60);white-space:nowrap;">${m.last_login || '—'}</td>
         <td>
           <div style="display:flex;gap:6px;flex-wrap:wrap;">
+            <button class="btn btn-outline btn-sm" onclick="openMemberBookings(${m.id},'${(m.name||'').replace(/'/g,"\\'")}')" style="white-space:nowrap;">預約記錄</button>
             <button class="btn btn-outline btn-sm" onclick="openEditMemberModal(${m.id},'${(m.name||'').replace(/'/g,"\\'")}','${m.email||''}','${m.phone||''}')" style="border-color:var(--teal);color:var(--teal);white-space:nowrap;">編輯</button>
             ${m.is_blocked
               ? `<button class="btn btn-outline btn-sm" onclick="unblockMember(${m.id})" style="white-space:nowrap;">解除停用</button>`

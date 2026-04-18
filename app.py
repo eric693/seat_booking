@@ -4959,6 +4959,21 @@ def admin_delete_member(mid):
     db.session.delete(m)
     db.session.commit()
     return jsonify({'success': True})
+
+@app.route('/admin/api/members/<int:mid>/bookings', methods=['GET'])
+def admin_member_bookings(mid):
+    err = check_admin()
+    if err: return err
+    m = Member.query.get_or_404(mid)
+    conditions = []
+    if m.phone: conditions.append(Booking.customer_phone == m.phone)
+    if m.email: conditions.append(Booking.customer_email == m.email)
+    if not conditions:
+        return jsonify([])
+    bookings = Booking.query.filter(db.or_(*conditions))\
+        .order_by(Booking.date.desc(), Booking.start_time.desc()).all()
+    return jsonify([b.to_dict() for b in bookings])
+
 # ─────────────────────────────────────────────
 # Admin — Blocked Slots
 # ─────────────────────────────────────────────

@@ -48,6 +48,18 @@ ADMIN_PASSWORD            = os.environ.get('ADMIN_PASSWORD', 'admin123')
 LINE_CHANNEL_ACCESS_TOKEN = os.environ.get('LINE_CHANNEL_ACCESS_TOKEN', '')
 LINE_CHANNEL_SECRET       = os.environ.get('LINE_CHANNEL_SECRET', '')
 
+# ── 預約建立鎖（防止 race condition）──
+import threading
+_booking_locks: dict = {}
+_booking_locks_lock = threading.Lock()
+
+def _get_booking_lock(room_id: int, date: str) -> threading.Lock:
+    key = f'{room_id}:{date}'
+    with _booking_locks_lock:
+        if key not in _booking_locks:
+            _booking_locks[key] = threading.Lock()
+        return _booking_locks[key]
+
 # ── 速率限制（in-memory，重啟清空）──
 from collections import defaultdict
 import threading
@@ -549,7 +561,7 @@ def _multi_time_badges(booking) -> list:
     segs = []
     if booking.segments:
         try: segs = _json.loads(booking.segments)
-        except Exception: pass
+        except Exception as _e: print(f'[segments parse] {_e}')
     if not segs:
         segs = [{'start': booking.start_time, 'end': booking.end_time}]
     if len(segs) == 1:
@@ -1340,7 +1352,8 @@ class Room(db.Model):
             try:
                 arr = json.loads(self.photos)
                 if arr: return arr
-            except Exception: pass
+            except Exception as _e:
+                print(f'[photos parse] room={self.id} err={_e}')
         if self.photo_url:
             return [self.photo_url]
         return []
@@ -2063,26 +2076,37 @@ def create_booking():
             if _lu and not _lu.phone:
                 _lu.phone = data['phone']
 
-        booking = Booking(
-            booking_number = generate_booking_number(),
-            room_id        = room.id,
-            customer_name  = data['name'],
-            customer_phone = data['phone'],
-            customer_email = data.get('email', ''),
-            department     = data.get('department', ''),
-            date           = data['date'],
-            start_time     = start_time,
-            end_time       = end_time,
-            segments       = segments_json,
-            duration       = dur,
-            total_price    = price,
-            attendees      = data.get('attendees', 1),
-            purpose        = data.get('purpose', ''),
-            note           = data.get('note', ''),
-            line_user_id   = line_uid,
-        )
-        db.session.add(booking)
-        db.session.commit()
+        # ── 排他鎖：重新確認可用性後才寫入，防止 race condition ──
+        _book_lock = _get_booking_lock(room.id, data['date'])
+        with _book_lock:
+            if segments and len(segments) > 0:
+                ok2, conflict2 = check_segments_availability(room.id, data['date'], segments)
+                if not ok2:
+                    return jsonify({'error': f'時段 {conflict2["start"]}–{conflict2["end"]} 已被搶訂，請重新選擇'}), 400
+            else:
+                if not check_availability(room.id, data['date'], start_time, end_time):
+                    return jsonify({'error': '此時段剛被預約，請重新選擇'}), 400
+
+            booking = Booking(
+                booking_number = generate_booking_number(),
+                room_id        = room.id,
+                customer_name  = data['name'],
+                customer_phone = data['phone'],
+                customer_email = data.get('email', ''),
+                department     = data.get('department', ''),
+                date           = data['date'],
+                start_time     = start_time,
+                end_time       = end_time,
+                segments       = segments_json,
+                duration       = dur,
+                total_price    = price,
+                attendees      = data.get('attendees', 1),
+                purpose        = data.get('purpose', ''),
+                note           = data.get('note', ''),
+                line_user_id   = line_uid,
+            )
+            db.session.add(booking)
+            db.session.commit()
         booking = Booking.query.get(booking.id)
 
         try:
@@ -3511,7 +3535,7 @@ def admin_floor_status():
             segs = []
             if b.segments:
                 try: segs = _json.loads(b.segments)
-                except Exception: pass
+                except Exception as _e: print(f'[floor_status segments] booking={b.id} err={_e}')
             if not segs:
                 segs = [{'start': b.start_time, 'end': b.end_time}]
             for seg in segs:

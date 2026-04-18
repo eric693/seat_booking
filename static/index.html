@@ -868,6 +868,8 @@ header {
 }
 
 .book-btn:disabled { background: #ccc; cursor: not-allowed; transform: none; }
+.btn-spinner { display:inline-block;width:14px;height:14px;border:2px solid rgba(255,255,255,0.4);border-top-color:#fff;border-radius:50%;animation:spin .7s linear infinite;vertical-align:middle;margin-right:6px; }
+@keyframes spin { to { transform: rotate(360deg); } }
 
 .notice-box {
   background: white;
@@ -2576,8 +2578,11 @@ async function submitBooking() {
   };
 
   const btn = document.getElementById('bookBtn');
+  const errEl = document.getElementById('booking-error-msg');
+  const showBookErr = (msg) => { if (errEl) { errEl.textContent = msg; errEl.style.display = 'block'; errEl.scrollIntoView({behavior:'smooth',block:'nearest'}); } else alert(msg); };
+  if (errEl) errEl.style.display = 'none';
   btn.disabled = true;
-  btn.textContent = hasMultiSeg ? ("預約中 (0/" + segs.length + ")...") : "預約中...";
+  btn.innerHTML = hasMultiSeg ? `<span class="btn-spinner"></span> 預約中 (0/${segs.length})...` : '<span class="btn-spinner"></span> 預約中...';
 
   try {
     if (!hasMultiSeg) {
@@ -2591,43 +2596,62 @@ async function submitBooking() {
           segments: segs,
         })
       });
-      const data = await res.json();
+      let data; try { data = await res.json(); } catch { data = {}; }
       if (res.ok && data.success) {
         showSuccess(data.booking);
       } else {
-        alert(data.error || '預約失敗，請重試');
+        showBookErr(data.error || '預約失敗，請重試');
       }
     } else {
       const results = [];
       const errors  = [];
       for (let i = 0; i < segs.length; i++) {
-        btn.textContent = "預約中 (" + (i+1) + "/" + segs.length + ")...";
+        btn.innerHTML = `<span class="btn-spinner"></span> 預約中 (${i+1}/${segs.length})...`;
         const seg = segs[i];
-        const res = await fetch(API + "/api/book", {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({
-            ...commonPayload,
-            start_time: seg.start,
-            end_time: seg.end,
-            segments: [seg],
-          })
-        });
-        const data = await res.json();
+        let res, data;
+        try {
+          res = await fetch(API + "/api/book", {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({
+              ...commonPayload,
+              start_time: seg.start,
+              end_time: seg.end,
+              segments: [seg],
+            })
+          });
+          data = await res.json();
+        } catch(fetchErr) {
+          data = { error: '網路錯誤' };
+          res = { ok: false };
+        }
         if (res.ok && data.success) {
           results.push(data.booking);
         } else {
+          // 自動取消已成功的訂單，避免孤兒預約
+          if (results.length > 0) {
+            btn.textContent = "回滾中...";
+            for (const b of results) {
+              try {
+                await fetch(`${API}/api/bookings/${b.id}/cancel`, {
+                  method: 'POST', headers: { 'Content-Type': 'application/json' },
+                  credentials: 'include', body: JSON.stringify({ reason: '多時段部分失敗自動取消' })
+                });
+              } catch(_) {}
+            }
+          }
           errors.push(seg.start + "–" + seg.end + "：" + (data.error || "失敗"));
+          break; // 停止後續，已成功的已在上方回滾
         }
       }
-      if (results.length > 0) {
+      if (results.length > 0 && errors.length === 0) {
         showMultiSuccess(results, errors);
       } else {
-        alert("所有時段預約失敗：\n" + errors.join("\n"));
+        showBookErr("預約失敗：" + errors.join("、") + (results.length > 0 ? "（已自動取消）" : ""));
       }
     }
   } catch (e) {
-    alert('預約失敗：' + e.message);
+    showBookErr('預約失敗：' + (e.message || '請稍後再試'));
   } finally {
     btn.disabled = false;
     btn.textContent = '確認預約';

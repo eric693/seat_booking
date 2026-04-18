@@ -2612,9 +2612,11 @@ def _handle_booking_flow(uid: str, rtok: str, text: str, lu):
                    '我的預約', '預約紀錄', '時段', '查詢', '綁定')
     lower_t = text.lower()
     if lower_t in GLOBAL_CMDS or any(lower_t.startswith(c) for c in GLOBAL_CMDS):
-        # 如果在流程中，先清除 session 再讓一般 handler 處理
         if step:
             _clear_sess(lu)
+            # 通知使用者預約流程已中斷（push 先送，reply token 留給後續指令回應）
+            push_line(uid, [{'type': 'text',
+                             'text': '已中止目前的預約流程。\n如需重新預約，請輸入「預約」。'}])
         return False
 
     # ── 取消 ──

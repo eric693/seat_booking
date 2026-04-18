@@ -1308,6 +1308,21 @@ footer {
     <h2 class="modal-title">預約成功！</h2>
     <p class="modal-sub">您的預約已送出，等待審核確認</p>
     <div class="confirm-table" id="confirmTable"></div>
+    <div id="line-bind-hint" style="display:none;margin:16px 0 4px;padding:14px 16px;background:#f0fff4;border-radius:10px;border:1px solid #b7eac8;text-align:left;">
+      <div style="display:flex;align-items:center;gap:8px;margin-bottom:6px;">
+        <svg width="20" height="20" viewBox="0 0 24 24" fill="#06C755"><path d="M12 2C6.48 2 2 6.29 2 11.5c0 2.9 1.37 5.5 3.53 7.3L4.5 22l3.37-1.73A10.9 10.9 0 0 0 12 21c5.52 0 10-4.29 10-9.5S17.52 2 12 2z"/></svg>
+        <span style="font-size:13px;font-weight:600;color:#1a6b35;">在 LINE 收到通知</span>
+      </div>
+      <p style="font-size:12px;color:#2d6a4f;margin:0 0 6px;line-height:1.6;">
+        已有 LINE 官方帳號？加入後輸入以下指令即可綁定此次預約通知：
+      </p>
+      <div style="background:#fff;border-radius:6px;padding:8px 12px;font-size:13px;font-weight:600;color:#06C755;letter-spacing:0.5px;" id="line-bind-cmd">
+        綁定 手機號碼
+      </div>
+      <p style="font-size:11px;color:#52796f;margin:6px 0 0;line-height:1.5;">
+        例：<code style="background:#e8f5e9;padding:1px 5px;border-radius:4px;">綁定 0912345678</code>，綁定後可隨時查詢、取消預約。
+      </p>
+    </div>
     <button class="modal-close-btn" onclick="closeSuccess()">完成</button>
   </div>
 </div>
@@ -2664,6 +2679,16 @@ function showSuccess(booking, isMulti) {
   document.getElementById('confirmTable').innerHTML = rows.map(([k, v]) =>
     `<div class="ct-row"><span class="ct-key">${k}</span><span class="ct-val">${v}</span></div>`
   ).join('');
+  // 非 LINE 環境才顯示綁定引導
+  const hint = document.getElementById('line-bind-hint');
+  if (hint) {
+    const inLine = !!(window._liffUserId);
+    hint.style.display = inLine ? 'none' : 'block';
+    if (!inLine && booking.customer_phone) {
+      const cmd = document.getElementById('line-bind-cmd');
+      if (cmd) cmd.textContent = `綁定 ${booking.customer_phone}`;
+    }
+  }
   document.getElementById('successModal').classList.add('active');
 }
 

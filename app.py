@@ -925,15 +925,15 @@ def flex_welcome() -> dict:
                 'paddingAll': '16px', 'spacing': 'md',
                 'contents': [
                     {'type': 'text',
-                     'text': '您可以透過本系統查詢會議室時段、綁定手機號碼接收預約通知。',
+                     'text': '您可以直接在 LINE 上查詢時段、完成預約，並接收預約通知。',
                      'size': 'sm', 'color': _C['ink60'], 'wrap': True},
                     _divider(),
-                    {'type': 'text', 'text': '建議先完成以下步驟：',
+                    {'type': 'text', 'text': '快速開始：',
                      'size': 'sm', 'weight': 'bold', 'color': _C['ink'],
                      'margin': 'md'},
-                    _step_row('1', '前往網站，完成會議室預約'),
-                    _step_row('2', '綁定手機號碼以接收通知'),
-                    _step_row('3', '輸入「說明」查看所有指令'),
+                    _step_row('1', '已有帳號？輸入「綁定 手機號碼」\n例：綁定 0912345678'),
+                    _step_row('2', '尚未註冊？點下方按鈕前往網站註冊'),
+                    _step_row('3', '綁定後直接輸入「預約」開始預約'),
                 ]
             },
             'footer': {

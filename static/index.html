@@ -1919,6 +1919,7 @@ function selectRoom(el) {
   state.roomRate = rate;
   state.roomType = type;
   state.minHours = minHours; // ★ 存入 state
+  state.advanceMinutes = 0;
   state.date     = null;
   state.startTime = null;
   state.endTime   = null;
@@ -2021,6 +2022,7 @@ async function selectDate(ds, el) {
 
     // 提前預約限制：今日才需鎖格
     const advMin = data.advance_minutes || 0;
+    state.advanceMinutes = advMin;
     if (advMin > 0) {
       const nowTw = new Date(Date.now() + 8 * 3600000); // UTC+8
       const todayStr = nowTw.toISOString().slice(0, 10);
@@ -2064,7 +2066,7 @@ async function selectDate(ds, el) {
         }
       }
     }
-  } catch(e2) { bookedSlots = []; blockedSlots = new Set(); _openPeriods = []; timeConfigBlockedSlots = new Set(); }
+  } catch(e2) { bookedSlots = []; blockedSlots = new Set(); _openPeriods = []; timeConfigBlockedSlots = new Set(); state.advanceMinutes = 0; }
 
   selectedSlots.clear();
 
@@ -2548,6 +2550,22 @@ async function submitBooking() {
     alert('最短預約時間為 60 分鐘（2 個時段）'); return;
   }
   if (!validateFormFields()) return;
+
+  // ★ 送出時再次檢查提前預約限制（防止選完時段後等太久才送出）
+  const _advMin = state.advanceMinutes || 0;
+  if (_advMin > 0 && state.date && state.startTime) {
+    const _nowTw = new Date(Date.now() + 8 * 3600000);
+    const _todayStr = _nowTw.toISOString().slice(0, 10);
+    if (state.date === _todayStr) {
+      const _cutoffMin = _nowTw.getUTCHours() * 60 + _nowTw.getUTCMinutes() + _advMin;
+      const [_sh, _sm] = state.startTime.split(':').map(Number);
+      if (_sh * 60 + _sm < _cutoffMin) {
+        const _advStr = _advMin >= 60 && _advMin % 60 === 0 ? `${_advMin/60} 小時` : `${_advMin} 分鐘`;
+        alert(`此會議室需提前 ${_advStr} 預約，請重新選擇較晚的時段。`);
+        return;
+      }
+    }
+  }
 
   const segs = state.segments || [];
 

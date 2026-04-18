@@ -2373,7 +2373,7 @@ function renderPhotoItems(photos, coverIdx, roomId) {
       ">${i+1}</div>
 
       <img src="${url}" draggable="false"
-        style="width:120px;height:90px;object-fit:cover;border-radius:8px;
+        style="width:120px;height:90px;object-fit:contain;background:#111;border-radius:8px;
                border:2px solid ${i===coverIdx?'var(--gold)':'var(--border)'};
                display:block;user-select:none;pointer-events:none;">
 

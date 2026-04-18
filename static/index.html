@@ -2441,9 +2441,16 @@ function autoFillContactForm() {
   const nameEl  = document.getElementById('f_name');
   const phoneEl = document.getElementById('f_phone');
   const emailEl = document.getElementById('f_email');
-  if (nameEl  && !nameEl.value.trim())  nameEl.value  = (member?.name  || liff?.displayName || '');
-  if (phoneEl && !phoneEl.value.trim()) phoneEl.value = (member?.phone || '');
-  if (emailEl && !emailEl.value.trim()) emailEl.value = (member?.email || '');
+  if (nameEl)  { nameEl.value  = (member?.name  || liff?.displayName || nameEl.value.trim() || ''); }
+  if (phoneEl) { phoneEl.value = (member?.phone || phoneEl.value.trim() || ''); }
+  if (emailEl) { emailEl.value = (member?.email || emailEl.value.trim() || ''); }
+  // 已登入會員：鎖定來自帳號的欄位不可編輯
+  if (member) {
+    const lockStyle = 'background:var(--paper);color:var(--ink-60);cursor:not-allowed;';
+    if (nameEl  && member.name)  { nameEl.readOnly  = true; nameEl.style.cssText  += lockStyle; }
+    if (phoneEl && member.phone) { phoneEl.readOnly = true; phoneEl.style.cssText += lockStyle; }
+    if (emailEl && member.email) { emailEl.readOnly = true; emailEl.style.cssText += lockStyle; }
+  }
   updateSummary();
 }
 

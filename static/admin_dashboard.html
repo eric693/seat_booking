@@ -1324,6 +1324,7 @@ input[list]::-webkit-calendar-picker-indicator { display: none !important; }
           <div class="card-title">Q&A 列表</div>
           <div style="display:flex;gap:8px;align-items:center;flex-wrap:wrap;">
             <input type="text" class="filter-input" id="qa-fil-q" placeholder="搜尋關鍵字..." style="width:160px;font-size:13px;" oninput="loadLineQA()">
+            <button class="btn btn-outline btn-sm" onclick="clearQAFilters()">清除</button>
             <span style="font-size:12px;color:var(--ink-60);">共 <span id="qa-count">0</span> 筆</span>
             <button class="btn btn-outline btn-sm" onclick="loadLineQA()">重新整理</button>
           </div>
@@ -3932,6 +3933,12 @@ function applyQaExample(idx) {
   document.getElementById('qa-keywords').scrollIntoView({ behavior: 'smooth', block: 'center' });
   document.getElementById('qa-keywords').focus();
   toast('範例已套用，修改後按「+ 新增」儲存', 'success');
+}
+
+function clearQAFilters() {
+  const el = document.getElementById('qa-fil-q');
+  if (el) el.value = '';
+  loadLineQA();
 }
 
 async function loadLineQA() {

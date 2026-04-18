@@ -2056,8 +2056,9 @@ def create_booking():
                 push_line(aid, [flex_admin_notify(booking)])
             if booking.customer_email:
                 subj_tag = '【預約待審核】' if booking.status == 'pending' else '【預約確認】'
+                room_name = booking.room.name if booking.room else '會議室'
                 send_email(booking.customer_email,
-                           f'{subj_tag}{booking.room.name} – {booking.date}',
+                           f'{subj_tag}{room_name} – {booking.date}',
                            _booking_email_html(booking))
             send_sms(booking.customer_phone, _booking_sms_body(booking))
         except Exception as ne:
@@ -2875,14 +2876,18 @@ def _handle_booking_flow(uid: str, rtok: str, text: str, lu):
         _clear_sess(lu)
 
         # 通知
-        push_line(uid, [flex_booking_confirm(booking)])
-        for aid in admin_line_ids():
-            push_line(aid, [flex_admin_notify(booking)])
-        if booking.customer_email:
-            send_email(booking.customer_email,
-                       f'【預約確認】{booking.room.name} – {booking.date}',
-                       _booking_email_html(booking))
-        send_sms(booking.customer_phone, _booking_sms_body(booking))
+        try:
+            push_line(uid, [flex_booking_confirm(booking)])
+            for aid in admin_line_ids():
+                push_line(aid, [flex_admin_notify(booking)])
+            if booking.customer_email:
+                room_name = booking.room.name if booking.room else '會議室'
+                send_email(booking.customer_email,
+                           f'【預約確認】{room_name} – {booking.date}',
+                           _booking_email_html(booking))
+            send_sms(booking.customer_phone, _booking_sms_body(booking))
+        except Exception as ne:
+            print(f'[LINE 預約通知錯誤] {ne}')
         return True
 
     return False  # 不在流程中
@@ -3204,10 +3209,11 @@ def _handle_line_text(uid, rtok, text):
                     '請直接聯繫管理員處理')])
                 return
         except Exception:
-            pass
+            reply_line(rtok, [flex_not_found('取消失敗', '無法解析預約時間，請聯繫管理員處理')])
+            return
         b.status = 'cancelled'
         db.session.commit()
-        push_line(uid, [flex_booking_cancel(b)])
+        reply_line(rtok, [flex_booking_cancel(b)])
         for aid in admin_line_ids():
             push_line(aid, [flex_admin_notify(b)])
         return
@@ -3722,8 +3728,9 @@ def admin_confirm_booking(bid):
         if b.line_user_id:
             push_line(b.line_user_id, [flex_booking_confirm(b)])
         if b.customer_email:
+            room_name = b.room.name if b.room else '會議室'
             send_email(b.customer_email,
-                       f'【預約確認】{b.room.name} – {b.date}',
+                       f'【預約確認】{room_name} – {b.date}',
                        _booking_email_html(b))
         send_sms(b.customer_phone, _booking_sms_body(b))
     except Exception as e:

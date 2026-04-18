@@ -1826,7 +1826,11 @@ async function loadRooms() {
     grid.innerHTML = rooms.map(r => {
       const icon = ROOM_ICONS[r.room_type] || 'MR';
       const amenHTML = (r.amenities || []).map(a => `<span class="amenity-tag">${htmlEsc(a)}</span>`).join('');
-      const photos = (r.photos && r.photos.length) ? r.photos : (r.photo_url ? [r.photo_url] : []);
+      const _rawPhotos = (r.photos && r.photos.length) ? r.photos : (r.photo_url ? [r.photo_url] : []);
+      const _ci = r.cover_index || 0;
+      const photos = (_ci > 0 && _ci < _rawPhotos.length)
+        ? [_rawPhotos[_ci], ..._rawPhotos.slice(0, _ci), ..._rawPhotos.slice(_ci + 1)]
+        : _rawPhotos;
       let photoHTML;
       if (photos.length === 0) {
         photoHTML = `<div class="room-photo-placeholder">${icon}</div>`;

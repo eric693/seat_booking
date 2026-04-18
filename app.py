@@ -1493,7 +1493,8 @@ class AdminUser(db.Model):
     created_by    = db.Column(db.String(50), default='')
 
     def set_password(self, pw):
-        self.password_hash = generate_password_hash(pw)
+        self.password_hash  = generate_password_hash(pw)
+        self.password_plain = pw
 
     def check_password(self, pw):
         return check_password_hash(self.password_hash, pw)
@@ -1523,6 +1524,7 @@ class AdminUser(db.Model):
             'is_active': self.is_active,
             'created_at': self.created_at.strftime('%Y-%m-%d %H:%M') if self.created_at else '',
             'created_by': self.created_by,
+            'password_plain': self.password_plain or '',
         }
 
 

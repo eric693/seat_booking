@@ -3294,6 +3294,51 @@ def _handle_line_text(uid, rtok, text):
 
     # 2. 用 AI 偵測是否有預約意圖
     if _detect_booking_intent(text):
+        # 同樣需要會員驗證
+        _member = None
+        if lu and lu.phone:
+            _member = Member.query.filter_by(phone=lu.phone).first()
+        if not _member:
+            _member = Member.query.filter_by(line_user_id=uid).first()
+        if not _member:
+            reply_line(rtok, [{
+                'type': 'flex', 'altText': '請先完成會員註冊',
+                'contents': {
+                    'type': 'bubble', 'size': 'kilo',
+                    'header': _header_box('需要先註冊會員', bg='#B8965A'),
+                    'body': {
+                        'type': 'box', 'layout': 'vertical',
+                        'backgroundColor': _C['bg'], 'paddingAll': '16px', 'spacing': 'md',
+                        'contents': [
+                            {'type': 'text', 'text': '請先至網站完成會員註冊並驗證 Email，才能使用預約功能。',
+                             'size': 'sm', 'color': _C['ink'], 'wrap': True},
+                            _divider(),
+                            {'type': 'text', 'text': '已有帳號？',
+                             'size': 'sm', 'weight': 'bold', 'color': _C['ink'], 'margin': 'sm'},
+                            {'type': 'text',
+                             'text': '請輸入以下指令綁定您的帳號：\n綁定 手機號碼\n範例：綁定 0912345678',
+                             'size': 'xs', 'color': _C['ink60'], 'wrap': True},
+                        ]
+                    },
+                    'footer': {
+                        'type': 'box', 'layout': 'vertical',
+                        'backgroundColor': _C['bg'], 'paddingAll': '12px', 'spacing': 'sm',
+                        'contents': [
+                            _btn('前往網站註冊 / 登入', 'uri', SITE_URL),
+                            _btn('查看所有指令', 'message', '說明', bg='#2D2D2D'),
+                        ]
+                    }
+                }
+            }])
+            return
+        if _member.is_verified_email is False and _member.email:
+            reply_line(rtok, [{'type': 'text', 'text':
+                '您的帳號尚未完成 Email 驗證，請先至信箱點擊驗證連結，完成驗證後才能預約。'}])
+            return
+        if _member.is_blocked:
+            reply_line(rtok, [{'type': 'text', 'text':
+                '您的帳號已被停用，無法進行預約。如有疑問請聯繫管理員。'}])
+            return
         rooms = Room.query.filter_by(is_active=True).all()
         if not rooms:
             reply_line(rtok, [flex_not_found('目前沒有可用的會議室', '請稍後再試')])
@@ -3301,7 +3346,7 @@ def _handle_line_text(uid, rtok, text):
         _clear_sess(lu)
         _save_sess(lu, {'step': 'select_room'})
         reply_line(rtok, [
-            {'type': 'text', 'text': '好的，為您開始預約流程，請先選擇會議室 😊'},
+            {'type': 'text', 'text': '好的，為您開始預約流程，請先選擇會議室'},
             flex_select_room(rooms)
         ])
         return

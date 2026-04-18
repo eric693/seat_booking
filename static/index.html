@@ -1164,7 +1164,7 @@ footer {
 <section class="hero">
   <div class="hero-inner">
     <div>
-      <div class="hero-badge">
+      <div class="hero-badge" id="hero-badge-wrap">
         <span style="width:5px;height:5px;border-radius:50%;background:rgba(255,255,255,0.5);display:inline-block;"></span>
         <span id="hero-badge">閱讀工作空間</span>
       </div>
@@ -1726,7 +1726,12 @@ async function loadContent() {
     }
     if (c.hero_title) document.getElementById('hero-title-el').textContent = c.hero_title;
     if (c.site_description) document.getElementById('hero-desc').textContent = c.site_description;
-    if (c.hero_badge) document.querySelector('#hero-badge').textContent = c.hero_badge;
+    const badgeWrap = document.getElementById('hero-badge-wrap');
+    if (c.hero_badge) {
+      document.getElementById('hero-badge').textContent = c.hero_badge;
+    } else {
+      if (badgeWrap) badgeWrap.style.display = 'none';
+    }
     if (c.service_hours) document.getElementById('meta-hours').textContent = c.service_hours;
     if (c.contact_email) document.getElementById('meta-email').textContent = c.contact_email;
     const phoneEl = document.getElementById('hdr-phone');

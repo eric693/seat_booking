@@ -5,6 +5,7 @@
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>管理後台 — 會議室預約系統</title>
 <link href="https://fonts.googleapis.com/css2?family=DM+Serif+Display:ital@0;1&family=DM+Sans:wght@300;400;500;600&display=swap" rel="stylesheet">
+<script src="https://cdn.sheetjs.com/xlsx-latest/package/dist/xlsx.full.min.js"></script>
 <style>
 :root {
   --ink: #0F0F0F;
@@ -833,10 +834,15 @@ input[list]::-webkit-calendar-picker-indicator { display: none !important; }
       <div class="card">
         <div class="card-head"><div class="card-title">預約管理</div></div>
         <div class="card-body">
-          <div class="filters">
+          <div class="filters" style="flex-wrap:wrap;align-items:center;">
             <div class="filter-group"><span class="filter-lbl">日期</span><input type="date" class="filter-input" id="fil-date" onchange="loadBookings()"></div>
             <div class="filter-group"><span class="filter-lbl">狀態</span><select class="filter-select" id="fil-status" onchange="loadBookings()"><option value="">全部</option><option value="pending">待審核</option><option value="confirmed">已確認</option><option value="cancelled">已取消</option><option value="completed">已完成</option></select></div>
             <div class="filter-group"><span class="filter-lbl">會議室</span><select class="filter-select" id="fil-room" onchange="loadBookings()"><option value="">全部</option></select></div>
+            <div class="filter-group" style="margin-left:auto;">
+              <button class="btn btn-outline btn-sm" onclick="exportBookingsExcel()" style="border-color:var(--teal);color:var(--teal);padding:6px 14px;font-size:13px;">
+                ⬇ 匯出 Excel
+              </button>
+            </div>
           </div>
           <div class="tbl-wrap">
             <table>
@@ -1823,6 +1829,8 @@ function clearDashFilters() {
 }
 
 // ── BOOKINGS ──
+let _currentBookings = [];
+
 async function loadBookings() {
   try {
     if (!allRooms.length) { const rr = await fetch('/admin/api/rooms', { headers: H }); allRooms = await rr.json(); }
@@ -1837,6 +1845,7 @@ async function loadBookings() {
     if (room) url += `room_id=${room}`;
     const res = await fetch(url, { headers: H });
     const bookings = await res.json();
+    _currentBookings = bookings;
     const tbody = document.getElementById('bookings-tbody');
     if (!bookings.length) { tbody.innerHTML = '<tr><td colspan="11" style="text-align:center;padding:30px;color:var(--ink-60);">找不到符合的預約</td></tr>'; return; }
     tbody.innerHTML = bookings.map(b => `<tr>
@@ -3265,6 +3274,45 @@ async function loadLoginLogs() {
 }
 
 // ── HELPERS ──
+function exportBookingsExcel() {
+  if (!_currentBookings.length) { toast('目前沒有可匯出的資料', 'error'); return; }
+  const statusMap = { pending: '待審核', confirmed: '已確認', cancelled: '已取消', completed: '已完成' };
+  function segText(b) {
+    if (b.segments) {
+      try {
+        const segs = typeof b.segments === 'string' ? JSON.parse(b.segments) : b.segments;
+        if (segs && segs.length) return segs.map(s => `${s.start}–${s.end}`).join(' / ');
+      } catch(e) {}
+    }
+    return `${b.start_time} – ${b.end_time}`;
+  }
+  const rows = _currentBookings.map(b => ({
+    '預約編號':   b.booking_number,
+    '姓名':       b.customer_name,
+    '電話':       b.customer_phone,
+    'Email':      b.customer_email || '',
+    '部門':       b.department || '',
+    '會議室':     b.room_name,
+    '日期':       b.date,
+    '時段':       segText(b),
+    '時長(h)':    b.duration,
+    '人數':       b.attendees,
+    '金額(NT$)':  b.total_price || 0,
+    '狀態':       statusMap[b.status] || b.status,
+    '用途':       b.purpose || '',
+    '備註':       b.note || '',
+    '建立時間':   b.created_at || '',
+  }));
+  const ws = XLSX.utils.json_to_sheet(rows);
+  const colWidths = [14,10,14,24,14,14,12,18,8,6,10,8,20,20,18];
+  ws['!cols'] = colWidths.map(w => ({ wch: w }));
+  const wb = XLSX.utils.book_new();
+  XLSX.utils.book_append_sheet(wb, ws, '預約清單');
+  const date = document.getElementById('fil-date').value;
+  const filename = date ? `預約清單_${date}.xlsx` : `預約清單_${new Date().toISOString().slice(0,10)}.xlsx`;
+  XLSX.writeFile(wb, filename);
+}
+
 function fmtSegments(b) {
   if (b.segments) {
     try {

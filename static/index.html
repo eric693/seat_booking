@@ -3099,11 +3099,8 @@ async function doRegister() {
   const showEmail = document.getElementById('reg-email-group')?.style.display !== 'none';
   const showPhone = document.getElementById('reg-phone-group')?.style.display !== 'none';
   if (!name) { errEl.textContent = '請填寫姓名'; errEl.style.display='block'; return; }
-  if (showEmail && showPhone && !email && !phone) {
-    errEl.textContent = '請填寫 Email 或手機號碼'; errEl.style.display='block'; return;
-  }
-  if (showEmail && !showPhone && !email) { errEl.textContent = '請填寫 Email'; errEl.style.display='block'; return; }
-  if (showPhone && !showEmail && !phone) { errEl.textContent = '請填寫手機號碼'; errEl.style.display='block'; return; }
+  if (showEmail && !email) { errEl.textContent = '請填寫 Email'; errEl.style.display='block'; return; }
+  if (showPhone && !phone) { errEl.textContent = '請填寫手機號碼'; errEl.style.display='block'; return; }
   if (showEmail && email && !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) {
     errEl.textContent = 'Email 格式不正確'; errEl.style.display='block'; return;
   }

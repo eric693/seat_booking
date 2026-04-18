@@ -245,7 +245,11 @@ body {
       </div>
       <div class="form-group">
         <label class="form-label">密碼</label>
-        <input type="password" class="form-input" id="password" placeholder="請輸入密碼" required autocomplete="current-password">
+        <div style="position:relative;">
+          <input type="password" class="form-input" id="password" placeholder="請輸入密碼" required autocomplete="current-password" style="padding-right:44px;">
+          <button type="button" onclick="toggleLoginPw()" id="login-pw-eye"
+            style="position:absolute;right:10px;top:50%;transform:translateY(-50%);background:none;border:none;cursor:pointer;color:#888;font-size:18px;line-height:1;">👁</button>
+        </div>
       </div>
       <button type="submit" class="login-btn">登入後台</button>
     </form>
@@ -298,6 +302,12 @@ body {
 </div>
 
 <script>
+function toggleLoginPw() {
+  const inp = document.getElementById('password'), eye = document.getElementById('login-pw-eye');
+  inp.type = inp.type === 'password' ? 'text' : 'password';
+  eye.textContent = inp.type === 'password' ? '👁' : '🙈';
+}
+
 async function login(e) {
   e.preventDefault();
   const uname = document.getElementById('username').value.trim();

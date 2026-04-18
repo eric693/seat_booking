@@ -1622,7 +1622,7 @@ input[list]::-webkit-calendar-picker-indicator { display: none !important; }
     <div class="fgrid">
       <div class="fg"><label>帳號 <span>（登入用）</span></label><input class="finput" id="acc-username" placeholder="例：john" autocomplete="off"></div>
       <div class="fg"><label>顯示名稱</label><input class="finput" id="acc-display" placeholder="例：王小明"></div>
-      <div class="fg"><label>密碼 <span id="acc-pw-hint">（新增時必填）</span></label><div style="position:relative;"><input class="finput" type="password" id="acc-pw" autocomplete="new-password" style="padding-right:44px;" oninput="onPwInput()"><button type="button" onclick="togglePwVis()" style="position:absolute;right:10px;top:50%;transform:translateY(-50%);background:none;border:none;cursor:pointer;font-size:18px;color:var(--ink-60);" id="acc-pw-eye">👁</button><div id="acc-pw-status" style="font-size:12px;margin-top:5px;height:16px;"></div></div></div>
+      <div class="fg"><label>密碼 <span id="acc-pw-hint">（新增時必填）</span></label><div style="position:relative;"><input class="finput" type="text" id="acc-pw" autocomplete="off" oninput="onPwInput()"><div id="acc-pw-status" style="font-size:12px;margin-top:5px;height:16px;"></div></div></div>
       <div class="fg"><label>角色</label><select class="fselect" id="acc-role" onchange="onRoleChange()"><option value="superadmin">超級管理員</option><option value="admin">管理員</option><option value="manager" selected>店長/經理</option><option value="staff">門市人員</option></select></div>
       <div class="fg"><label>狀態</label><select class="fselect" id="acc-active"><option value="true">啟用</option><option value="false">停用</option></select></div>
     </div>

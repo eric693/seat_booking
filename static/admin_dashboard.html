@@ -2206,6 +2206,9 @@ async function saveRoom() {
     photo_url: document.getElementById('rm-photo-url').value,
   };
   if (!payload.name) { alert('請填寫會議室名稱'); return; }
+  if (document.getElementById('rm-advance-enabled').checked && !payload.advance_minutes) {
+    alert('請填寫最短提前預約時間（分鐘），或關閉此功能。'); return;
+  }
   try {
     const url = id ? `/admin/api/rooms/${id}` : '/admin/api/rooms';
     const method = id ? 'PUT' : 'POST';

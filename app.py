@@ -1724,34 +1724,44 @@ def allowed_file(fn):
     return '.' in fn and fn.rsplit('.', 1)[1].lower() in ALLOWED_EXTENSIONS
 
 
-def check_availability(room_id, date, start_time, end_time, exclude_id=None):
-    """檢查單一時段是否可用（支援多段預約的 segments 展開，含封鎖時段及清潔緩衝）"""
-    import json as _json
-    def m(t): h, mn = map(int, t.split(':')); return h*60+mn
-    s, e = m(start_time), m(end_time)
-    # 取得該房間的清潔緩衝時間（分鐘）
+def _parse_booking_segments(b):
+    """解析預約的 segments JSON，若無則用 start/end_time 組成單段。"""
+    if b.segments:
+        try:
+            segs = json.loads(b.segments)
+            if segs:
+                return segs
+        except Exception:
+            pass
+    return [{'start': b.start_time, 'end': b.end_time}]
+
+
+def _load_slot_context(room_id, date, exclude_id=None):
+    """一次性載入可用性所需資料（3 queries），供 check / get_booked_slots 共用。
+    回傳 (buffer_minutes, [(booking, segments), ...], [blocked_slot, ...])
+    """
     room = Room.query.get(room_id)
     buffer = int(room.cleaning_buffer or 0) if room else 0
-    # 一般預約衝突
     bookings = Booking.query.filter_by(room_id=room_id, date=date).filter(
         Booking.status.in_(['pending', 'confirmed', 'completed'])).all()
     if exclude_id:
         bookings = [b for b in bookings if b.id != exclude_id]
-    for b in bookings:
-        segs = []
-        if b.segments:
-            try: segs = _json.loads(b.segments)
-            except Exception: pass
-        if not segs:
-            segs = [{'start': b.start_time, 'end': b.end_time}]
-        for seg in segs:
-            seg_end_with_buffer = m(seg['end']) + buffer
-            if not (e <= m(seg['start']) or s >= seg_end_with_buffer):
-                return False
-    # 封鎖時段衝突（全館 + 指定房間）
+    bookings_with_segs = [(b, _parse_booking_segments(b)) for b in bookings]
     blocked = BlockedSlot.query.filter_by(date=date).filter(
         (BlockedSlot.room_id == room_id) | (BlockedSlot.room_id.is_(None))
     ).all()
+    return buffer, bookings_with_segs, blocked
+
+
+def check_availability(room_id, date, start_time, end_time, exclude_id=None):
+    """檢查單一時段是否可用（含清潔緩衝及封鎖時段）。"""
+    def m(t): h, mn = map(int, t.split(':')); return h*60+mn
+    s, e = m(start_time), m(end_time)
+    buffer, bws, blocked = _load_slot_context(room_id, date, exclude_id)
+    for _, segs in bws:
+        for seg in segs:
+            if not (e <= m(seg['start']) or s >= m(seg['end']) + buffer):
+                return False
     for bl in blocked:
         if not (e <= m(bl.start_time) or s >= m(bl.end_time)):
             return False
@@ -1759,41 +1769,35 @@ def check_availability(room_id, date, start_time, end_time, exclude_id=None):
 
 
 def check_segments_availability(room_id, date, segments, exclude_id=None):
-    """檢查多段時段是否全部可用"""
+    """批次檢查多段時段是否全部可用（只查一次資料庫）。"""
+    def m(t): h, mn = map(int, t.split(':')); return h*60+mn
+    buffer, bws, blocked = _load_slot_context(room_id, date, exclude_id)
     for seg in segments:
-        if not check_availability(room_id, date, seg['start'], seg['end'], exclude_id):
-            return False, seg
+        s, e = m(seg['start']), m(seg['end'])
+        for _, existing_segs in bws:
+            for eseg in existing_segs:
+                if not (e <= m(eseg['start']) or s >= m(eseg['end']) + buffer):
+                    return False, seg
+        for bl in blocked:
+            if not (e <= m(bl.start_time) or s >= m(bl.end_time)):
+                return False, seg
     return True, None
 
 
 def get_booked_slots(room_id, date):
-    import json as _json
     def _add_min(t, mins):
         if not mins: return t
         h, mn = map(int, t.split(':'))
         total = h * 60 + mn + mins
         return f'{total//60:02d}:{total%60:02d}'
-    room = Room.query.get(room_id)
-    buffer = int(room.cleaning_buffer or 0) if room else 0
-    bookings = Booking.query.filter_by(room_id=room_id, date=date).filter(
-        Booking.status.in_(['pending', 'confirmed', 'completed'])).all()
+    buffer, bws, blocked = _load_slot_context(room_id, date)
     result = []
-    for b in bookings:
-        segs = []
-        if b.segments:
-            try: segs = _json.loads(b.segments)
-            except Exception: pass
-        if not segs:
-            segs = [{'start': b.start_time, 'end': b.end_time}]
+    for b, segs in bws:
         for seg in segs:
             result.append({'start': seg['start'],
                            'end': _add_min(seg['end'], buffer),
                            'actual_end': seg['end'],
                            'booking_number': b.booking_number})
-    # 加入封鎖時段（全館 + 指定房間）
-    blocked = BlockedSlot.query.filter_by(date=date).filter(
-        (BlockedSlot.room_id == room_id) | (BlockedSlot.room_id.is_(None))
-    ).all()
     for bl in blocked:
         result.append({'start': bl.start_time, 'end': bl.end_time,
                        'blocked': True, 'reason': bl.reason or '不開放'})
@@ -4090,6 +4094,19 @@ with app.app_context():
                 print('[migrate] admin_users.password_hash 擴充為 VARCHAR(256)')
     except Exception as e:
         print(f'[migrate] admin_users.password_hash 擴充略過（可能已是正確長度）：{e}')
+    # ── 高頻查詢複合索引 ──
+    try:
+        with db.engine.connect() as _conn:
+            _conn.execute(db.text(
+                'CREATE INDEX IF NOT EXISTS ix_booking_room_date_status '
+                'ON bookings (room_id, date, status)'))
+            _conn.execute(db.text(
+                'CREATE INDEX IF NOT EXISTS ix_blocked_slot_date '
+                'ON blocked_slots (date)'))
+            _conn.commit()
+            print('[migrate] 確認查詢索引 OK')
+    except Exception as e:
+        print(f'[migrate] 索引建立略過：{e}')
     try:
         db.session.rollback()  # 確保 session 乾淨
         su = AdminUser.query.filter_by(username='admin').first()

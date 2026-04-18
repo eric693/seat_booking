@@ -3821,6 +3821,9 @@ def admin_get_bookings():
     if v := request.args.get('time_to'):   q = q.filter(Booking.start_time <= v)
     if v := request.args.get('status'):    q = q.filter_by(status=v)
     if v := request.args.get('room_id'):   q = q.filter_by(room_id=int(v))
+    if v := request.args.get('q'):
+        kw = f'%{v}%'
+        q = q.filter(db.or_(Booking.customer_name.ilike(kw), Booking.customer_phone.ilike(kw), Booking.customer_email.ilike(kw), Booking.booking_number.ilike(kw)))
     return jsonify([b.to_dict() for b in q.order_by(Booking.created_at.desc()).all()])
 
 @app.route('/admin/api/bookings/<int:bid>/cancel', methods=['POST'])
@@ -4428,6 +4431,9 @@ def admin_get_login_logs():
         q = q.filter(AdminLoginLog.success == True)
     elif success == '0':
         q = q.filter(AdminLoginLog.success == False)
+    if v := request.args.get('date_from'): q = q.filter(AdminLoginLog.login_at >= v)
+    if v := request.args.get('date_to'):   q = q.filter(AdminLoginLog.login_at <= v + ' 23:59:59')
+    if v := request.args.get('ip'):        q = q.filter(AdminLoginLog.ip_address.ilike(f'%{v}%'))
     total = q.count()
     logs  = q.offset((page-1)*per).limit(per).all()
     return jsonify({'total': total, 'logs': [l.to_dict() for l in logs]})
@@ -4892,6 +4898,11 @@ def admin_get_members():
             Member.email.ilike(f'%{kw}%') |
             Member.phone.ilike(f'%{kw}%')
         )
+    if v := request.args.get('status'):
+        if v == 'blocked':
+            q = q.filter(Member.is_blocked == True)
+        elif v == 'active':
+            q = q.filter(Member.is_blocked == False)
     members = q.order_by(Member.created_at.desc()).all()
     return jsonify([m.to_dict() for m in members])
 

@@ -834,14 +834,14 @@ input[list]::-webkit-calendar-picker-indicator { display: none !important; }
       <div class="card">
         <div class="card-head"><div class="card-title">預約管理</div></div>
         <div class="card-body">
-          <div class="filters" style="flex-wrap:wrap;align-items:center;">
+          <div class="filters" style="flex-wrap:wrap;align-items:center;gap:8px;">
+            <div class="filter-group"><span class="filter-lbl">搜尋</span><input type="text" class="filter-input" id="fil-q" placeholder="姓名 / 手機 / Email / 編號" style="width:190px;" oninput="loadBookings()"></div>
             <div class="filter-group"><span class="filter-lbl">日期</span><input type="date" class="filter-input" id="fil-date" onchange="loadBookings()"></div>
             <div class="filter-group"><span class="filter-lbl">狀態</span><select class="filter-select" id="fil-status" onchange="loadBookings()"><option value="">全部</option><option value="pending">待審核</option><option value="confirmed">已確認</option><option value="cancelled">已取消</option><option value="completed">已完成</option></select></div>
             <div class="filter-group"><span class="filter-lbl">會議室</span><select class="filter-select" id="fil-room" onchange="loadBookings()"><option value="">全部</option></select></div>
+            <button class="btn btn-outline btn-sm" onclick="clearBookingFilters()" style="font-size:12px;">清除</button>
             <div class="filter-group" style="margin-left:auto;">
-              <button class="btn btn-outline btn-sm" onclick="exportBookingsExcel()" style="border-color:var(--teal);color:var(--teal);padding:6px 14px;font-size:13px;">
-                ⬇ 匯出 Excel
-              </button>
+              <button class="btn btn-outline btn-sm" onclick="exportBookingsExcel()" style="border-color:var(--teal);color:var(--teal);padding:6px 14px;font-size:13px;">⬇ 匯出 Excel</button>
             </div>
           </div>
           <div class="tbl-wrap">
@@ -858,7 +858,14 @@ input[list]::-webkit-calendar-picker-indicator { display: none !important; }
     <div class="page" id="page-rooms">
       <div class="card">
         <div class="card-head"><div class="card-title">會議室管理</div><button class="btn btn-primary" onclick="openRoomModal()">＋ 新增會議室</button></div>
-        <div class="card-body"><div class="room-admin-grid" id="roomAdminGrid"><div style="grid-column:1/-1;text-align:center;padding:40px;color:var(--ink-60);">載入中...</div></div></div>
+        <div class="card-body">
+          <div class="filters" style="margin-bottom:16px;flex-wrap:wrap;gap:8px;">
+            <div class="filter-group"><span class="filter-lbl">搜尋</span><input type="text" class="filter-input" id="room-fil-q" placeholder="名稱搜尋..." style="width:160px;" oninput="renderRoomsAdmin()"></div>
+            <div class="filter-group"><span class="filter-lbl">狀態</span><select class="filter-select" id="room-fil-active" onchange="renderRoomsAdmin()"><option value="">全部</option><option value="1">啟用中</option><option value="0">已停用</option></select></div>
+            <button class="btn btn-outline btn-sm" onclick="clearRoomFilters()">清除</button>
+          </div>
+          <div class="room-admin-grid" id="roomAdminGrid"><div style="grid-column:1/-1;text-align:center;padding:40px;color:var(--ink-60);">載入中...</div></div>
+        </div>
       </div>
     </div>
 
@@ -1065,7 +1072,14 @@ input[list]::-webkit-calendar-picker-indicator { display: none !important; }
       <div class="card" style="margin-bottom:20px;">
         <div class="card-head">
           <div class="card-title">LINE 用戶管理</div>
-          <div style="display:flex;align-items:center;gap:12px;">
+          <div style="display:flex;align-items:center;gap:8px;flex-wrap:wrap;">
+            <input type="text" class="filter-input" id="lu-fil-q" placeholder="名稱 / 手機搜尋..." style="width:170px;font-size:13px;" oninput="renderLineUsers()">
+            <select class="filter-select" id="lu-fil-admin" onchange="renderLineUsers()" style="font-size:13px;padding:6px 10px;">
+              <option value="">全部類型</option>
+              <option value="1">管理員</option>
+              <option value="0">一般用戶</option>
+            </select>
+            <button class="btn btn-outline btn-sm" onclick="clearLineUserFilters()">清除</button>
             <button class="btn btn-outline btn-sm" onclick="loadLineUsers()">重新整理</button>
           </div>
         </div>
@@ -1108,11 +1122,16 @@ input[list]::-webkit-calendar-picker-indicator { display: none !important; }
       <div class="card" style="margin-bottom:20px;">
         <div class="card-head">
           <div class="card-title">會員管理</div>
-          <div style="display:flex;gap:8px;align-items:center;">
+          <div style="display:flex;gap:8px;align-items:center;flex-wrap:wrap;">
             <input type="text" class="finput" id="member-search" placeholder="搜尋姓名 / Email / 手機"
               style="padding:6px 10px;font-size:13px;width:230px;"
               oninput="loadMembers()">
-            <button class="btn btn-outline btn-sm" onclick="loadMembers()">重新整理</button>
+            <select class="filter-select" id="member-fil-status" onchange="loadMembers()" style="font-size:13px;padding:6px 10px;">
+              <option value="">全部狀態</option>
+              <option value="active">正常</option>
+              <option value="blocked">已停用</option>
+            </select>
+            <button class="btn btn-outline btn-sm" onclick="clearMemberFilters()">清除</button>
           </div>
         </div>
         <div class="card-body">
@@ -1303,7 +1322,8 @@ input[list]::-webkit-calendar-picker-indicator { display: none !important; }
       <div class="card">
         <div class="card-head">
           <div class="card-title">Q&A 列表</div>
-          <div style="display:flex;gap:8px;align-items:center;">
+          <div style="display:flex;gap:8px;align-items:center;flex-wrap:wrap;">
+            <input type="text" class="filter-input" id="qa-fil-q" placeholder="搜尋關鍵字..." style="width:160px;font-size:13px;" oninput="loadLineQA()">
             <span style="font-size:12px;color:var(--ink-60);">共 <span id="qa-count">0</span> 筆</span>
             <button class="btn btn-outline btn-sm" onclick="loadLineQA()">重新整理</button>
           </div>
@@ -1463,7 +1483,25 @@ input[list]::-webkit-calendar-picker-indicator { display: none !important; }
     <!-- ── ACCOUNTS ── -->
     <div class="page" id="page-accounts">
       <div class="card">
-        <div class="card-head"><div class="card-title">帳號管理</div><button class="btn btn-primary btn-sm" onclick="openAddAccount()">＋ 新增帳號</button></div>
+        <div class="card-head">
+          <div class="card-title">帳號管理</div>
+          <div style="display:flex;gap:8px;align-items:center;flex-wrap:wrap;">
+            <select class="filter-select" id="acc-fil-role" onchange="renderAccounts()" style="font-size:13px;padding:6px 10px;">
+              <option value="">全部角色</option>
+              <option value="superadmin">超級管理員</option>
+              <option value="admin">管理員</option>
+              <option value="manager">主管</option>
+              <option value="staff">員工</option>
+            </select>
+            <select class="filter-select" id="acc-fil-active" onchange="renderAccounts()" style="font-size:13px;padding:6px 10px;">
+              <option value="">全部狀態</option>
+              <option value="1">啟用</option>
+              <option value="0">停用</option>
+            </select>
+            <button class="btn btn-outline btn-sm" onclick="clearAccFilters()">清除</button>
+            <button class="btn btn-primary btn-sm" onclick="openAddAccount()">＋ 新增帳號</button>
+          </div>
+        </div>
         <div class="card-body"><div id="accountList"><div style="text-align:center;padding:40px;color:var(--ink-60);">載入中...</div></div></div>
       </div>
     </div>
@@ -1479,9 +1517,12 @@ input[list]::-webkit-calendar-picker-indicator { display: none !important; }
           </div>
         </div>
         <div class="card-body">
-          <div style="display:flex;gap:10px;flex-wrap:wrap;margin-bottom:16px;align-items:center;">
-            <div class="filter-group"><span class="filter-lbl">帳號</span><input type="text" class="filter-input" id="log-fil-user" placeholder="搜尋帳號..." style="width:140px;" oninput="loadLoginLogs()"></div>
+          <div style="display:flex;gap:8px;flex-wrap:wrap;margin-bottom:16px;align-items:center;">
+            <div class="filter-group"><span class="filter-lbl">帳號</span><input type="text" class="filter-input" id="log-fil-user" placeholder="搜尋帳號..." style="width:130px;" oninput="loadLoginLogs()"></div>
             <div class="filter-group"><span class="filter-lbl">結果</span><select class="filter-select" id="log-fil-result" onchange="loadLoginLogs()"><option value="">全部</option><option value="1">✓ 成功</option><option value="0">✗ 失敗</option></select></div>
+            <div class="filter-group"><span class="filter-lbl">開始日期</span><input type="date" class="filter-input" id="log-fil-date-from" onchange="loadLoginLogs()" style="font-size:13px;padding:6px 10px;"></div>
+            <div class="filter-group"><span class="filter-lbl">結束日期</span><input type="date" class="filter-input" id="log-fil-date-to" onchange="loadLoginLogs()" style="font-size:13px;padding:6px 10px;"></div>
+            <div class="filter-group"><span class="filter-lbl">IP</span><input type="text" class="filter-input" id="log-fil-ip" placeholder="IP 位址..." style="width:130px;" oninput="loadLoginLogs()"></div>
             <button class="btn btn-outline btn-sm" onclick="clearLogFilters()">清除篩選</button>
           </div>
           <div id="loginLogList"><div style="text-align:center;padding:40px;color:var(--ink-60);">載入中...</div></div>
@@ -1849,13 +1890,15 @@ async function loadBookings() {
     if (!allRooms.length) { const rr = await fetch('/admin/api/rooms', { headers: H }); allRooms = await rr.json(); }
     const sel = document.getElementById('fil-room');
     if (sel.options.length < 2) allRooms.forEach(r => { const opt = document.createElement('option'); opt.value = r.id; opt.textContent = r.name; sel.appendChild(opt); });
+    const q = document.getElementById('fil-q')?.value.trim() || '';
     const date = document.getElementById('fil-date').value;
     const status = document.getElementById('fil-status').value;
     const room = document.getElementById('fil-room').value;
     let url = '/admin/api/bookings?';
-    if (date) url += `date=${date}&`;
+    if (q)      url += `q=${encodeURIComponent(q)}&`;
+    if (date)   url += `date=${date}&`;
     if (status) url += `status=${status}&`;
-    if (room) url += `room_id=${room}`;
+    if (room)   url += `room_id=${room}`;
     const res = await fetch(url, { headers: H });
     const bookings = await res.json();
     _currentBookings = bookings;
@@ -1880,6 +1923,11 @@ async function loadBookings() {
       </div></td>
     </tr>`).join('');
   } catch(e) { console.error(e); }
+}
+
+function clearBookingFilters() {
+  ['fil-q','fil-date','fil-status','fil-room'].forEach(id => { const el = document.getElementById(id); if (el) el.value = ''; });
+  loadBookings();
 }
 
 // ── Booking Edit Modal ──
@@ -1975,12 +2023,21 @@ async function deleteBooking(id) {
 }
 
 // ── ROOMS ADMIN ──
-async function loadRoomsAdmin() {
-  try {
-    const res = await fetch('/admin/api/rooms', { headers: H });
-    allRooms = await res.json();
-    const ICONS = {'腦力激盪':'BS','洽談室':'MT','簡報廳':'PR','視訊會議':'VC','行政套房':'EX','培訓教室':'TR'};
-    document.getElementById('roomAdminGrid').innerHTML = allRooms.map(r => {
+function renderRoomsAdmin() {
+  const q = (document.getElementById('room-fil-q')?.value || '').trim().toLowerCase();
+  const activeFilter = document.getElementById('room-fil-active')?.value || '';
+  const ICONS = {'腦力激盪':'BS','洽談室':'MT','簡報廳':'PR','視訊會議':'VC','行政套房':'EX','培訓教室':'TR'};
+  const filtered = allRooms.filter(r => {
+    if (q && !r.name.toLowerCase().includes(q)) return false;
+    if (activeFilter === '1' && !r.is_active) return false;
+    if (activeFilter === '0' && r.is_active) return false;
+    return true;
+  });
+  if (!filtered.length) {
+    document.getElementById('roomAdminGrid').innerHTML = '<div style="grid-column:1/-1;text-align:center;padding:40px;color:var(--ink-60);">找不到符合的會議室</div>';
+    return;
+  }
+  document.getElementById('roomAdminGrid').innerHTML = filtered.map(r => {
       const icon = ICONS[r.room_type] || 'MR';
       const photoHTML = r.photo_url
         ? `<div class="rac-photo" style="position:relative;"><img src="${r.photo_url}" alt="${r.name}" onerror="this.parentElement.innerHTML='<div class=rac-photo-placeholder>${icon}</div>'"><span class="rac-status ${r.is_active ? 'badge-green' : 'badge-red'}">${r.is_active ? '啟用中' : '已停用'}</span></div>`
@@ -1999,7 +2056,19 @@ async function loadRoomsAdmin() {
           </div>
         </div>
       </div>`;
-    }).join('');
+  }).join('');
+}
+
+function clearRoomFilters() {
+  ['room-fil-q','room-fil-active'].forEach(id => { const el = document.getElementById(id); if (el) el.value = ''; });
+  renderRoomsAdmin();
+}
+
+async function loadRoomsAdmin() {
+  try {
+    const res = await fetch('/admin/api/rooms', { headers: H });
+    allRooms = await res.json();
+    renderRoomsAdmin();
   } catch(e) { console.error(e); }
 }
 
@@ -3114,13 +3183,21 @@ const ALL_PAGES = [
 function roleLabel(r) { return {superadmin:'超級管理員',admin:'管理員',manager:'店長/經理',staff:'門市人員'}[r] || r; }
 function roleBadgeClass(r) { return {superadmin:'badge-superadmin',admin:'badge-admin',manager:'badge-manager',staff:'badge-staff'}[r] || 'badge-gray'; }
 
-async function loadAccounts() {
-  const res = await fetch('/admin/api/accounts', {headers:H});
-  const users = await res.json();
+let _allAccounts = [];
+
+function renderAccounts() {
+  const roleFilter   = document.getElementById('acc-fil-role')?.value   || '';
+  const activeFilter = document.getElementById('acc-fil-active')?.value || '';
+  const filtered = _allAccounts.filter(u => {
+    if (roleFilter && u.role !== roleFilter) return false;
+    if (activeFilter === '1' && !u.is_active) return false;
+    if (activeFilter === '0' && u.is_active)  return false;
+    return true;
+  });
   document.getElementById('accountList').innerHTML = `
     <div class="tbl-wrap"><table>
       <thead><tr><th>帳號</th><th>顯示名稱</th><th>角色</th><th>狀態</th><th>建立者</th><th>建立時間</th><th>操作</th></tr></thead>
-      <tbody>${users.map(u => `<tr>
+      <tbody>${filtered.length ? filtered.map(u => `<tr>
         <td><strong>${u.username}</strong></td>
         <td>${u.display_name||'—'}</td>
         <td><span class="badge ${roleBadgeClass(u.role)}">${roleLabel(u.role)}</span></td>
@@ -3131,8 +3208,19 @@ async function loadAccounts() {
           <button class="btn btn-outline btn-sm" onclick="editAccount(${u.id})">編輯</button>
           ${u.role!=='superadmin'?`<button class="btn btn-danger btn-sm" onclick="deleteAccount(${u.id})">刪除</button>`:''}
         </div></td>
-      </tr>`).join('')}</tbody>
+      </tr>`).join('') : '<tr><td colspan="7" style="text-align:center;padding:30px;color:var(--ink-60);">找不到符合的帳號</td></tr>'}</tbody>
     </table></div>`;
+}
+
+function clearAccFilters() {
+  ['acc-fil-role','acc-fil-active'].forEach(id => { const el = document.getElementById(id); if (el) el.value = ''; });
+  renderAccounts();
+}
+
+async function loadAccounts() {
+  const res = await fetch('/admin/api/accounts', {headers:H});
+  _allAccounts = await res.json();
+  renderAccounts();
 }
 
 function onRoleChange() {
@@ -3218,10 +3306,7 @@ async function deleteAccount(id) {
 
 // ── LOGIN LOGS ──
 function clearLogFilters() {
-  const u = document.getElementById('log-fil-user');
-  const r = document.getElementById('log-fil-result');
-  if (u) u.value = '';
-  if (r) r.value = '';
+  ['log-fil-user','log-fil-result','log-fil-date-from','log-fil-date-to','log-fil-ip'].forEach(id => { const el = document.getElementById(id); if (el) el.value = ''; });
   loadLoginLogs();
 }
 
@@ -3249,17 +3334,23 @@ function parseUA(ua) {
 }
 
 async function loadLoginLogs() {
-  const uname   = document.getElementById('log-fil-user')?.value?.trim() || '';
-  const success = document.getElementById('log-fil-result')?.value || '';
+  const uname    = document.getElementById('log-fil-user')?.value?.trim()      || '';
+  const success  = document.getElementById('log-fil-result')?.value             || '';
+  const dateFrom = document.getElementById('log-fil-date-from')?.value          || '';
+  const dateTo   = document.getElementById('log-fil-date-to')?.value            || '';
+  const ip       = document.getElementById('log-fil-ip')?.value?.trim()         || '';
   let url = `/admin/api/login-logs?per=200`;
-  if (uname)   url += `&username=${encodeURIComponent(uname)}`;
-  if (success) url += `&success=${success}`;
+  if (uname)    url += `&username=${encodeURIComponent(uname)}`;
+  if (success)  url += `&success=${success}`;
+  if (dateFrom) url += `&date_from=${dateFrom}`;
+  if (dateTo)   url += `&date_to=${dateTo}`;
+  if (ip)       url += `&ip=${encodeURIComponent(ip)}`;
   const res = await fetch(url, {headers:H});
   const data = await res.json();
   const logs = data.logs || [];
   const list = document.getElementById('loginLogList');
   const lastInfo = document.getElementById('lastLoginInfo');
-  if (lastInfo && !uname && !success) {
+  if (lastInfo && !uname && !success && !dateFrom && !dateTo && !ip) {
     const succ = logs.filter(l => l.success);
     if (succ.length >= 2) {
       const prev = succ[1];
@@ -3277,14 +3368,14 @@ async function loadLoginLogs() {
           <th>登入時間</th><th>帳號</th><th>結果</th><th>IP 位址</th><th>地區</th><th>瀏覽器 / 裝置</th>
         </tr></thead>
         <tbody>
-          ${logs.map((l, i) => `<tr style="${i===0&&l.success&&!uname&&!success?'background:#f0faf5;':''}">
-            <td style="white-space:nowrap;font-weight:${i===0&&!uname&&!success?'600':'400'};">${formatLoginTime(l.login_at)}${i===0&&l.success&&!uname&&!success?` <span style="background:var(--gold);color:#fff;font-size:10px;padding:1px 6px;border-radius:10px;vertical-align:middle;margin-left:4px;">本次</span>`:''}</td>
+          ${logs.map((l, i) => { const noFilter = !uname&&!success&&!dateFrom&&!dateTo&&!ip; return `<tr style="${i===0&&l.success&&noFilter?'background:#f0faf5;':''}">
+            <td style="white-space:nowrap;font-weight:${i===0&&noFilter?'600':'400'};">${formatLoginTime(l.login_at)}${i===0&&l.success&&noFilter?` <span style="background:var(--gold);color:#fff;font-size:10px;padding:1px 6px;border-radius:10px;vertical-align:middle;margin-left:4px;">本次</span>`:''}</td>
             <td><strong>${l.username}</strong></td>
             <td>${l.success ? '<span style="color:var(--green);font-weight:600;">✓ 成功</span>' : '<span style="color:var(--red);font-weight:600;">✗ 失敗</span>'}</td>
             <td style="font-family:monospace;font-size:12px;white-space:nowrap;">${l.ip_address||'—'}</td>
             <td style="font-size:13px;white-space:nowrap;">${[l.country,l.city].filter(Boolean).join(' ')||'—'}</td>
             <td style="font-size:12px;color:var(--ink-60);white-space:normal;word-break:break-word;min-width:220px;">${parseUA(l.user_agent)}<br><span style="font-size:11px;opacity:.6;" title="${(l.user_agent||'').replace(/"/g,'&quot;')}">${l.user_agent||''}</span></td>
-          </tr>`).join('')}
+          </tr>`; }).join('')}
         </tbody>
       </table>
     </div>`;
@@ -3604,11 +3695,19 @@ async function openMemberBookings(mid, name) {
   }
 }
 
+function clearMemberFilters() {
+  ['member-search','member-fil-status'].forEach(id => { const el = document.getElementById(id); if (el) el.value = ''; });
+  loadMembers();
+}
+
 async function loadMembers() {
   const q = document.getElementById('member-search')?.value.trim() || '';
+  const status = document.getElementById('member-fil-status')?.value || '';
   const tbody = document.getElementById('member-tbody');
   try {
-    const res = await fetch(`/admin/api/members?q=${encodeURIComponent(q)}`, { headers: H });
+    let url = `/admin/api/members?q=${encodeURIComponent(q)}`;
+    if (status) url += `&status=${status}`;
+    const res = await fetch(url, { headers: H });
     const members = await res.json();
     if (!members.length) {
       tbody.innerHTML = '<tr><td colspan="9" style="text-align:center;padding:40px;color:var(--ink-60);">' +
@@ -3839,10 +3938,12 @@ async function loadLineQA() {
   const list = document.getElementById('qa-list');
   try {
     const res = await fetch('/admin/api/line-qa', { headers: H });
-    const items = await res.json();
+    let items = await res.json();
+    const filterQ = (document.getElementById('qa-fil-q')?.value || '').trim().toLowerCase();
+    if (filterQ) items = items.filter(i => i.keywords.toLowerCase().includes(filterQ) || i.reply.toLowerCase().includes(filterQ));
     document.getElementById('qa-count').textContent = items.length;
     if (!items.length) {
-      list.innerHTML = '<div style="text-align:center;padding:40px;color:var(--ink-60);">尚未設定任何 Q&A</div>';
+      list.innerHTML = '<div style="text-align:center;padding:40px;color:var(--ink-60);">' + (filterQ ? '找不到符合的 Q&A' : '尚未設定任何 Q&A') + '</div>';
       return;
     }
     list.innerHTML = items.map(q => `
@@ -3938,34 +4039,49 @@ function editLineQA(id, btn) {
   card.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
 }
 
+let _allLineUsers = [];
+
+function renderLineUsers() {
+  const q = (document.getElementById('lu-fil-q')?.value || '').trim().toLowerCase();
+  const adminFilter = document.getElementById('lu-fil-admin')?.value || '';
+  const tbody = document.getElementById('lineuser-tbody');
+  if (!tbody) return;
+  const filtered = _allLineUsers.filter(u => {
+    if (q && !(u.display_name||'').toLowerCase().includes(q) && !(u.phone||'').includes(q)) return false;
+    if (adminFilter === '1' && !u.is_admin) return false;
+    if (adminFilter === '0' && u.is_admin) return false;
+    return true;
+  });
+  if (!filtered.length) {
+    tbody.innerHTML = '<tr><td colspan="6" style="text-align:center;padding:30px;color:var(--ink-60);">找不到符合的 LINE 用戶</td></tr>';
+    return;
+  }
+  tbody.innerHTML = filtered.map(u => `
+    <tr>
+      <td><code style="font-size:11px;color:var(--ink-60);">${u.line_user_id.slice(0,20)}...</code></td>
+      <td>${u.display_name || '—'}</td>
+      <td>${u.phone || '—'}</td>
+      <td><span class="badge ${u.is_admin ? 'badge-gold' : 'badge-gray'}">${u.is_admin ? '✓ 管理員' : '一般用戶'}</span></td>
+      <td style="color:var(--ink-60);font-size:13px;">${u.created_at || '—'}</td>
+      <td>
+        <div style="display:flex;gap:6px;">
+          <button class="btn btn-outline btn-sm" onclick="toggleLineAdmin('${u.line_user_id}')">${u.is_admin ? '取消管理員' : '設為管理員'}</button>
+          <button class="btn btn-danger btn-sm" onclick="deleteLineUser('${u.line_user_id}', '${(u.display_name||'此用戶').replace(/'/g,"\\'")}')">刪除</button>
+        </div>
+      </td>
+    </tr>`).join('');
+}
+
+function clearLineUserFilters() {
+  ['lu-fil-q','lu-fil-admin'].forEach(id => { const el = document.getElementById(id); if (el) el.value = ''; });
+  renderLineUsers();
+}
+
 async function loadLineUsers() {
   try {
     const res = await fetch('/admin/api/line-users', { headers: H });
-    const users = await res.json();
-    const tbody = document.getElementById('lineuser-tbody');
-    if (!tbody) return;
-    if (!users.length) {
-      tbody.innerHTML = '<tr><td colspan="6" style="text-align:center;padding:30px;color:var(--ink-60);">尚無 LINE 用戶</td></tr>';
-      return;
-    }
-    tbody.innerHTML = users.map(u => `
-      <tr>
-        <td><code style="font-size:11px;color:var(--ink-60);">${u.line_user_id.slice(0,20)}...</code></td>
-        <td>${u.display_name || '—'}</td>
-        <td>${u.phone || '—'}</td>
-        <td>
-          <span class="badge ${u.is_admin ? 'badge-gold' : 'badge-gray'}">${u.is_admin ? '✓ 管理員' : '一般用戶'}</span>
-        </td>
-        <td style="color:var(--ink-60);font-size:13px;">${u.created_at || '—'}</td>
-        <td>
-          <div style="display:flex;gap:6px;">
-            <button class="btn btn-outline btn-sm" onclick="toggleLineAdmin('${u.line_user_id}')">
-              ${u.is_admin ? '取消管理員' : '設為管理員'}
-            </button>
-            <button class="btn btn-danger btn-sm" onclick="deleteLineUser('${u.line_user_id}', '${(u.display_name||'此用戶').replace(/'/g,"\\'")}')">刪除</button>
-          </div>
-        </td>
-      </tr>`).join('');
+    _allLineUsers = await res.json();
+    renderLineUsers();
   } catch(e) { console.error(e); }
 }
 

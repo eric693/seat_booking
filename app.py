@@ -2650,14 +2650,21 @@ def _handle_booking_flow(uid: str, rtok: str, text: str, lu):
                         'contents': [
                             {'type': 'text', 'text': '請先至網站完成會員註冊並驗證 Email，才能使用預約功能。',
                              'size': 'sm', 'color': _C['ink'], 'wrap': True},
-                            {'type': 'text', 'text': '已有帳號？請至網站登入後，系統將自動綁定您的 LINE。',
+                            _divider(),
+                            {'type': 'text', 'text': '已有帳號？',
+                             'size': 'sm', 'weight': 'bold', 'color': _C['ink'], 'margin': 'sm'},
+                            {'type': 'text',
+                             'text': '請輸入以下指令綁定您的帳號：\n綁定 手機號碼\n範例：綁定 0912345678',
                              'size': 'xs', 'color': _C['ink60'], 'wrap': True},
                         ]
                     },
                     'footer': {
                         'type': 'box', 'layout': 'vertical',
-                        'backgroundColor': _C['bg'], 'paddingAll': '12px',
-                        'contents': [_btn('前往網站註冊 / 登入', 'uri', SITE_URL)]
+                        'backgroundColor': _C['bg'], 'paddingAll': '12px', 'spacing': 'sm',
+                        'contents': [
+                            _btn('前往網站註冊 / 登入', 'uri', SITE_URL),
+                            _btn('查看所有指令', 'message', '說明', bg='#2D2D2D'),
+                        ]
                     }
                 }
             }])

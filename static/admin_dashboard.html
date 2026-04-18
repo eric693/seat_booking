@@ -3142,12 +3142,6 @@ function openAddAccount() {
   document.getElementById('accountModal').classList.add('show');
 }
 
-function togglePwVis() {
-  const inp = document.getElementById('acc-pw'), eye = document.getElementById('acc-pw-eye');
-  inp.type = inp.type === 'password' ? 'text' : 'password';
-  eye.textContent = inp.type === 'password' ? '👁' : '🙈';
-}
-
 function onPwInput() {
   const el = document.getElementById('acc-pw'), val = el.value;
   const s = document.getElementById('acc-pw-status'), isEdit = !!document.getElementById('acc-id').value;

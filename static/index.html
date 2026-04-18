@@ -1720,27 +1720,44 @@ async function loadContent() {
   try {
     const res = await fetch(`${API}/api/site-content`);
     const c = await res.json();
+    // helper: set text, hide element when empty
+    function sc(id, val, hideWhenEmpty) {
+      const el = document.getElementById(id);
+      if (!el) return;
+      if (val) { el.textContent = val; el.style.display = ''; }
+      else if (hideWhenEmpty) { el.style.display = 'none'; }
+      else { el.textContent = ''; }
+    }
+    // helper: hide parent .meta-row when empty
+    function scRow(id, val) {
+      const el = document.getElementById(id);
+      if (!el) return;
+      const row = el.closest('.meta-row');
+      if (val) { el.textContent = val; if (row) row.style.display = ''; }
+      else { if (row) row.style.display = 'none'; }
+    }
     if (c.site_title) {
       document.title = c.site_title;
       document.getElementById('hdr-title').textContent = c.site_title;
     }
-    if (c.hero_title) document.getElementById('hero-title-el').textContent = c.hero_title;
-    if (c.site_description) document.getElementById('hero-desc').textContent = c.site_description;
+    sc('hero-title-el', c.hero_title);
+    sc('hero-desc', c.site_description, true);
     const badgeWrap = document.getElementById('hero-badge-wrap');
     if (c.hero_badge) {
       document.getElementById('hero-badge').textContent = c.hero_badge;
+      if (badgeWrap) badgeWrap.style.display = '';
     } else {
       if (badgeWrap) badgeWrap.style.display = 'none';
     }
-    if (c.service_hours) document.getElementById('meta-hours').textContent = c.service_hours;
-    if (c.contact_email) document.getElementById('meta-email').textContent = c.contact_email;
+    scRow('meta-hours', c.service_hours);
+    scRow('meta-email', c.contact_email);
     const phoneEl = document.getElementById('hdr-phone');
     if (c.contact_phone) { phoneEl.textContent = c.contact_phone; phoneEl.style.display = ''; }
     else { phoneEl.style.display = 'none'; }
-    if (c.footer_text) document.getElementById('footerText').textContent = c.footer_text;
-    if (c.step1_title) document.getElementById('txt-step1-title').textContent = c.step1_title;
-    if (c.step2_title) document.getElementById('txt-step2-title').textContent = c.step2_title;
-    if (c.step3_title) document.getElementById('txt-step3-title').textContent = c.step3_title;
+    sc('footerText', c.footer_text, true);
+    sc('txt-step1-title', c.step1_title);
+    sc('txt-step2-title', c.step2_title);
+    sc('txt-step3-title', c.step3_title);
 
     const notices = ['notice_1','notice_2','notice_3','notice_4','notice_5'].map(k => c[k]).filter(Boolean);
     if (notices.length) {

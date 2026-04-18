@@ -1140,7 +1140,6 @@ footer {
         <img id="liff-avatar" src="" style="width:28px;height:28px;border-radius:50%;object-fit:cover;border:2px solid var(--teal);" alt="">
         <span id="liff-name" style="font-size:13px;font-weight:600;color:var(--teal);max-width:80px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;"></span>
       </div>
-      <a class="header-link" onclick="openQueryModal()">查詢預約</a>
       <!-- 未登入 -->
       <a class="header-link" id="member-login-btn" onclick="openAuthModal()" style="border:1px solid rgba(255,255,255,0.3);padding:5px 14px;border-radius:20px;font-size:12px;font-weight:600;">登入 / 註冊</a>
       <!-- 已登入 -->
@@ -1331,23 +1330,6 @@ footer {
   </div>
 </div>
 
-<!-- Query Modal -->
-<div class="modal" id="queryModal">
-  <div class="modal-box" style="max-width:460px;">
-    <h2 class="modal-title" style="margin-bottom:20px;">查詢預約</h2>
-    <div class="form-grid" style="grid-template-columns:1fr;">
-      <div class="fgroup">
-        <label>手機號碼</label>
-        <input class="finput" type="tel" id="qPhone" placeholder="0912345678">
-      </div>
-    </div>
-    <div style="display:flex;gap:10px;margin-top:16px;">
-      <button class="book-btn" style="background:var(--teal);flex:1;margin:0;" onclick="doQuery()">查詢</button>
-      <button class="book-btn" style="background:var(--ink-60);flex:1;margin:0;" onclick="document.getElementById('queryModal').classList.remove('active')">關閉</button>
-    </div>
-    <div id="queryResult" style="margin-top:16px;"></div>
-  </div>
-</div>
 
 
 <!-- ── Auth Modal ── -->
@@ -2774,45 +2756,6 @@ document.getElementById('successModal').addEventListener('click', function(e) {
   if (e.target === this) closeSuccess();
 });
 
-// ── Query ──
-function openQueryModal() {
-  document.getElementById('queryResult').innerHTML = '';
-  document.getElementById('queryModal').classList.add('active');
-}
-
-document.getElementById('queryModal').addEventListener('click', function(e) {
-  if (e.target === this) this.classList.remove('active');
-});
-
-async function doQuery() {
-  const phone = document.getElementById('qPhone').value.trim();
-  if (!phone) { alert('請填寫手機號碼'); return; }
-  try {
-    const res = await fetch(`${API}/api/bookings/check?phone=${encodeURIComponent(phone)}`);
-    const data = await res.json();
-    if (res.ok) {
-      const statusMap = { pending: '待審核', confirmed: '已確認', cancelled: '已取消', completed: '已完成' };
-      const list = Array.isArray(data) ? data : [data];
-      document.getElementById('queryResult').innerHTML = list.map(b => `
-        <div class="confirm-table" style="margin-bottom:12px;">
-          <div class="ct-row"><span class="ct-key">預約編號</span><span class="ct-val">${b.booking_number}</span></div>
-          <div class="ct-row"><span class="ct-key">會議室</span><span class="ct-val">${b.room_name}</span></div>
-          <div class="ct-row"><span class="ct-key">日期</span><span class="ct-val">${b.date}</span></div>
-          <div class="ct-row"><span class="ct-key">時段</span><span class="ct-val">${b.start_time} – ${b.end_time}</span></div>
-          <div class="ct-row"><span class="ct-key">狀態</span><span class="ct-val">${statusMap[b.status] || b.status}</span></div>
-        </div>`).join('');
-    } else {
-      const qErr = document.createElement('div');
-      qErr.style.cssText = 'color:var(--red);padding:12px;text-align:center;';
-      qErr.textContent = data.error || '查詢失敗';
-      const qr = document.getElementById('queryResult');
-      qr.innerHTML = '';
-      qr.appendChild(qErr);
-    }
-  } catch (e) {
-    document.getElementById('queryResult').innerHTML = `<div style="color:var(--red);padding:12px;text-align:center;">查詢失敗，請稍後再試</div>`;
-  }
-}
 
 // ── AI 預約助理 ──────────────────────────────────────────
 let _aiChatOpen = false;

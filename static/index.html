@@ -2570,8 +2570,7 @@ async function submitBooking() {
     if (Date.UTC(_sy, _smo - 1, _sd, _sh, _sm, 0) < _cutoffTwMs) {
       const _h = Math.floor(_advMin / 60), _m2 = _advMin % 60;
       const _advStr = _h > 0 && _m2 === 0 ? `${_h} 小時` : _h > 0 ? `${_h} 小時 ${_m2} 分鐘` : `${_m2} 分鐘`;
-      const _cutoffDate = new Date(_cutoffTwMs - 8 * 3600000);
-      const _cutoffDisp = _cutoffDate.toISOString().slice(0,16).replace('T',' ');
+      const _cutoffDisp = new Date(_cutoffTwMs).toISOString().slice(0,16).replace('T',' ');
       alert(`此會議室需提前 ${_advStr} 預約。\n最早可預約時段：${_cutoffDisp}（台灣時間）`);
       return;
     }

@@ -1944,6 +1944,11 @@ def create_booking():
     # ── 會員登入驗證 ──
     if not session.get('member_id'):
         return jsonify({'error': '請先登入會員才能完成預約'}), 401
+    _booking_member = Member.query.get(session['member_id'])
+    if not _booking_member or _booking_member.is_blocked:
+        return jsonify({'error': '您的帳號已被停用，無法預約'}), 403
+    if _booking_member.is_verified_email is False and _booking_member.email:
+        return jsonify({'error': '請先完成 Email 驗證才能預約'}), 403
     try:
         data = request.get_json()
         if not data:
@@ -2026,6 +2031,10 @@ def create_booking():
             lu = LineUser.query.filter_by(phone=data['phone']).first()
             if lu:
                 line_uid = lu.line_user_id
+        if line_uid and data.get('phone'):
+            _lu = LineUser.query.filter_by(line_user_id=line_uid).first()
+            if _lu and not _lu.phone:
+                _lu.phone = data['phone']
 
         booking = Booking(
             booking_number = generate_booking_number(),
@@ -2107,6 +2116,15 @@ def member_cancel_booking(bid):
         return jsonify({'error': '此預約已取消'}), 400
     if b.status == 'completed':
         return jsonify({'error': '已完成的預約無法取消'}), 400
+    # 2 小時內禁止取消
+    try:
+        from datetime import datetime as _dt, timezone as _tz, timedelta as _td
+        booking_dt = _dt.strptime(f"{b.date} {b.start_time}", '%Y-%m-%d %H:%M')
+        now_tw = _dt.now(_tz.utc).replace(tzinfo=None) + _td(hours=8)
+        if (booking_dt - now_tw).total_seconds() < 7200:
+            return jsonify({'error': '距離使用時間不足 2 小時，如需取消請聯繫管理員'}), 400
+    except Exception:
+        pass
     b.status = 'cancelled'
     db.session.commit()
     # 通知
@@ -2118,6 +2136,8 @@ def member_cancel_booking(bid):
                        f'【預約取消】{b.room.name if b.room else ""} – {b.date}',
                        _cancel_email_html(b))
         send_sms(b.customer_phone, _cancel_sms_body(b))
+        for aid in admin_line_ids():
+            push_line(aid, [flex_admin_notify(b)])
     except Exception as e:
         print(f'[member cancel notify error] {e}')
     return jsonify({'success': True})
@@ -3199,18 +3219,21 @@ def _handle_line_text(uid, rtok, text):
                 f'找不到預約編號 {number}',
                 '請確認編號是否正確')])
             return
+        lu_member = Member.query.filter_by(line_user_id=uid).first()
         is_owner = (b.line_user_id == uid or
-                    (lu and lu.phone and b.customer_phone == lu.phone))
+                    (lu and lu.phone and b.customer_phone == lu.phone) or
+                    (lu_member and lu_member.email and b.customer_email == lu_member.email))
         if not is_owner:
             reply_line(rtok, [flex_not_found('無法取消此預約', '只能取消您自己的預約')])
             return
         if b.status == 'cancelled':
             reply_line(rtok, [flex_not_found('此預約已取消', '如有疑問請聯繫管理員')])
             return
-        from datetime import datetime as _dt
+        from datetime import datetime as _dt, timezone as _tz2, timedelta as _td2
         try:
             booking_dt = _dt.strptime(f"{b.date} {b.start_time}", '%Y-%m-%d %H:%M')
-            if (booking_dt - _dt.now()).total_seconds() < 7200:
+            now_tw = _dt.now(_tz2.utc).replace(tzinfo=None) + _td2(hours=8)
+            if (booking_dt - now_tw).total_seconds() < 7200:
                 reply_line(rtok, [flex_not_found(
                     '距離使用時間不足 2 小時',
                     '請直接聯繫管理員處理')])
@@ -3221,8 +3244,17 @@ def _handle_line_text(uid, rtok, text):
         b.status = 'cancelled'
         db.session.commit()
         reply_line(rtok, [flex_booking_cancel(b)])
-        for aid in admin_line_ids():
-            push_line(aid, [flex_admin_notify(b)])
+        try:
+            for aid in admin_line_ids():
+                push_line(aid, [flex_admin_notify(b)])
+            if b.customer_email:
+                room_name = b.room.name if b.room else '會議室'
+                send_email(b.customer_email,
+                           f'【預約取消】{room_name} – {b.date}',
+                           _cancel_email_html(b))
+            send_sms(b.customer_phone, _cancel_sms_body(b))
+        except Exception as ne:
+            print(f'[LINE 取消通知錯誤] {ne}')
         return
 
     # ── 綁定手機 / Email ──

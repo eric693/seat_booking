@@ -3037,9 +3037,7 @@ function closeAuthModal() {
 }
 
 document.addEventListener('DOMContentLoaded', () => {
-  document.getElementById('authModal')?.addEventListener('click', function(e) {
-    if (e.target === this) document.getElementById('authModal').classList.remove('active');
-  });
+  // authModal 只允許點 X 關閉，點外部不關閉
   document.getElementById('memberProfileModal')?.addEventListener('click', function(e) {
     if (e.target === this) this.classList.remove('active');
   });

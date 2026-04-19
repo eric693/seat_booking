@@ -1387,6 +1387,23 @@ footer {
   display: flex; gap: 8px; margin-bottom: 16px; align-items: center;
 }
 .coupon-claim-row input { flex: 1; }
+/* 預約表單優惠碼區 */
+.coupon-apply-box {
+  border: 1.5px dashed var(--gold); border-radius: 10px;
+  padding: 14px 16px; margin-bottom: 16px; background: #fffdf7;
+}
+.coupon-apply-label {
+  display: flex; align-items: center; gap: 6px;
+  font-size: 13px; font-weight: 700; color: var(--ink-60);
+  margin-bottom: 10px;
+}
+/* 優惠券可使用提示按鈕 */
+.coupon-use-btn {
+  margin-top: 6px; padding: 6px 14px; border: 1.5px solid var(--teal);
+  border-radius: 20px; font-size: 12px; font-weight: 600; color: var(--teal);
+  background: #fff; cursor: pointer; transition: all .15s;
+}
+.coupon-use-btn:hover { background: var(--teal); color: #fff; }
 /* 點數列表 */
 .pt-row {
   display: flex; align-items: center; justify-content: space-between;
@@ -2360,11 +2377,35 @@ footer {
           <div class="sum-lbl">聯絡人</div>
           <div class="sum-val empty" id="sum-name">請填寫</div>
         </div>
+        <div class="sum-row" id="sum-discount-row" style="display:none;">
+          <div class="sum-lbl" style="color:var(--red);">優惠折抵</div>
+          <div class="sum-val" id="sum-discount" style="color:var(--red);font-weight:700;">-NT$ 0</div>
+        </div>
         <div class="sum-total">
           <div class="sum-total-lbl">費用合計</div>
           <div class="sum-total-price" id="sum-price">NT$ 0</div>
         </div>
+        <div style="margin-top:2px;font-size:11px;color:var(--ink-60);text-align:right;display:none;" id="sum-original-row">
+          原價 <span id="sum-original">NT$ 0</span>
+        </div>
       </div>
+    </div>
+
+    <!-- 優惠碼 -->
+    <div class="coupon-apply-box" id="coupon-apply-box">
+      <div class="coupon-apply-label">
+        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M2 9a1 1 0 011-1h18a1 1 0 011 1v1.5a2.5 2.5 0 000 5V17a1 1 0 01-1 1H3a1 1 0 01-1-1v-1.5a2.5 2.5 0 000-5V9z"/><line x1="9" y1="8" x2="9" y2="16" stroke-dasharray="2 2"/></svg>
+        使用優惠券
+      </div>
+      <div style="display:flex;gap:8px;align-items:center;">
+        <input class="finput" type="text" id="booking-coupon-code" placeholder="輸入優惠碼"
+          style="flex:1;text-transform:uppercase;font-size:13px;"
+          oninput="this.value=this.value.toUpperCase()"
+          onkeydown="if(event.key==='Enter'){event.preventDefault();applyBookingCoupon();}">
+        <button onclick="applyBookingCoupon()" style="padding:10px 16px;background:var(--ink);color:#fff;border:none;border-radius:8px;font-size:13px;font-weight:600;cursor:pointer;white-space:nowrap;">套用</button>
+        <button id="coupon-remove-btn" onclick="removeBookingCoupon()" style="display:none;padding:10px 12px;background:var(--paper);color:var(--ink-60);border:1px solid var(--border);border-radius:8px;font-size:13px;cursor:pointer;">✕</button>
+      </div>
+      <div id="coupon-apply-msg" style="margin-top:8px;font-size:12px;display:none;"></div>
     </div>
 
     <div id="booking-error-msg" style="display:none;background:#fff0ee;color:var(--red);border:1px solid #ffcdd2;border-radius:8px;padding:10px 14px;font-size:13px;text-align:center;margin-bottom:8px;"></div>
@@ -4101,6 +4142,7 @@ function updatePrice() {
     else { const h = Math.floor(dur); const m = Math.round((dur - h) * 60); durText = h + ' 小時 ' + m + ' 分鐘'; }
     document.getElementById('sum-dur').textContent = durText;
     document.getElementById('sum-price').textContent = formatMoney(state.price);
+    _setBookingOriginalPrice(state.price);
   } else if (state.startTime && state.endTime && state.roomRate) {
     const dur = (toMin(state.endTime) - toMin(state.startTime)) / 60;
     state.price = Math.round(dur * state.roomRate);
@@ -4110,6 +4152,7 @@ function updatePrice() {
     else { const h = Math.floor(dur); const m = Math.round((dur - h) * 60); durText = h + ' 小時 ' + m + ' 分鐘'; }
     document.getElementById('sum-dur').textContent = durText;
     document.getElementById('sum-price').textContent = formatMoney(state.price);
+    _setBookingOriginalPrice(state.price);
   } else {
     document.getElementById('sum-dur').textContent = '—';
     document.getElementById('sum-price').textContent = 'NT$ 0';
@@ -4272,6 +4315,7 @@ async function submitBooking() {
     note: getFieldVal('note'),
     extra_fields: Object.fromEntries(_formFields.filter(f=>!f.system).map(f=>[f.id, getFieldVal(f.id)])),
     line_user_id: window._liffUserId || '',
+    coupon_code: _bookingCoupon ? _bookingCoupon.coupon?.code || '' : '',
   };
 
   const btn = document.getElementById('bookBtn');
@@ -4368,6 +4412,19 @@ function showMultiSuccess(bookings, errors) {
 }
 
 function showSuccess(booking, isMulti) {
+  // 重置優惠碼狀態
+  _bookingCoupon = null;
+  _bookingOriginalPrice = 0;
+  const codeEl = document.getElementById('booking-coupon-code');
+  if (codeEl) codeEl.value = '';
+  const removeBtn = document.getElementById('coupon-remove-btn');
+  if (removeBtn) removeBtn.style.display = 'none';
+  const msgEl = document.getElementById('coupon-apply-msg');
+  if (msgEl) msgEl.style.display = 'none';
+  const drEl = document.getElementById('sum-discount-row');
+  if (drEl) drEl.style.display = 'none';
+  const orEl = document.getElementById('sum-original-row');
+  if (orEl) orEl.style.display = 'none';
   if (isMulti && booking._multi_info) {
     document.getElementById('confirmTable').innerHTML =
       booking._multi_info.split('\n').map(function(line) {
@@ -5696,6 +5753,9 @@ function _renderCoupons() {
     const dateStr = (c.start_date && c.end_date) ? `${c.start_date.replace(/-/g,'/')} ～ ${c.end_date.replace(/-/g,'/')}` :
                     c.end_date ? `至 ${c.end_date.replace(/-/g,'/')}` : '無使用期限';
     const tag = isUsed ? '<span class="ccr-tag">已使用</span>' : isExpired ? '<span class="ccr-tag" style="background:#bbb;">已逾期</span>' : '';
+    const useBtn = (!isUsed && !isExpired)
+      ? `<button class="coupon-use-btn" onclick="useCouponInBooking('${c.code}')">立即使用 →</button>`
+      : '';
     return `<div class="coupon-card-eslite${extraCls}">
       <div class="ccl">
         <div class="ccl-amount">${amountStr}</div>
@@ -5705,6 +5765,7 @@ function _renderCoupons() {
         <div class="ccr-name">${c.name}${tag}</div>
         <div class="ccr-min">${minStr}</div>
         <div class="ccr-date">${dateStr}</div>
+        ${useBtn}
       </div>
     </div>`;
   }).join('');
@@ -5721,6 +5782,96 @@ async function loadMcCoupons() {
   } catch(e) {
     el.innerHTML = '<div style="color:var(--red);text-align:center;padding:20px;">載入失敗</div>';
   }
+}
+
+// ── 預約表單優惠碼套用 ──
+let _bookingCoupon = null;   // { code, discount, discount_str, final_price, coupon }
+let _bookingOriginalPrice = 0;
+
+async function applyBookingCoupon() {
+  const code = (document.getElementById('booking-coupon-code')?.value || '').trim().toUpperCase();
+  const msgEl = document.getElementById('coupon-apply-msg');
+  if (!code) return;
+  // 取當前金額
+  const priceText = document.getElementById('sum-price')?.textContent?.replace(/[^0-9]/g, '') || '0';
+  const amount = parseInt(_bookingOriginalPrice || priceText || 0, 10);
+  try {
+    const res = await fetch(`${API}/api/coupon/validate?code=${encodeURIComponent(code)}&amount=${amount}`, { credentials: 'include' });
+    const data = await res.json();
+    if (!res.ok || !data.valid) {
+      msgEl.textContent = data.error || '優惠碼無效';
+      msgEl.style.cssText = 'margin-top:8px;font-size:12px;display:block;color:var(--red);';
+      _bookingCoupon = null;
+      _refreshCouponDisplay();
+      return;
+    }
+    _bookingCoupon = data;
+    if (!_bookingOriginalPrice) {
+      _bookingOriginalPrice = amount;
+    }
+    msgEl.innerHTML = `✅ ${data.coupon.name}：<strong>${data.discount_str}</strong>`;
+    msgEl.style.cssText = 'margin-top:8px;font-size:12px;display:block;color:var(--teal);font-weight:600;';
+    document.getElementById('coupon-remove-btn').style.display = '';
+    _refreshCouponDisplay();
+  } catch(e) {
+    msgEl.textContent = '驗證失敗，請稍後再試';
+    msgEl.style.cssText = 'margin-top:8px;font-size:12px;display:block;color:var(--red);';
+  }
+}
+
+function removeBookingCoupon() {
+  _bookingCoupon = null;
+  const codeEl = document.getElementById('booking-coupon-code');
+  if (codeEl) codeEl.value = '';
+  const msgEl = document.getElementById('coupon-apply-msg');
+  if (msgEl) msgEl.style.display = 'none';
+  const removeBtn = document.getElementById('coupon-remove-btn');
+  if (removeBtn) removeBtn.style.display = 'none';
+  _refreshCouponDisplay();
+}
+
+function _refreshCouponDisplay() {
+  const discountRow = document.getElementById('sum-discount-row');
+  const discountEl  = document.getElementById('sum-discount');
+  const originalRow = document.getElementById('sum-original-row');
+  const originalEl  = document.getElementById('sum-original');
+  const priceEl     = document.getElementById('sum-price');
+  if (!priceEl) return;
+  if (_bookingCoupon && _bookingCoupon.discount > 0) {
+    const orig = _bookingOriginalPrice;
+    const final = Math.max(0, orig - _bookingCoupon.discount);
+    priceEl.textContent = `NT$ ${final.toLocaleString()}`;
+    if (discountRow) discountRow.style.display = '';
+    if (discountEl) discountEl.textContent = `-NT$ ${_bookingCoupon.discount.toLocaleString()}`;
+    if (originalRow) originalRow.style.display = '';
+    if (originalEl) originalEl.textContent = `NT$ ${orig.toLocaleString()}`;
+  } else {
+    if (discountRow) discountRow.style.display = 'none';
+    if (originalRow) originalRow.style.display = 'none';
+    // restore original price
+    if (_bookingOriginalPrice) priceEl.textContent = `NT$ ${_bookingOriginalPrice.toLocaleString()}`;
+  }
+}
+
+function _setBookingOriginalPrice(price) {
+  if (!_bookingCoupon) _bookingOriginalPrice = price;
+  else {
+    _bookingOriginalPrice = price;
+    _refreshCouponDisplay();
+  }
+}
+
+function useCouponInBooking(code) {
+  // 從優惠券頁面點「立即使用」
+  closeMcPanel();
+  closeMemberCenter();
+  scrollToBooking();
+  setTimeout(() => {
+    const el = document.getElementById('booking-coupon-code');
+    if (el) { el.value = code; el.focus(); applyBookingCoupon(); }
+    const box = document.getElementById('coupon-apply-box');
+    if (box) box.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
+  }, 500);
 }
 
 async function claimCoupon() {

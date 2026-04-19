@@ -1406,6 +1406,9 @@ class Booking(db.Model):
     duration       = db.Column(db.Float, default=1)
     segments       = db.Column(db.Text)   # JSON: [{"start":"08:30","end":"10:00"},...]
     total_price    = db.Column(db.Integer, default=0)
+    original_price = db.Column(db.Integer, default=0)   # 折扣前原價
+    coupon_code    = db.Column(db.String(50), default='')
+    discount_amount= db.Column(db.Integer, default=0)   # 實際折抵金額
     attendees      = db.Column(db.Integer, default=1)
     purpose        = db.Column(db.Text)
     status         = db.Column(db.String(20), default='pending')
@@ -1425,6 +1428,9 @@ class Booking(db.Model):
             'date': self.date, 'start_time': self.start_time, 'end_time': self.end_time,
             'segments': self.segments,
             'duration': self.duration, 'total_price': self.total_price,
+            'original_price': self.original_price or self.total_price,
+            'coupon_code': self.coupon_code or '',
+            'discount_amount': self.discount_amount or 0,
             'attendees': self.attendees, 'purpose': self.purpose,
             'status': self.status, 'note': self.note,
             'created_at': self.created_at.strftime('%Y-%m-%d %H:%M') if self.created_at else ''
@@ -2190,7 +2196,30 @@ def create_booking():
         if dur > 24:
             return jsonify({'error': '單次預約不能超過 24 小時'}), 400
 
-        price = max(0, int(dur * room.hourly_rate))
+        original_price = max(0, int(dur * room.hourly_rate))
+        price = original_price
+        coupon_code    = ''
+        discount_amount = 0
+        # ── 優惠碼套用 ──
+        _coupon_code = (data.get('coupon_code') or '').strip().upper()
+        if _coupon_code:
+            _c = Coupon.query.filter_by(code=_coupon_code, is_active=True).first()
+            if _c:
+                today_str = tw_now().strftime('%Y-%m-%d')
+                _ok = (not _c.start_date or today_str >= _c.start_date) and \
+                      (not _c.end_date or today_str <= _c.end_date) and \
+                      (not _c.max_uses or _c.used_count < _c.max_uses) and \
+                      (not _c.min_spend or original_price >= _c.min_spend)
+                if _ok:
+                    _mc = MemberCoupon.query.filter_by(
+                        member_id=session.get('member_id'), coupon_id=_c.id).first()
+                    if _mc and not _mc.is_used:
+                        if _c.discount_type == 'percent':
+                            discount_amount = round(original_price * (_c.discount_value / 100))
+                        else:
+                            discount_amount = min(int(_c.discount_value), original_price)
+                        price = max(0, original_price - discount_amount)
+                        coupon_code = _coupon_code
 
         line_uid = data.get('line_user_id', '')
         if not line_uid and data.get('phone'):
@@ -2218,24 +2247,39 @@ def create_booking():
                     return jsonify({'error': '此時段剛被預約，請重新選擇'}), 400
 
             booking = Booking(
-                booking_number = generate_booking_number(),
-                room_id        = room.id,
-                customer_name  = data['name'],
-                customer_phone = data['phone'],
-                customer_email = data.get('email', ''),
-                department     = data.get('department', ''),
-                date           = data['date'],
-                start_time     = start_time,
-                end_time       = end_time,
-                segments       = segments_json,
-                duration       = dur,
-                total_price    = price,
-                attendees      = data.get('attendees', 1),
-                purpose        = data.get('purpose', ''),
-                note           = data.get('note', ''),
-                line_user_id   = line_uid,
+                booking_number  = generate_booking_number(),
+                room_id         = room.id,
+                customer_name   = data['name'],
+                customer_phone  = data['phone'],
+                customer_email  = data.get('email', ''),
+                department      = data.get('department', ''),
+                date            = data['date'],
+                start_time      = start_time,
+                end_time        = end_time,
+                segments        = segments_json,
+                duration        = dur,
+                original_price  = original_price,
+                total_price     = price,
+                coupon_code     = coupon_code,
+                discount_amount = discount_amount,
+                attendees       = data.get('attendees', 1),
+                purpose         = data.get('purpose', ''),
+                note            = data.get('note', ''),
+                line_user_id    = line_uid,
             )
             db.session.add(booking)
+            db.session.flush()  # 取得 booking.id
+            # 標記優惠券已使用
+            if coupon_code and discount_amount > 0:
+                _c2 = Coupon.query.filter_by(code=coupon_code).first()
+                if _c2:
+                    _mc2 = MemberCoupon.query.filter_by(
+                        member_id=session.get('member_id'), coupon_id=_c2.id).first()
+                    if _mc2:
+                        _mc2.is_used = True
+                        _mc2.used_at = tw_now()
+                        _mc2.booking_id = booking.id
+                    _c2.used_count = (_c2.used_count or 0) + 1
             db.session.commit()
         booking = Booking.query.get(booking.id)
 
@@ -4224,6 +4268,30 @@ def seed():
     Room.query.filter(
         ~Room.floor.in_(['2F', '3F'])
     ).update({'floor': '3F'}, synchronize_session=False)
+    # ── 範例優惠券 ──
+    if Coupon.query.count() == 0:
+        _today = tw_now().strftime('%Y-%m-%d')
+        _yr = tw_now().year
+        _sample_coupons = [
+            {'code': 'WELCOME100', 'name': '新會員入會禮 NT$100',
+             'description': '完成會員註冊即可使用，折抵首次預約空間費用 NT$100。',
+             'discount_type': 'fixed', 'discount_value': 100.0, 'min_spend': 500.0,
+             'max_uses': 0, 'start_date': _today, 'end_date': f'{_yr}-12-31', 'is_active': True},
+            {'code': 'MEMBER9', 'name': '會員9折優惠券',
+             'description': '預約任意空間享 9 折折扣，限當月使用。',
+             'discount_type': 'percent', 'discount_value': 10.0, 'min_spend': 1000.0,
+             'max_uses': 200, 'start_date': _today, 'end_date': f'{_yr}-12-31', 'is_active': True},
+            {'code': 'VIP200', 'name': '貴賓專屬折抵 NT$200',
+             'description': '會員專屬優惠，單筆消費滿 NT$2,000 可折抵 NT$200。',
+             'discount_type': 'fixed', 'discount_value': 200.0, 'min_spend': 2000.0,
+             'max_uses': 100, 'start_date': _today, 'end_date': f'{_yr}-12-31', 'is_active': True},
+            {'code': 'SUMMER150', 'name': '夏季活動 NT$150 折扣',
+             'description': '夏季限定活動優惠，單筆滿 NT$800 折抵 NT$150。',
+             'discount_type': 'fixed', 'discount_value': 150.0, 'min_spend': 800.0,
+             'max_uses': 50, 'start_date': _today, 'end_date': f'{_yr}-08-31', 'is_active': True},
+        ]
+        for sc in _sample_coupons:
+            db.session.add(Coupon(**sc))
     # ── 兌換商品範例資料 ──
     if RedemptionItem.query.count() == 0:
         _sample_items = [
@@ -4392,7 +4460,7 @@ with app.app_context():
                 print('[migrate] 新增 rooms.advance_minutes 欄位')
     except Exception as e:
         print(f'[migrate] rooms 欄位補齊略過：{e}')
-    # ── bookings.status 欄位（確保欄位存在）──
+    # ── bookings 欄位補齊（status, coupon, discount）──
     try:
         _is_pg = 'sqlite' not in str(db.engine.url)
         _bk_q  = ("SELECT column_name FROM information_schema.columns WHERE table_name='bookings'"
@@ -4402,12 +4470,22 @@ with app.app_context():
                 _bk_cols = [r[0] for r in _conn.execute(db.text(_bk_q)).fetchall()]
             else:
                 _bk_cols = [r[1] for r in _conn.execute(db.text(_bk_q)).fetchall()]
-            if 'status' not in _bk_cols:
-                _conn.execute(db.text("ALTER TABLE bookings ADD COLUMN status VARCHAR(20) DEFAULT 'pending'"))
-                _conn.commit()
-                print('[migrate] 新增 bookings.status 欄位')
+            _bk_new = {
+                'status':          "ALTER TABLE bookings ADD COLUMN status VARCHAR(20) DEFAULT 'pending'",
+                'original_price':  'ALTER TABLE bookings ADD COLUMN original_price INTEGER DEFAULT 0',
+                'coupon_code':     "ALTER TABLE bookings ADD COLUMN coupon_code VARCHAR(50) DEFAULT ''",
+                'discount_amount': 'ALTER TABLE bookings ADD COLUMN discount_amount INTEGER DEFAULT 0',
+            }
+            for col, sql in _bk_new.items():
+                if col not in _bk_cols:
+                    try:
+                        _conn.execute(db.text(sql))
+                        _conn.commit()
+                        print(f'[migrate] 新增 bookings.{col} 欄位')
+                    except Exception as _ce:
+                        print(f'[migrate] bookings.{col} 略過：{_ce}')
     except Exception as e:
-        print(f'[migrate] bookings.status 略過：{e}')
+        print(f'[migrate] bookings 欄位略過：{e}')
     # ── admin_users.password_hash 欄位加長（VARCHAR(128) → VARCHAR(256)）──
     try:
         _is_pg = 'sqlite' not in str(db.engine.url)
@@ -4845,6 +4923,15 @@ def member_register():
                 return jsonify({'error': '此手機號碼已被使用，請直接登入或使用其他號碼。'}), 400
             return jsonify({'error': '此帳號資訊已被使用，請直接登入。'}), 400
         return jsonify({'error': '註冊失敗，請稍後再試。'}), 500
+
+    # ── 自動發放入會禮優惠券（WELCOME100）──
+    try:
+        _join_coupon = Coupon.query.filter_by(code='WELCOME100', is_active=True).first()
+        if _join_coupon:
+            db.session.add(MemberCoupon(member_id=m.id, coupon_id=_join_coupon.id))
+            db.session.commit()
+    except Exception as _jce:
+        print(f'[register] 入會禮發放失敗：{_jce}')
 
     # 寄送驗證信
     if email and m.email_verify_token:
@@ -5350,6 +5437,51 @@ def member_get_coupons():
                        'used_at': mc.used_at.strftime('%Y-%m-%d') if mc.used_at else '',
                        'claimed_at': mc.created_at.strftime('%Y-%m-%d') if mc.created_at else ''})
     return jsonify(result)
+
+@app.route('/api/coupon/validate', methods=['GET'])
+def coupon_validate():
+    """驗證優惠碼是否可用，回傳折扣資訊（不需登入，但登入後會驗證是否已領取）"""
+    code = request.args.get('code', '').strip().upper()
+    amount = float(request.args.get('amount', 0) or 0)
+    if not code:
+        return jsonify({'valid': False, 'error': '請輸入優惠碼'}), 400
+    c = Coupon.query.filter_by(code=code, is_active=True).first()
+    if not c:
+        return jsonify({'valid': False, 'error': '優惠碼不存在或已停用'}), 404
+    today = tw_now().strftime('%Y-%m-%d')
+    if c.start_date and today < c.start_date:
+        return jsonify({'valid': False, 'error': f'優惠券 {c.start_date} 才開始'}), 400
+    if c.end_date and today > c.end_date:
+        return jsonify({'valid': False, 'error': '優惠券已過期'}), 400
+    if c.max_uses and c.used_count >= c.max_uses:
+        return jsonify({'valid': False, 'error': '優惠券已達使用上限'}), 400
+    # 登入會員：確認是否已領取、是否已用過
+    mid = session.get('member_id')
+    if mid:
+        mc = MemberCoupon.query.filter_by(member_id=mid, coupon_id=c.id).first()
+        if mc and mc.is_used:
+            return jsonify({'valid': False, 'error': '您已使用過此優惠券'}), 400
+    # 最低消費驗證
+    if c.min_spend and amount > 0 and amount < c.min_spend:
+        return jsonify({'valid': False,
+                        'error': f'此優惠券需單筆消費滿 NT${int(c.min_spend)} 才可使用',
+                        'min_spend': c.min_spend}), 400
+    # 計算折扣
+    if c.discount_type == 'percent':
+        discount = round(amount * (c.discount_value / 100)) if amount > 0 else 0
+        discount_str = f'{c.discount_value}% 折扣'
+    else:
+        discount = int(c.discount_value)
+        discount_str = f'折抵 NT${discount}'
+    final = max(0, int(amount) - discount) if amount > 0 else None
+    return jsonify({
+        'valid': True,
+        'coupon': c.to_dict(),
+        'discount': discount,
+        'discount_str': discount_str,
+        'final_price': final,
+    })
+
 
 @app.route('/api/member/coupons/claim', methods=['POST'])
 def member_claim_coupon():

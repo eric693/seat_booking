@@ -5789,12 +5789,18 @@ async function uploadRedemptionImage(input) {
   if (!file) return;
   const fd = new FormData(); fd.append('image', file);
   try {
-    const res = await fetch('/admin/api/redemption/upload-image', { method: 'POST', credentials: 'include', body: fd });
+    const res = await fetch('/admin/api/redemption/upload-image', {
+      method: 'POST', credentials: 'include',
+      headers: { 'X-Admin-Password': PW },
+      body: fd
+    });
     const data = await res.json();
     if (data.url) {
       document.getElementById('rdm-item-image').value = data.url;
       const prev = document.getElementById('rdm-item-preview');
       prev.src = data.url; prev.style.display = '';
+    } else {
+      alert(data.error || '圖片上傳失敗');
     }
   } catch(e) { alert('圖片上傳失敗'); }
 }

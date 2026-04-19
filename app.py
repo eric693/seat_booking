@@ -1812,15 +1812,20 @@ class RedemptionRecord(db.Model):
 
 def check_admin():
     uid = session.get('admin_user_id')
-    if not uid:
+    if uid is not None:
+        if uid == 0:
+            return None
+        u = AdminUser.query.get(uid)
+        if u and u.is_active:
+            return None
+        session.clear()
         return jsonify({'error': 'Unauthorized'}), 401
-    if uid == 0:
-        # 舊版 session（初始帳號），仍允許但限制為 superadmin
-        return None
-    u = AdminUser.query.get(uid)
-    if u and u.is_active:
-        return None
-    session.clear()
+    # 也接受 X-Admin-Password header（上傳等無法夾帶 session 的情境）
+    pw = request.headers.get('X-Admin-Password')
+    if pw:
+        u = AdminUser.query.filter_by(username='admin').first()
+        if u and u.check_password(pw):
+            return None
     return jsonify({'error': 'Unauthorized'}), 401
 
 

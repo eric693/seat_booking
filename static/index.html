@@ -1201,13 +1201,13 @@ footer {
 .mc-card-visits-u { font-size: 13px; color: var(--ink-60); }
 .mc-upgrade-bar-wrap { margin-bottom: 10px; }
 .mc-upgrade-bar-track {
-  height: 5px; background: #e0e0e0; border-radius: 3px; overflow: hidden; margin-bottom: 8px;
+  height: 6px; background: rgba(15,15,15,0.08); border-radius: 4px; overflow: hidden;
 }
 .mc-upgrade-bar-fill {
   height: 100%; background: linear-gradient(90deg, var(--gold-light), var(--gold));
-  border-radius: 3px; transition: width 0.5s ease;
+  border-radius: 4px; transition: width 0.7s cubic-bezier(.25,.8,.25,1);
 }
-.mc-upgrade-hint { font-size: 12px; color: var(--ink-60); text-align: right; }
+.mc-upgrade-hint { font-size: 11px; color: var(--ink-60); }
 .mc-card-deco {
   position: absolute; right: -10px; top: 50%; transform: translateY(-50%);
   opacity: 0.06; pointer-events: none;
@@ -2913,7 +2913,15 @@ footer {
               累計消費 <strong id="mc-cumul-spend">$0</strong><br>
               累計到訪 <strong id="mc-cumul-visits">0</strong> 次
             </div>
-            <div class="mc-info-hint" id="mc-upgrade-hint-text2">累積消費提升會員等級</div>
+            <div class="mc-upgrade-bar-wrap" id="mc-upgrade-bar-wrap">
+              <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:5px;">
+                <span style="font-size:11px;color:var(--ink-60);" id="mc-upgrade-hint-text2">累積消費提升會員等級</span>
+                <span style="font-size:11px;font-weight:600;color:var(--ink-60);" id="mc-upgrade-bar-pct">0%</span>
+              </div>
+              <div class="mc-upgrade-bar-track">
+                <div class="mc-upgrade-bar-fill" id="mc-upgrade-bar-fill" style="width:0%"></div>
+              </div>
+            </div>
             <div id="mc-vip-badge" class="mc-info-vip" style="display:none;">🃏 VIP 鼎極卡 · <span id="mc-vip-pct"></span>折優惠</div>
           </div>
           <button class="mc-info-btn white" id="mc-info-terms-btn" onclick="openMemberTerms()">會員權益說明 ›</button>
@@ -5726,17 +5734,20 @@ async function _loadMcStats() {
         gt = Number(ts.green_threshold) || 6000;
         bt = Number(ts.black_threshold) || 20000;
       } catch {}
-      // Determine tier
-      let tierName, tierKey, hint2;
+      // Determine tier + progress bar
+      let tierName, tierKey, hint2, barPct = 0;
       if (total >= bt) {
         tierName = '黑卡會員'; tierKey = 'black';
         hint2 = '您已達頂級黑卡會員，感謝支持！';
+        barPct = 100;
       } else if (total >= gt) {
         tierName = '綠卡會員'; tierKey = 'green';
         hint2 = `再累計 $${(bt - total).toLocaleString()} 可升等黑卡`;
+        barPct = Math.min(99, Math.round((total - gt) / (bt - gt) * 100));
       } else {
         tierName = '白卡會員'; tierKey = 'white';
         hint2 = `再累計 $${(gt - total).toLocaleString()} 可升等綠卡`;
+        barPct = Math.min(99, Math.round(total / gt * 100));
       }
       // Update legacy IDs
       document.getElementById('mc-card-tier-label').textContent = tierName;
@@ -5745,6 +5756,19 @@ async function _loadMcStats() {
       if (infoTier) { infoTier.textContent = tierName; infoTier.className = 'mc-info-tier ' + tierKey; }
       const hint2El = document.getElementById('mc-upgrade-hint-text2');
       if (hint2El) hint2El.textContent = hint2;
+      // Animate progress bar
+      const barFill = document.getElementById('mc-upgrade-bar-fill');
+      const barPctEl = document.getElementById('mc-upgrade-bar-pct');
+      if (barFill) {
+        const barColors = {
+          white: 'linear-gradient(90deg,#f2e8d5,#b8965a)',
+          green: 'linear-gradient(90deg,#7ecf9e,#2d7a4f)',
+          black: 'linear-gradient(90deg,#f2e8d5,#b8965a)',
+        };
+        barFill.style.background = barColors[tierKey] || barColors.white;
+        setTimeout(() => { barFill.style.width = barPct + '%'; }, 150);
+      }
+      if (barPctEl) barPctEl.textContent = barPct >= 100 ? '頂級' : barPct + '%';
       // Update physical card color
       const physCard = document.getElementById('mc-phys-card');
       if (physCard) physCard.className = 'mc-phys-card ' + tierKey;

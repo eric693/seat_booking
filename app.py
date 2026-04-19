@@ -4258,6 +4258,16 @@ def admin_update_site_content():
 # Admin — Stats
 # ─────────────────────────────────────────────
 
+@app.route('/admin/api/storage-status', methods=['GET'])
+def admin_storage_status():
+    err = check_admin()
+    if err: return err
+    return jsonify({
+        'use_cloudinary': USE_CLOUDINARY,
+        'cloud_name': CLOUDINARY_CLOUD_NAME if USE_CLOUDINARY else '',
+    })
+
+
 @app.route('/admin/api/stats', methods=['GET'])
 def admin_get_stats():
     err = check_admin()
@@ -6285,16 +6295,13 @@ def admin_upload_redemption_image():
     f = request.files.get('image')
     if not f or not allowed_file(f.filename):
         return jsonify({'error': '請上傳圖片（png/jpg/gif/webp）'}), 400
+    if USE_CLOUDINARY:
+        url = _upload_to_cloudinary(f)
+        if url:
+            return jsonify({'url': url})
+        return jsonify({'error': 'Cloudinary 上傳失敗，請確認設定'}), 500
     ext = f.filename.rsplit('.', 1)[1].lower()
     filename = f'redemption_{uuid.uuid4().hex}.{ext}'
-    if USE_CLOUDINARY:
-        try:
-            import cloudinary.uploader
-            res = cloudinary.uploader.upload(f, public_id=f'redemption/{filename}', resource_type='image')
-            url = res.get('secure_url', '')
-            return jsonify({'url': url})
-        except Exception as e:
-            print(f'[Cloudinary] {e}')
     save_path = os.path.join(UPLOAD_FOLDER, filename)
     f.save(save_path)
     return jsonify({'url': f'/static/uploads/{filename}'})

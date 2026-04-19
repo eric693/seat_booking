@@ -1044,6 +1044,7 @@ input[list]::-webkit-calendar-picker-indicator { display: none !important; }
 
     <!-- ── PHOTOS ── -->
     <div class="page" id="page-photos">
+      <div id="storage-status-banner" style="margin-bottom:16px;display:none;"></div>
       <div class="card">
         <div class="card-head">
           <div class="card-title">會議室照片管理</div>
@@ -1311,6 +1312,7 @@ input[list]::-webkit-calendar-picker-indicator { display: none !important; }
 
     <!-- ── 點數兌換管理 ── -->
     <div class="page" id="page-redemption">
+      <div id="storage-status-banner-rdm" style="margin-bottom:16px;display:none;"></div>
       <!-- 商品管理 -->
       <div class="card" style="margin-bottom:20px;">
         <div class="card-head" style="flex-wrap:wrap;gap:8px;">
@@ -3239,6 +3241,26 @@ setTimeout(() => {
 
 // ── PHOTOS (★ 完整重寫，支援拖曳排序) ──
 async function loadPhotos() {
+  // 檢查圖片儲存狀態
+  try {
+    const sr = await fetch('/admin/api/storage-status', { headers: H });
+    const ss = await sr.json();
+    const banner = document.getElementById('storage-status-banner');
+    if (banner) {
+      if (ss.use_cloudinary) {
+        banner.style.display = 'block';
+        banner.innerHTML = `<div style="background:var(--green-light);border:1px solid rgba(58,124,85,0.25);border-radius:8px;padding:10px 16px;font-size:13px;color:var(--green);">圖片已設定使用 <strong>Cloudinary</strong> 雲端儲存（${ss.cloud_name}），重新部署後圖片不會消失。</div>`;
+      } else {
+        banner.style.display = 'block';
+        banner.innerHTML = `<div style="background:#fff8e1;border:1px solid #f5c518;border-radius:8px;padding:12px 16px;font-size:13px;color:#7a5c00;line-height:1.7;">
+          <strong>圖片目前儲存在伺服器本地，重新部署後會消失。</strong><br>
+          請至 <a href="https://cloudinary.com" target="_blank" style="color:var(--teal);">cloudinary.com</a> 免費註冊，取得 Cloud Name / API Key / API Secret，<br>
+          然後在 Render 後台的 <strong>Environment Variables</strong> 中設定：<br>
+          <code style="background:#f5f5f5;padding:2px 6px;border-radius:4px;font-size:12px;">CLOUDINARY_CLOUD_NAME &nbsp; CLOUDINARY_API_KEY &nbsp; CLOUDINARY_API_SECRET</code>
+        </div>`;
+      }
+    }
+  } catch {}
   try {
     const res = await fetch('/admin/api/rooms', { headers: H });
     allRooms = await res.json();
@@ -5871,6 +5893,19 @@ let _rdmItemsAdmin = [];
 let _rdmRecordsAdmin = [];
 
 async function loadAdminRedemptionItems() {
+  // 檢查圖片儲存狀態
+  try {
+    const sr = await fetch('/admin/api/storage-status', { headers: H });
+    const ss = await sr.json();
+    const banner = document.getElementById('storage-status-banner-rdm');
+    if (banner && !ss.use_cloudinary) {
+      banner.style.display = 'block';
+      banner.innerHTML = `<div style="background:#fff8e1;border:1px solid #f5c518;border-radius:8px;padding:10px 16px;font-size:13px;color:#7a5c00;">
+        商品圖片目前儲存在伺服器本地，<strong>重新部署後會消失</strong>。請設定 Cloudinary 環境變數以持久保存圖片。
+        <a href="#" onclick="showPage('photos',null);return false;" style="color:var(--teal);margin-left:4px;">查看設定說明 &rsaquo;</a>
+      </div>`;
+    } else if (banner) { banner.style.display = 'none'; }
+  } catch {}
   const tbody = document.getElementById('admin-rdm-items-body');
   tbody.innerHTML = '<tr><td colspan="8" style="text-align:center;padding:20px;color:var(--ink-60);">載入中...</td></tr>';
   try {

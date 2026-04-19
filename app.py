@@ -5369,6 +5369,93 @@ def admin_adjust_points(mid):
     return jsonify({'success': True, 'balance': m.points})
 
 
+# ─────────────────────────────────────────────
+# 掃碼累點 API
+# ─────────────────────────────────────────────
+
+@app.route('/admin/api/scan/member', methods=['GET'])
+def scan_lookup_member():
+    err = check_admin()
+    if err: return err
+    code = request.args.get('code', '').strip()
+    if not code:
+        return jsonify({'error': '請輸入或掃描條碼'}), 400
+    try:
+        mid = int(code)
+    except ValueError:
+        return jsonify({'error': '無效條碼格式'}), 400
+    m = Member.query.get(mid)
+    if not m:
+        return jsonify({'error': '查無此會員，請確認條碼是否正確'}), 404
+    if m.is_blocked:
+        return jsonify({'error': f'此會員已停用（{m.block_reason or ""}）'}), 403
+    return jsonify({
+        'id': m.id,
+        'name': m.name,
+        'phone': m.phone or '',
+        'email': m.email or '',
+        'points': m.points or 0,
+        'member_number': str(m.id).zfill(10),
+        'created_at': m.created_at.strftime('%Y-%m-%d') if m.created_at else '',
+    })
+
+
+@app.route('/admin/api/scan/earn-points', methods=['POST'])
+def scan_earn_points():
+    err = check_admin()
+    if err: return err
+    d = request.get_json() or {}
+    mid = d.get('member_id')
+    amount = float(d.get('amount', 0))
+    note = d.get('note', '').strip()
+    if not mid:
+        return jsonify({'error': '缺少會員 ID'}), 400
+    if amount <= 0:
+        return jsonify({'error': '消費金額必須大於 0'}), 400
+    m = Member.query.get(mid)
+    if not m:
+        return jsonify({'error': '查無此會員'}), 404
+    pts = int(amount // 10)
+    if pts <= 0:
+        return jsonify({'error': f'消費金額 NT${amount:.0f} 不足以獲得點數（每 NT$10 = 1 點）'}), 400
+    desc = f'掃碼累點 NT${amount:.0f}' + (f'（{note}）' if note else '')
+    m.points = (m.points or 0) + pts
+    db.session.add(PointTransaction(
+        member_id=m.id, type='earn', points=pts, description=desc
+    ))
+    db.session.commit()
+    return jsonify({
+        'success': True,
+        'member_name': m.name,
+        'earned': pts,
+        'new_balance': m.points,
+        'description': desc,
+    })
+
+
+@app.route('/admin/api/scan/history', methods=['GET'])
+def scan_history():
+    err = check_admin()
+    if err: return err
+    txs = (PointTransaction.query
+           .filter(PointTransaction.description.like('掃碼累點%'))
+           .order_by(PointTransaction.created_at.desc())
+           .limit(50).all())
+    result = []
+    for t in txs:
+        m = Member.query.get(t.member_id)
+        result.append({
+            'id': t.id,
+            'member_id': t.member_id,
+            'member_name': m.name if m else '—',
+            'member_phone': m.phone if m else '',
+            'points': t.points,
+            'description': t.description,
+            'created_at': t.created_at.strftime('%Y-%m-%d %H:%M') if t.created_at else '',
+        })
+    return jsonify(result)
+
+
 if __name__ == '__main__':
     print('\n會議室預約系統啟動中...')
     print('   前台預約：http://localhost:5000')

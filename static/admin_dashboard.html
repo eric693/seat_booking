@@ -740,6 +740,9 @@ input[list]::-webkit-calendar-picker-indicator { display: none !important; }
     <div class="nav-item" onclick="showPage('coupons',this)">
       <span class="nav-icon">🎟️</span> 優惠券管理
     </div>
+    <div class="nav-item" onclick="showPage('scan',this)">
+      <span class="nav-icon"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"><rect x="3" y="10" width="3" height="7"/><rect x="7" y="6" width="1.5" height="11"/><rect x="10" y="10" width="2" height="7"/><rect x="13.5" y="6" width="1.5" height="11"/><rect x="16.5" y="10" width="3" height="7"/><line x1="1" y1="3" x2="1" y2="8" stroke-width="2"/><line x1="1" y1="3" x2="6" y2="3" stroke-width="2"/><line x1="23" y1="3" x2="23" y2="8" stroke-width="2"/><line x1="23" y1="3" x2="18" y2="3" stroke-width="2"/><line x1="1" y1="21" x2="1" y2="16" stroke-width="2"/><line x1="1" y1="21" x2="6" y2="21" stroke-width="2"/><line x1="23" y1="21" x2="23" y2="16" stroke-width="2"/><line x1="23" y1="21" x2="18" y2="21" stroke-width="2"/></svg></span> 掃碼累點
+    </div>
     <div class="nav-item" onclick="showPage('chat',this)" id="nav-chat">
       <span class="nav-icon"><svg width="16" height="16" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M14 2H2a1 1 0 00-1 1v8a1 1 0 001 1h3l2 2 2-2h5a1 1 0 001-1V3a1 1 0 00-1-1z"/><path d="M5 6h6M5 9h4"/></svg></span> 聊天記錄
       <span id="chat-unread-badge" style="display:none;background:var(--red);color:#fff;border-radius:10px;font-size:10px;font-weight:700;padding:1px 6px;margin-left:4px;"></span>
@@ -1140,6 +1143,115 @@ input[list]::-webkit-calendar-picker-indicator { display: none !important; }
       </div>
     </div>
 
+
+    <!-- ── SCAN & EARN POINTS ── -->
+    <div class="page" id="page-scan">
+      <div style="display:grid;grid-template-columns:1fr 1fr;gap:20px;align-items:start;">
+
+        <!-- 左欄：掃碼操作 -->
+        <div>
+          <!-- 掃碼輸入 -->
+          <div class="card" style="margin-bottom:20px;">
+            <div class="card-head"><h2 class="card-title">掃碼累點</h2></div>
+            <div class="card-body">
+              <div style="margin-bottom:16px;">
+                <label style="font-size:13px;font-weight:600;display:block;margin-bottom:6px;color:var(--ink-60);">掃描或輸入會員條碼</label>
+                <div style="display:flex;gap:8px;">
+                  <div style="flex:1;position:relative;">
+                    <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" style="position:absolute;left:12px;top:50%;transform:translateY(-50%);opacity:0.4;"><rect x="3" y="9" width="3" height="6"/><rect x="7" y="5" width="1.5" height="14"/><rect x="10" y="9" width="2" height="6"/><rect x="13.5" y="5" width="1.5" height="14"/><rect x="16.5" y="9" width="3" height="6"/></svg>
+                    <input id="scan-barcode-input" type="text" class="finput" inputmode="numeric" autocomplete="off"
+                      placeholder="掃描條碼或輸入10位會員號碼"
+                      style="padding-left:38px;font-size:15px;letter-spacing:2px;font-family:monospace;"
+                      onkeydown="if(event.key==='Enter')doScanLookup()"
+                      oninput="onScanInputChange()">
+                  </div>
+                  <button class="btn btn-primary" onclick="doScanLookup()" style="white-space:nowrap;">查詢</button>
+                  <button class="btn btn-outline" onclick="clearScan()" title="清除">✕</button>
+                </div>
+                <div style="font-size:11px;color:var(--ink-60);margin-top:6px;">💡 使用條碼掃描器對準條碼後自動辨識，或手動輸入 10 位會員號碼按 Enter</div>
+              </div>
+
+              <!-- 會員資訊卡 -->
+              <div id="scan-member-card" style="display:none;">
+                <div style="border:2px solid var(--teal);border-radius:12px;padding:16px 20px;background:linear-gradient(135deg,var(--teal-light) 0%,#fff 100%);">
+                  <div style="display:flex;align-items:center;gap:14px;">
+                    <div style="width:52px;height:52px;border-radius:50%;background:var(--teal);display:flex;align-items:center;justify-content:center;color:#fff;font-size:22px;font-weight:700;flex-shrink:0;" id="scan-member-avatar">M</div>
+                    <div style="flex:1;">
+                      <div style="font-size:18px;font-weight:700;" id="scan-member-name">—</div>
+                      <div style="font-size:12px;color:var(--ink-60);margin-top:2px;" id="scan-member-contact">—</div>
+                      <div style="font-size:11px;color:var(--ink-60);margin-top:1px;" id="scan-member-number">—</div>
+                    </div>
+                    <div style="text-align:right;">
+                      <div style="font-size:11px;color:var(--ink-60);">目前點數</div>
+                      <div style="font-size:26px;font-weight:800;color:var(--teal);" id="scan-member-points">—</div>
+                      <div style="font-size:11px;color:var(--ink-60);">點</div>
+                    </div>
+                  </div>
+                </div>
+                <div id="scan-error-banner" style="display:none;background:#fff0ee;color:var(--red);border:1px solid #ffcdd2;border-radius:8px;padding:10px 14px;font-size:13px;margin-top:8px;"></div>
+              </div>
+
+              <!-- 錯誤提示 -->
+              <div id="scan-lookup-error" style="display:none;background:#fff0ee;color:var(--red);border:1px solid #ffcdd2;border-radius:8px;padding:10px 14px;font-size:13px;margin-top:8px;"></div>
+            </div>
+          </div>
+
+          <!-- 累點表單 -->
+          <div class="card" id="scan-form-card" style="display:none;margin-bottom:20px;">
+            <div class="card-head"><h2 class="card-title">登記消費・累積點數</h2></div>
+            <div class="card-body">
+              <div style="margin-bottom:14px;">
+                <label style="font-size:13px;font-weight:600;display:block;margin-bottom:6px;">消費金額（NT$）</label>
+                <input id="scan-amount-input" type="number" class="finput" placeholder="輸入消費金額" min="1" step="1"
+                  style="font-size:20px;font-weight:700;text-align:right;" oninput="updatePointsPreview()">
+              </div>
+              <!-- 點數預覽 -->
+              <div id="scan-points-preview" style="background:#f0f9f4;border:1px solid #b7e4c7;border-radius:10px;padding:14px 16px;margin-bottom:14px;display:none;">
+                <div style="display:flex;align-items:center;justify-content:space-between;">
+                  <div>
+                    <div style="font-size:12px;color:var(--ink-60);">本次將獲得</div>
+                    <div style="font-size:28px;font-weight:800;color:var(--green);" id="scan-pts-earn">0</div>
+                    <div style="font-size:12px;color:var(--ink-60);margin-top:1px;">點（每 NT$10 = 1 點）</div>
+                  </div>
+                  <div style="text-align:right;">
+                    <div style="font-size:12px;color:var(--ink-60);">累積後點數</div>
+                    <div style="font-size:22px;font-weight:700;color:var(--teal);" id="scan-pts-after">—</div>
+                    <div style="font-size:11px;color:var(--ink-60);">點</div>
+                  </div>
+                </div>
+              </div>
+              <div style="margin-bottom:14px;">
+                <label style="font-size:13px;font-weight:600;display:block;margin-bottom:6px;">備注（選填）</label>
+                <input id="scan-note-input" type="text" class="finput" placeholder="如：書籍、餐飲、活動票券…">
+              </div>
+              <div id="scan-submit-msg" style="display:none;border-radius:8px;padding:10px 14px;font-size:13px;margin-bottom:12px;"></div>
+              <button class="btn btn-primary" id="scan-confirm-btn" onclick="doScanEarnPoints()" style="width:100%;padding:14px;font-size:15px;font-weight:700;">
+                ✅ 確認累點
+              </button>
+            </div>
+          </div>
+        </div>
+
+        <!-- 右欄：近期紀錄 -->
+        <div>
+          <div class="card">
+            <div class="card-head">
+              <h2 class="card-title">近期掃碼紀錄</h2>
+              <button class="btn btn-outline btn-sm" onclick="loadScanHistory()">重新整理</button>
+            </div>
+            <div class="table-wrap">
+              <table class="data-table">
+                <thead><tr><th>時間</th><th>會員</th><th>說明</th><th style="text-align:right;">獲得點數</th></tr></thead>
+                <tbody id="scan-history-tbody">
+                  <tr><td colspan="4" style="text-align:center;color:var(--ink-60);padding:30px;">載入中...</td></tr>
+                </tbody>
+              </table>
+            </div>
+          </div>
+        </div>
+
+      </div>
+    </div>
 
     <!-- ── COUPONS ── -->
     <div class="page" id="page-coupons">
@@ -1804,7 +1916,7 @@ function showPage(id, navEl) {
   document.getElementById(`page-${id}`).classList.add('active');
   document.querySelectorAll('.nav-item').forEach(n => n.classList.remove('active'));
   if (navEl) navEl.classList.add('active');
-  const titles = { dashboard:'儀表板', bookings:'預約管理', rooms:'會議室管理', content:'文字內容編輯', photos:'照片管理', formfields:'表單欄位管理', blocked:'封鎖時段管理', lineusers:'LINE 用戶管理', members:'會員管理', coupons:'優惠券管理', chat:'聊天記錄', lineqa:'QA 問答設定', payment:'付款設定', accounts:'帳號管理', logs:'登入紀錄' };
+  const titles = { dashboard:'儀表板', bookings:'預約管理', rooms:'會議室管理', content:'文字內容編輯', photos:'照片管理', formfields:'表單欄位管理', blocked:'封鎖時段管理', lineusers:'LINE 用戶管理', members:'會員管理', coupons:'優惠券管理', scan:'掃碼累點', chat:'聊天記錄', lineqa:'QA 問答設定', payment:'付款設定', accounts:'帳號管理', logs:'登入紀錄' };
   document.getElementById('topbarTitle').textContent = titles[id] || '';
   switch(id) {
     case 'dashboard': initFloorDate(); loadDashboard(); loadFloorStatus(); break;
@@ -1818,6 +1930,7 @@ function showPage(id, navEl) {
     case 'lineusers':  loadLineUsers(); break;
     case 'members':    loadMembers(); break;
     case 'coupons':    loadCoupons(); break;
+    case 'scan':       initScanPage(); break;
     case 'chat':       loadChatSessions(); break;
     case 'lineqa':     loadLineQA(); break;
     case 'payment':   loadPaymentSettings(); break;
@@ -4447,6 +4560,163 @@ loadDashboard();
 loadFloorStatus();
 startDashClock();
 startStatsAutoRefresh();
+
+// ─────────────────────────────────────────────
+// 掃碼累點
+// ─────────────────────────────────────────────
+let _scanMember = null;
+
+function initScanPage() {
+  clearScan();
+  loadScanHistory();
+  setTimeout(() => document.getElementById('scan-barcode-input')?.focus(), 100);
+}
+
+function clearScan() {
+  _scanMember = null;
+  document.getElementById('scan-barcode-input').value = '';
+  document.getElementById('scan-member-card').style.display = 'none';
+  document.getElementById('scan-lookup-error').style.display = 'none';
+  document.getElementById('scan-form-card').style.display = 'none';
+  document.getElementById('scan-amount-input').value = '';
+  document.getElementById('scan-note-input').value = '';
+  document.getElementById('scan-points-preview').style.display = 'none';
+  document.getElementById('scan-submit-msg').style.display = 'none';
+  document.getElementById('scan-barcode-input').focus();
+}
+
+function onScanInputChange() {
+  // Auto-lookup when exactly 10 digits are entered (typical barcode scanner behaviour)
+  const val = document.getElementById('scan-barcode-input').value.trim();
+  if (/^\d{10}$/.test(val)) {
+    setTimeout(doScanLookup, 80);
+  }
+}
+
+async function doScanLookup() {
+  const code = document.getElementById('scan-barcode-input').value.trim();
+  if (!code) return;
+  document.getElementById('scan-lookup-error').style.display = 'none';
+  document.getElementById('scan-member-card').style.display = 'none';
+  document.getElementById('scan-form-card').style.display = 'none';
+  try {
+    const res = await fetch(`/admin/api/scan/member?code=${encodeURIComponent(code)}`, { headers: H });
+    const data = await res.json();
+    if (!res.ok) {
+      const errEl = document.getElementById('scan-lookup-error');
+      errEl.textContent = data.error || '查詢失敗';
+      errEl.style.display = 'block';
+      _scanMember = null;
+      return;
+    }
+    _scanMember = data;
+    // Populate member card
+    const initial = (data.name || '?')[0].toUpperCase();
+    document.getElementById('scan-member-avatar').textContent = initial;
+    document.getElementById('scan-member-name').textContent = data.name;
+    document.getElementById('scan-member-contact').textContent = [data.email, data.phone].filter(Boolean).join('  ·  ');
+    document.getElementById('scan-member-number').textContent = `會員號碼：${data.member_number}`;
+    document.getElementById('scan-member-points').textContent = (data.points || 0).toLocaleString();
+    document.getElementById('scan-member-card').style.display = 'block';
+    document.getElementById('scan-error-banner').style.display = 'none';
+    document.getElementById('scan-form-card').style.display = 'block';
+    document.getElementById('scan-submit-msg').style.display = 'none';
+    document.getElementById('scan-confirm-btn').disabled = false;
+    document.getElementById('scan-confirm-btn').textContent = '✅ 確認累點';
+    document.getElementById('scan-amount-input').focus();
+  } catch(e) {
+    const errEl = document.getElementById('scan-lookup-error');
+    errEl.textContent = '網路錯誤，請稍後再試';
+    errEl.style.display = 'block';
+  }
+}
+
+function updatePointsPreview() {
+  const amount = parseFloat(document.getElementById('scan-amount-input').value) || 0;
+  const preview = document.getElementById('scan-points-preview');
+  if (!_scanMember || amount <= 0) { preview.style.display = 'none'; return; }
+  const pts = Math.floor(amount / 10);
+  preview.style.display = 'block';
+  document.getElementById('scan-pts-earn').textContent = pts;
+  document.getElementById('scan-pts-after').textContent = ((_scanMember.points || 0) + pts).toLocaleString();
+}
+
+async function doScanEarnPoints() {
+  if (!_scanMember) return;
+  const amount = parseFloat(document.getElementById('scan-amount-input').value) || 0;
+  const note = document.getElementById('scan-note-input').value.trim();
+  const msgEl = document.getElementById('scan-submit-msg');
+  msgEl.style.display = 'none';
+  if (amount <= 0) {
+    msgEl.textContent = '請輸入消費金額';
+    msgEl.style.background = '#fff0ee'; msgEl.style.color = 'var(--red)';
+    msgEl.style.display = 'block'; return;
+  }
+  const pts = Math.floor(amount / 10);
+  if (pts <= 0) {
+    msgEl.textContent = `金額 NT$${amount} 不足獲得點數（需滿 NT$10）`;
+    msgEl.style.background = '#fff0ee'; msgEl.style.color = 'var(--red)';
+    msgEl.style.display = 'block'; return;
+  }
+  const btn = document.getElementById('scan-confirm-btn');
+  btn.disabled = true; btn.textContent = '處理中...';
+  try {
+    const res = await fetch('/admin/api/scan/earn-points', {
+      method: 'POST', headers: H,
+      body: JSON.stringify({ member_id: _scanMember.id, amount, note })
+    });
+    const data = await res.json();
+    if (data.success) {
+      msgEl.textContent = `✅ 已為「${data.member_name}」累積 +${data.earned} 點，目前共 ${data.new_balance} 點`;
+      msgEl.style.background = '#f0fff4'; msgEl.style.color = 'var(--green)';
+      msgEl.style.display = 'block';
+      // Update displayed points
+      _scanMember.points = data.new_balance;
+      document.getElementById('scan-member-points').textContent = data.new_balance.toLocaleString();
+      document.getElementById('scan-amount-input').value = '';
+      document.getElementById('scan-note-input').value = '';
+      document.getElementById('scan-points-preview').style.display = 'none';
+      btn.textContent = '✅ 確認累點'; btn.disabled = false;
+      loadScanHistory();
+    } else {
+      msgEl.textContent = data.error || '累點失敗';
+      msgEl.style.background = '#fff0ee'; msgEl.style.color = 'var(--red)';
+      msgEl.style.display = 'block';
+      btn.textContent = '✅ 確認累點'; btn.disabled = false;
+    }
+  } catch(e) {
+    msgEl.textContent = '網路錯誤，請稍後再試';
+    msgEl.style.background = '#fff0ee'; msgEl.style.color = 'var(--red)';
+    msgEl.style.display = 'block';
+    btn.textContent = '✅ 確認累點'; btn.disabled = false;
+  }
+}
+
+async function loadScanHistory() {
+  const tbody = document.getElementById('scan-history-tbody');
+  if (!tbody) return;
+  tbody.innerHTML = '<tr><td colspan="4" style="text-align:center;color:var(--ink-60);padding:20px;">載入中...</td></tr>';
+  try {
+    const res = await fetch('/admin/api/scan/history', { headers: H });
+    const rows = await res.json();
+    if (!Array.isArray(rows) || !rows.length) {
+      tbody.innerHTML = '<tr><td colspan="4" style="text-align:center;color:var(--ink-60);padding:30px;">尚無掃碼記錄</td></tr>';
+      return;
+    }
+    tbody.innerHTML = rows.map(r => `
+      <tr>
+        <td style="font-size:12px;color:var(--ink-60);white-space:nowrap;">${r.created_at}</td>
+        <td>
+          <div style="font-weight:600;">${r.member_name}</div>
+          <div style="font-size:11px;color:var(--ink-60);">${r.member_phone}</div>
+        </td>
+        <td style="font-size:12px;">${r.description}</td>
+        <td style="text-align:right;font-weight:700;color:var(--green);">+${r.points} 點</td>
+      </tr>`).join('');
+  } catch(e) {
+    tbody.innerHTML = '<tr><td colspan="4" style="text-align:center;color:var(--red);padding:20px;">載入失敗</td></tr>';
+  }
+}
 </script>
 </body>
 </html>

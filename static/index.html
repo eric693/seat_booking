@@ -1900,13 +1900,32 @@ footer {
         <div class="mcard-member-name" id="mc-card-name">—</div>
         <div class="mcard-tagline">Space &amp; Meeting Booking</div>
       </div>
-      <!-- 條碼 -->
-      <div class="member-barcode-wrap">
-        <svg id="member-barcode"></svg>
+      <!-- 條碼區 -->
+      <div style="background:#fff;border-radius:14px;padding:20px 16px 14px;margin-bottom:12px;box-shadow:0 2px 10px rgba(0,0,0,0.07);border:1px solid #eee;">
+        <div style="font-size:11px;color:var(--ink-60);text-align:center;margin-bottom:10px;letter-spacing:0.5px;">出示此條碼給服務人員掃描以累積點數</div>
+        <div class="member-barcode-wrap" id="member-barcode-wrap">
+          <svg id="member-barcode" style="width:100%;max-width:300px;height:80px;display:block;margin:0 auto;"></svg>
+        </div>
         <div class="member-card-num" id="member-card-number">0000000000</div>
+        <!-- 亮度提示 -->
+        <div style="margin-top:10px;text-align:center;">
+          <button onclick="boostScreenBrightness()" style="background:none;border:none;font-size:12px;color:var(--teal);cursor:pointer;display:inline-flex;align-items:center;gap:4px;padding:4px 8px;border-radius:6px;transition:background .15s;" onmouseover="this.style.background='var(--teal-light)'" onmouseout="this.style.background='none'">
+            <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><circle cx="12" cy="12" r="5"/><line x1="12" y1="1" x2="12" y2="3"/><line x1="12" y1="21" x2="12" y2="23"/><line x1="4.22" y1="4.22" x2="5.64" y2="5.64"/><line x1="18.36" y1="18.36" x2="19.78" y2="19.78"/><line x1="1" y1="12" x2="3" y2="12"/><line x1="21" y1="12" x2="23" y2="12"/><line x1="4.22" y1="19.78" x2="5.64" y2="18.36"/><line x1="18.36" y1="5.64" x2="19.78" y2="4.22"/></svg>
+            點亮螢幕
+          </button>
+        </div>
       </div>
-      <div style="text-align:center;margin-top:10px;padding:10px 16px;background:var(--ink);color:#fff;border-radius:10px;font-size:12px;display:flex;align-items:center;justify-content:center;gap:6px;cursor:pointer;" onclick="closeMcPanel()">
-        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round"><rect x="3" y="9" width="3" height="6"/><rect x="7" y="5" width="1" height="14"/><rect x="9" y="9" width="2" height="6"/><rect x="12" y="5" width="1" height="14"/><rect x="14" y="9" width="3" height="6"/><rect x="18" y="5" width="1" height="14"/><rect x="20" y="9" width="1" height="6"/></svg>
+      <!-- 說明 -->
+      <div style="background:#f8f8f8;border-radius:10px;padding:12px 14px;font-size:11px;color:var(--ink-60);line-height:1.8;margin-bottom:12px;">
+        <div style="font-weight:600;color:var(--ink);margin-bottom:4px;font-size:12px;">如何使用？</div>
+        <div>1. 在收銀台出示此條碼給服務人員</div>
+        <div>2. 服務人員掃描後輸入消費金額</div>
+        <div>3. 每消費 <strong>NT$10</strong> 自動累積 <strong>1 點</strong></div>
+        <div>4. 點數可於結帳時折抵消費</div>
+      </div>
+      <!-- 載具按鈕 -->
+      <div style="padding:12px 16px;background:var(--ink);color:#fff;border-radius:10px;font-size:13px;font-weight:600;display:flex;align-items:center;justify-content:center;gap:8px;cursor:default;opacity:0.85;">
+        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><rect x="3" y="9" width="3" height="6"/><rect x="7" y="5" width="1" height="14"/><rect x="9" y="9" width="2" height="6"/><rect x="12" y="5" width="1" height="14"/><rect x="14" y="9" width="3" height="6"/><rect x="18" y="5" width="1" height="14"/><rect x="20" y="9" width="1" height="6"/></svg>
         手機條碼載具
       </div>
     </div>
@@ -4013,6 +4032,27 @@ function renderMemberCard() {
       });
     } catch(e) {}
   }
+}
+
+// ── 螢幕亮度提升 ──
+function boostScreenBrightness() {
+  const wrap = document.getElementById('member-barcode-wrap');
+  if (!wrap) return;
+  const overlay = document.createElement('div');
+  overlay.style.cssText = 'position:fixed;inset:0;background:#fff;z-index:9999;display:flex;flex-direction:column;align-items:center;justify-content:center;padding:32px;';
+  const svg = document.getElementById('member-barcode');
+  const num = document.getElementById('member-card-number')?.textContent || '';
+  overlay.innerHTML = `
+    <div style="font-size:13px;color:#666;margin-bottom:16px;">請將螢幕對準掃描器</div>
+    <div style="background:#fff;padding:20px;border-radius:12px;box-shadow:0 2px 20px rgba(0,0,0,0.08);">
+      ${svg ? svg.outerHTML : ''}
+      <div style="text-align:center;font-size:16px;letter-spacing:3px;margin-top:10px;font-family:monospace;font-weight:700;">${num}</div>
+    </div>
+    <button style="margin-top:28px;padding:12px 32px;background:#222;color:#fff;border:none;border-radius:10px;font-size:14px;cursor:pointer;font-weight:600;" onclick="this.parentElement.remove()">關閉</button>
+  `;
+  document.body.appendChild(overlay);
+  // Try to request full brightness if API available
+  if (navigator.wakeLock) navigator.wakeLock.request('screen').catch(()=>{});
 }
 
 // ── 優惠券 ──

@@ -3700,8 +3700,10 @@ def admin_me():
     if u:
         return jsonify(u.to_dict())
     return jsonify({'username': 'admin', 'role': 'superadmin',
-                    'permissions': ['dashboard','bookings','rooms','content',
-                                    'photos','formfields','blocked','accounts','logs']})
+                    'permissions': ['dashboard','bookings','rooms','content','photos',
+                                    'formfields','blocked','lineusers','members','tier',
+                                    'redemption','coupons','points','consumption','scan',
+                                    'chat','lineqa','payment','accounts','logs']})
 
 
 # ─────────────────────────────────────────────

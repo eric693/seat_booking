@@ -1304,9 +1304,18 @@ input[list]::-webkit-calendar-picker-indicator { display: none !important; }
     <div class="page" id="page-redemption">
       <!-- 商品管理 -->
       <div class="card" style="margin-bottom:20px;">
-        <div class="card-head">
+        <div class="card-head" style="flex-wrap:wrap;gap:8px;">
           <h2 class="card-title">兌換商品管理</h2>
-          <button class="btn btn-primary" onclick="openRedemptionItemModal()">＋ 新增商品</button>
+          <div style="display:flex;gap:8px;align-items:center;flex-wrap:wrap;margin-left:auto;">
+            <input class="finput" id="rdm-items-q" placeholder="搜尋商品名稱 / 分類..." style="font-size:13px;padding:6px 10px;width:190px;" oninput="renderAdminRedemptionItems()">
+            <select class="filter-select" id="rdm-items-status" onchange="renderAdminRedemptionItems()" style="font-size:13px;padding:6px 10px;">
+              <option value="">全部狀態</option>
+              <option value="active">上架中</option>
+              <option value="inactive">已下架</option>
+            </select>
+            <button class="btn btn-outline btn-sm" onclick="document.getElementById('rdm-items-q').value='';document.getElementById('rdm-items-status').value='';renderAdminRedemptionItems();">清除</button>
+            <button class="btn btn-primary" onclick="openRedemptionItemModal()">＋ 新增商品</button>
+          </div>
         </div>
         <div class="table-wrap">
           <table>
@@ -1317,8 +1326,18 @@ input[list]::-webkit-calendar-picker-indicator { display: none !important; }
       </div>
       <!-- 兌換紀錄 -->
       <div class="card">
-        <div class="card-head">
+        <div class="card-head" style="flex-wrap:wrap;gap:8px;">
           <h2 class="card-title">兌換紀錄</h2>
+          <div style="display:flex;gap:8px;align-items:center;flex-wrap:wrap;margin-left:auto;">
+            <input class="finput" id="rdm-rec-q" placeholder="搜尋會員 / 商品..." style="font-size:13px;padding:6px 10px;width:190px;" oninput="renderAdminRedemptionRecords()">
+            <select class="filter-select" id="rdm-rec-status" onchange="renderAdminRedemptionRecords()" style="font-size:13px;padding:6px 10px;">
+              <option value="">全部狀態</option>
+              <option value="pending">處理中</option>
+              <option value="completed">已完成</option>
+              <option value="cancelled">已取消</option>
+            </select>
+            <button class="btn btn-outline btn-sm" onclick="document.getElementById('rdm-rec-q').value='';document.getElementById('rdm-rec-status').value='';renderAdminRedemptionRecords();">清除</button>
+          </div>
         </div>
         <div class="table-wrap">
           <table>
@@ -1391,9 +1410,18 @@ input[list]::-webkit-calendar-picker-indicator { display: none !important; }
     <!-- ── COUPONS ── -->
     <div class="page" id="page-coupons">
       <div class="card" style="margin-bottom:20px;">
-        <div class="card-head">
+        <div class="card-head" style="flex-wrap:wrap;gap:8px;">
           <h2 class="card-title">優惠券管理</h2>
-          <button class="btn btn-primary" onclick="openCouponModal()">＋ 新增優惠券</button>
+          <div style="display:flex;gap:8px;align-items:center;flex-wrap:wrap;margin-left:auto;">
+            <input class="finput" id="cp-fil-q" placeholder="搜尋優惠碼 / 名稱..." style="font-size:13px;padding:6px 10px;width:200px;" oninput="renderCoupons()">
+            <select class="filter-select" id="cp-fil-status" onchange="renderCoupons()" style="font-size:13px;padding:6px 10px;">
+              <option value="">全部狀態</option>
+              <option value="active">啟用</option>
+              <option value="inactive">停用</option>
+            </select>
+            <button class="btn btn-outline btn-sm" onclick="document.getElementById('cp-fil-q').value='';document.getElementById('cp-fil-status').value='';renderCoupons();">清除</button>
+            <button class="btn btn-primary" onclick="openCouponModal()">＋ 新增優惠券</button>
+          </div>
         </div>
         <div class="table-wrap">
           <table class="data-table" id="coupon-table">
@@ -4621,38 +4649,54 @@ async function loadConsumptionPage() {
 
 // ── COUPONS ──────────────────────────────────────────────
 
+let _couponsAdmin = [];
+
 async function loadCoupons() {
   const tbody = document.getElementById('coupon-tbody');
   tbody.innerHTML = '<tr><td colspan="9" style="text-align:center;padding:30px;color:var(--ink-60);">載入中...</td></tr>';
   try {
     const res = await fetch('/admin/api/coupons', { headers: H });
-    const coupons = await res.json();
-    if (!Array.isArray(coupons) || !coupons.length) {
-      tbody.innerHTML = '<tr><td colspan="9" style="text-align:center;padding:30px;color:var(--ink-60);">尚無優惠券</td></tr>';
-      return;
-    }
-    tbody.innerHTML = coupons.map(c => {
-      const discStr = c.discount_type === 'percent' ? `${c.discount_value}%` : `NT$${c.discount_value}`;
-      const minStr  = c.min_spend ? `NT$${c.min_spend}` : '不限';
-      const usesStr = c.max_uses  ? `${c.max_uses} / ${c.used_count||0}` : `不限 / ${c.used_count||0}`;
-      const dateStr = [c.start_date||'', c.end_date||''].filter(Boolean).join(' ~ ') || '無限制';
-      const statusTag = c.is_active
-        ? '<span style="color:var(--green);font-weight:600;">啟用</span>'
-        : '<span style="color:var(--ink-60);">停用</span>';
-      return `<tr>
-        <td><code style="font-size:12px;background:var(--gold-light);padding:2px 6px;border-radius:4px;">${c.code}</code></td>
-        <td>${c.name}</td><td>${discStr}</td><td>${minStr}</td><td>${usesStr}</td>
-        <td style="font-size:12px;">${dateStr}</td><td>${statusTag}</td>
-        <td>${c.claimed_count||0} 人</td>
-        <td>
-          <button class="btn btn-outline btn-sm" onclick="openCouponModal(${c.id})">編輯</button>
-          <button class="btn btn-sm" style="background:var(--red-light);color:var(--red);margin-left:4px;" onclick="deleteCoupon(${c.id})">刪除</button>
-        </td>
-      </tr>`;
-    }).join('');
+    _couponsAdmin = await res.json();
+    renderCoupons();
   } catch(e) {
     tbody.innerHTML = '<tr><td colspan="9" style="text-align:center;padding:30px;color:var(--red);">載入失敗</td></tr>';
   }
+}
+
+function renderCoupons() {
+  const tbody = document.getElementById('coupon-tbody');
+  if (!Array.isArray(_couponsAdmin)) return;
+  const q      = (document.getElementById('cp-fil-q')?.value || '').toLowerCase();
+  const status = document.getElementById('cp-fil-status')?.value || '';
+  const filtered = _couponsAdmin.filter(c => {
+    if (q && !c.code.toLowerCase().includes(q) && !c.name.toLowerCase().includes(q)) return false;
+    if (status === 'active'   && !c.is_active) return false;
+    if (status === 'inactive' &&  c.is_active) return false;
+    return true;
+  });
+  if (!filtered.length) {
+    tbody.innerHTML = '<tr><td colspan="9" style="text-align:center;padding:30px;color:var(--ink-60);">尚無優惠券</td></tr>';
+    return;
+  }
+  tbody.innerHTML = filtered.map(c => {
+    const discStr = c.discount_type === 'percent' ? `${c.discount_value}%` : `NT$${c.discount_value}`;
+    const minStr  = c.min_spend ? `NT$${c.min_spend}` : '不限';
+    const usesStr = c.max_uses  ? `${c.max_uses} / ${c.used_count||0}` : `不限 / ${c.used_count||0}`;
+    const dateStr = [c.start_date||'', c.end_date||''].filter(Boolean).join(' ~ ') || '無限制';
+    const statusTag = c.is_active
+      ? '<span style="color:var(--green);font-weight:600;">啟用</span>'
+      : '<span style="color:var(--ink-60);">停用</span>';
+    return `<tr>
+      <td><code style="font-size:12px;background:var(--gold-light);padding:2px 6px;border-radius:4px;">${c.code}</code></td>
+      <td>${c.name}</td><td>${discStr}</td><td>${minStr}</td><td>${usesStr}</td>
+      <td style="font-size:12px;">${dateStr}</td><td>${statusTag}</td>
+      <td>${c.claimed_count||0} 人</td>
+      <td>
+        <button class="btn btn-outline btn-sm" onclick="openCouponModal(${c.id})">編輯</button>
+        <button class="btn btn-sm" style="background:var(--red-light);color:var(--red);margin-left:4px;" onclick="deleteCoupon(${c.id})">刪除</button>
+      </td>
+    </tr>`;
+  }).join('');
 }
 
 function openCouponModal(id) {
@@ -5332,7 +5376,7 @@ async function loadCurrentUser() {
       _myPerms = u.permissions || [];
       const el = document.getElementById('currentUserInfo');
       if (el) el.innerHTML = `<span style="color:rgba(255,255,255,0.8);">&#128100; ${u.display_name||u.username}</span> <span style="color:var(--gold);font-size:11px;">${roleLabel(u.role)}</span>`;
-      applyPermissions(_myPerms);
+      applyPermissions(_myPerms, u.role);
     }
     // 本次 & 上次登入時間
     const lr = await fetch('/admin/api/login-logs?per=2', {headers:H});
@@ -5348,25 +5392,32 @@ async function loadCurrentUser() {
   } catch(e) {}
 }
 
-function applyPermissions(perms) {
+function applyPermissions(perms, role) {
+  if (role === 'superadmin') {
+    document.querySelectorAll('.nav-item').forEach(item => item.style.display = '');
+    return;
+  }
   const PAGE_NAV_MAP = {
-    'dashboard':  "showPage('dashboard'",
-    'bookings':   "showPage('bookings'",
-    'rooms':      "showPage('rooms'",
-    'content':    "showPage('content'",
-    'photos':     "showPage('photos'",
-    'formfields': "showPage('formfields'",
-    'blocked':    "showPage('blocked'",
-    'lineusers':  "showPage('lineusers'",
-    'members':    "showPage('members'",
+    'dashboard':   "showPage('dashboard'",
+    'bookings':    "showPage('bookings'",
+    'rooms':       "showPage('rooms'",
+    'content':     "showPage('content'",
+    'photos':      "showPage('photos'",
+    'formfields':  "showPage('formfields'",
+    'blocked':     "showPage('blocked'",
+    'lineusers':   "showPage('lineusers'",
+    'members':     "showPage('members'",
+    'tier':        "showPage('tier'",
+    'redemption':  "showPage('redemption'",
     'coupons':     "showPage('coupons'",
     'points':      "showPage('points'",
     'consumption': "showPage('consumption'",
+    'scan':        "showPage('scan'",
     'chat':        "showPage('chat'",
-    'lineqa':     "showPage('lineqa'",
-    'accounts':   "showPage('accounts'",
-    'payment':    "showPage('payment'",
-    'logs':       "showPage('logs'",
+    'lineqa':      "showPage('lineqa'",
+    'accounts':    "showPage('accounts'",
+    'payment':     "showPage('payment'",
+    'logs':        "showPage('logs'",
   };
   document.querySelectorAll('.nav-item').forEach(item => {
     const oc = item.getAttribute('onclick') || '';
@@ -5608,6 +5659,7 @@ async function loadScanHistory() {
 
 // ── 點數兌換管理 ──
 let _rdmItemsAdmin = [];
+let _rdmRecordsAdmin = [];
 
 async function loadAdminRedemptionItems() {
   const tbody = document.getElementById('admin-rdm-items-body');
@@ -5615,27 +5667,40 @@ async function loadAdminRedemptionItems() {
   try {
     const res = await fetch('/admin/api/redemption/items', { credentials: 'include' });
     _rdmItemsAdmin = await res.json();
-    if (!_rdmItemsAdmin.length) {
-      tbody.innerHTML = '<tr><td colspan="8" style="text-align:center;padding:20px;color:var(--ink-60);">尚無商品</td></tr>';
-      return;
-    }
-    tbody.innerHTML = _rdmItemsAdmin.map(item => `
-      <tr>
-        <td>${item.image_url ? `<img src="${item.image_url}" style="width:40px;height:40px;object-fit:cover;border-radius:6px;">` : '—'}</td>
-        <td style="font-weight:600;">${item.name}</td>
-        <td>${item.category || '—'}</td>
-        <td style="color:var(--teal);font-weight:700;">${item.points_cost.toLocaleString()}</td>
-        <td>${item.stock === -1 ? '無限' : item.stock}</td>
-        <td>${item.sort_order || 0}</td>
-        <td><span class="status-badge ${item.is_active ? 'confirmed' : 'cancelled'}">${item.is_active ? '上架' : '下架'}</span></td>
-        <td>
-          <button class="btn btn-secondary btn-sm" onclick="openRedemptionItemModal(${item.id})">編輯</button>
-          <button class="btn btn-sm" style="background:var(--red-light);color:var(--red);" onclick="deleteRedemptionItem(${item.id}, '${item.name.replace(/'/g,"\\'")}')">刪除</button>
-        </td>
-      </tr>`).join('');
+    renderAdminRedemptionItems();
   } catch(e) {
-    tbody.innerHTML = '<tr><td colspan="8" style="text-align:center;color:var(--red);">載入失敗</td></tr>';
+    document.getElementById('admin-rdm-items-body').innerHTML = '<tr><td colspan="8" style="text-align:center;color:var(--red);">載入失敗</td></tr>';
   }
+}
+
+function renderAdminRedemptionItems() {
+  const tbody  = document.getElementById('admin-rdm-items-body');
+  const q      = (document.getElementById('rdm-items-q')?.value || '').toLowerCase();
+  const status = document.getElementById('rdm-items-status')?.value || '';
+  const filtered = _rdmItemsAdmin.filter(item => {
+    if (q && !item.name.toLowerCase().includes(q) && !(item.category||'').toLowerCase().includes(q)) return false;
+    if (status === 'active'   && !item.is_active) return false;
+    if (status === 'inactive' &&  item.is_active) return false;
+    return true;
+  });
+  if (!filtered.length) {
+    tbody.innerHTML = '<tr><td colspan="8" style="text-align:center;padding:20px;color:var(--ink-60);">尚無商品</td></tr>';
+    return;
+  }
+  tbody.innerHTML = filtered.map(item => `
+    <tr>
+      <td>${item.image_url ? `<img src="${item.image_url}" style="width:40px;height:40px;object-fit:cover;border-radius:6px;">` : '—'}</td>
+      <td style="font-weight:600;">${item.name}</td>
+      <td>${item.category || '—'}</td>
+      <td style="color:var(--teal);font-weight:700;">${item.points_cost.toLocaleString()}</td>
+      <td>${item.stock === -1 ? '無限' : item.stock}</td>
+      <td>${item.sort_order || 0}</td>
+      <td><span class="status-badge ${item.is_active ? 'confirmed' : 'cancelled'}">${item.is_active ? '上架' : '下架'}</span></td>
+      <td>
+        <button class="btn btn-secondary btn-sm" onclick="openRedemptionItemModal(${item.id})">編輯</button>
+        <button class="btn btn-sm" style="background:var(--red-light);color:var(--red);" onclick="deleteRedemptionItem(${item.id}, '${item.name.replace(/'/g,"\\'")}')">刪除</button>
+      </td>
+    </tr>`).join('');
 }
 
 async function loadAdminRedemptionRecords() {
@@ -5643,31 +5708,43 @@ async function loadAdminRedemptionRecords() {
   tbody.innerHTML = '<tr><td colspan="6" style="text-align:center;padding:20px;color:var(--ink-60);">載入中...</td></tr>';
   try {
     const res = await fetch('/admin/api/redemption/records', { credentials: 'include' });
-    const records = await res.json();
-    if (!records.length) {
-      tbody.innerHTML = '<tr><td colspan="6" style="text-align:center;padding:20px;color:var(--ink-60);">尚無兌換紀錄</td></tr>';
-      return;
-    }
-    const statusMap = { pending:'處理中', completed:'已完成', cancelled:'已取消' };
-    const statusCls = { pending:'pending', completed:'confirmed', cancelled:'cancelled' };
-    tbody.innerHTML = records.map(r => `
-      <tr>
-        <td style="color:var(--ink-60);font-size:12px;">${r.created_at||''}</td>
-        <td>${r.member_name||''}<br><span style="color:var(--ink-60);font-size:11px;">${r.member_phone||''}</span></td>
-        <td>${r.item_name||''}</td>
-        <td style="color:var(--red);font-weight:600;">-${(r.points_cost||0).toLocaleString()}</td>
-        <td><span class="status-badge ${statusCls[r.status]||'pending'}">${statusMap[r.status]||r.status}</span></td>
-        <td>
-          <select onchange="updateRedemptionRecord(${r.id}, this.value)" style="border:1px solid var(--border);border-radius:6px;padding:4px 8px;font-size:12px;">
-            <option value="pending" ${r.status==='pending'?'selected':''}>處理中</option>
-            <option value="completed" ${r.status==='completed'?'selected':''}>已完成</option>
-            <option value="cancelled" ${r.status==='cancelled'?'selected':''}>已取消</option>
-          </select>
-        </td>
-      </tr>`).join('');
+    _rdmRecordsAdmin = await res.json();
+    renderAdminRedemptionRecords();
   } catch(e) {
-    tbody.innerHTML = '<tr><td colspan="6" style="text-align:center;color:var(--red);">載入失敗</td></tr>';
+    document.getElementById('admin-rdm-records-body').innerHTML = '<tr><td colspan="6" style="text-align:center;color:var(--red);">載入失敗</td></tr>';
   }
+}
+
+function renderAdminRedemptionRecords() {
+  const tbody  = document.getElementById('admin-rdm-records-body');
+  const q      = (document.getElementById('rdm-rec-q')?.value || '').toLowerCase();
+  const status = document.getElementById('rdm-rec-status')?.value || '';
+  const filtered = _rdmRecordsAdmin.filter(r => {
+    if (q && !(r.member_name||'').toLowerCase().includes(q) && !(r.item_name||'').toLowerCase().includes(q) && !(r.member_phone||'').includes(q)) return false;
+    if (status && r.status !== status) return false;
+    return true;
+  });
+  if (!filtered.length) {
+    tbody.innerHTML = '<tr><td colspan="6" style="text-align:center;padding:20px;color:var(--ink-60);">尚無兌換紀錄</td></tr>';
+    return;
+  }
+  const statusMap = { pending:'處理中', completed:'已完成', cancelled:'已取消' };
+  const statusCls = { pending:'pending', completed:'confirmed', cancelled:'cancelled' };
+  tbody.innerHTML = filtered.map(r => `
+    <tr>
+      <td style="color:var(--ink-60);font-size:12px;">${r.created_at||''}</td>
+      <td>${r.member_name||''}<br><span style="color:var(--ink-60);font-size:11px;">${r.member_phone||''}</span></td>
+      <td>${r.item_name||''}</td>
+      <td style="color:var(--red);font-weight:600;">-${(r.points_cost||0).toLocaleString()}</td>
+      <td><span class="status-badge ${statusCls[r.status]||'pending'}">${statusMap[r.status]||r.status}</span></td>
+      <td>
+        <select onchange="updateRedemptionRecord(${r.id}, this.value)" style="border:1px solid var(--border);border-radius:6px;padding:4px 8px;font-size:12px;">
+          <option value="pending" ${r.status==='pending'?'selected':''}>處理中</option>
+          <option value="completed" ${r.status==='completed'?'selected':''}>已完成</option>
+          <option value="cancelled" ${r.status==='cancelled'?'selected':''}>已取消</option>
+        </select>
+      </td>
+    </tr>`).join('');
 }
 
 async function updateRedemptionRecord(id, status) {
@@ -5677,7 +5754,9 @@ async function updateRedemptionRecord(id, status) {
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({ status })
     });
-    loadAdminRedemptionRecords();
+    const r = _rdmRecordsAdmin.find(x => x.id === id);
+    if (r) r.status = status;
+    renderAdminRedemptionRecords();
   } catch(e) { alert('更新失敗'); }
 }
 

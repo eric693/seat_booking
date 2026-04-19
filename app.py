@@ -4047,10 +4047,10 @@ def upload_photo():
 
 def _upload_to_cloudinary(file_storage) -> str:
     """上傳檔案至 Cloudinary，回傳安全 URL；失敗回傳空字串"""
-    import hmac as _hmac, hashlib as _hashlib, time
-    timestamp = str(int(time.time()))
+    import hashlib as _hashlib, time as _time
+    timestamp = str(int(_time.time()))
     folder    = 'meeting_rooms'
-    # 簽章
+    # 簽章：參數依字母排序後串接 API secret
     params_to_sign = f'folder={folder}&timestamp={timestamp}'
     sig = _hashlib.sha1(
         (params_to_sign + CLOUDINARY_API_SECRET).encode()
@@ -4058,15 +4058,22 @@ def _upload_to_cloudinary(file_storage) -> str:
 
     upload_url = f'https://api.cloudinary.com/v1_1/{CLOUDINARY_CLOUD_NAME}/image/upload'
     try:
+        # 確保 stream 從頭讀
+        if hasattr(file_storage, 'stream') and hasattr(file_storage.stream, 'seek'):
+            file_storage.stream.seek(0)
         resp = http_requests.post(upload_url, data={
             'api_key':   CLOUDINARY_API_KEY,
             'timestamp': timestamp,
             'folder':    folder,
             'signature': sig,
-        }, files={'file': (file_storage.filename, file_storage.stream, file_storage.mimetype)},
+        }, files={'file': (file_storage.filename, file_storage.stream,
+                           file_storage.mimetype or 'image/jpeg')},
         timeout=30)
         data = resp.json()
-        return data.get('secure_url', '')
+        if 'secure_url' in data:
+            return data['secure_url']
+        print(f'[Cloudinary] 上傳失敗 HTTP {resp.status_code}: {data}')
+        return ''
     except Exception as e:
         print(f'[Cloudinary error] {e}')
         return ''

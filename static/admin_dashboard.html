@@ -762,6 +762,9 @@ input[list]::-webkit-calendar-picker-indicator { display: none !important; }
     <div class="nav-item" onclick="showPage('lineqa',this)">
       <span class="nav-icon"><svg width="16" height="16" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M8 2C5.2 2 3 4 3 6.5c0 1.5.7 2.8 1.8 3.7L4 13l3-1.5c.3.1.7.1 1 .1 2.8 0 5-2 5-4.5S10.8 2 8 2z"/><path d="M6 6.5h4M6 8.5h2.5" stroke-linecap="round"/></svg></span> Q&A 問答設定
     </div>
+    <div class="nav-item" onclick="showPage('linecontent',this)">
+      <span class="nav-icon"><svg width="16" height="16" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><rect x="1" y="1" width="14" height="14" rx="2"/><path d="M4 5h8M4 8h6M4 11h4"/></svg></span> LINE 訊息文字
+    </div>
     <div class="nav-section">金流</div>
     <div class="nav-item" onclick="showPage('payment',this)">
       <span class="nav-icon"><svg width="16" height="16" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><rect x="1" y="3" width="14" height="10" rx="1.5"/><path d="M1 7h14"/><circle cx="4.5" cy="11" r="1" fill="currentColor" stroke="none"/></svg></span> 付款設定
@@ -2117,6 +2120,85 @@ input[list]::-webkit-calendar-picker-indicator { display: none !important; }
       </div>
     </div>
 
+    <!-- ── LINE 訊息文字 ── -->
+    <div class="page" id="page-linecontent">
+      <div style="background:var(--teal-light);border:1px solid rgba(42,107,107,0.2);border-radius:8px;padding:12px 16px;margin-bottom:16px;font-size:13px;color:var(--teal);line-height:1.7;">
+        <strong>說明：</strong>此頁面可自訂 LINE Bot 各流程的顯示文字。儲存後立即生效，不需重新部署。
+      </div>
+      <div style="display:grid;gap:20px;">
+
+        <!-- 系統名稱 & 歡迎訊息 -->
+        <div class="card">
+          <div class="card-head">
+            <div class="card-title">歡迎訊息設定</div>
+            <button class="btn btn-primary btn-sm" onclick="saveLineContent()">儲存</button>
+          </div>
+          <div class="card-body" style="display:grid;gap:14px;">
+            <div class="fg"><label>系統名稱 <span>（顯示於各 Flex 卡片標題）</span></label>
+              <input class="finput" type="text" id="lc-line_sys_name" placeholder="會議室預約系統"></div>
+            <div class="fg"><label>歡迎卡副標題</label>
+              <input class="finput" type="text" id="lc-line_welcome_subtitle" placeholder="歡迎使用"></div>
+            <div class="fg"><label>歡迎說明文字</label>
+              <textarea class="finput" id="lc-line_welcome_body" rows="2" placeholder="您可以直接在 LINE 上查詢時段、完成預約，並接收預約通知。"></textarea></div>
+            <div class="fg"><label>快速開始 步驟 1</label>
+              <textarea class="finput" id="lc-line_welcome_step1" rows="2" placeholder="已有帳號？輸入「綁定 手機號碼」&#10;例：綁定 0912345678"></textarea></div>
+            <div class="fg"><label>快速開始 步驟 2</label>
+              <input class="finput" type="text" id="lc-line_welcome_step2" placeholder="尚未註冊？點下方按鈕前往網站註冊"></div>
+            <div class="fg"><label>快速開始 步驟 3</label>
+              <input class="finput" type="text" id="lc-line_welcome_step3" placeholder="綁定後直接輸入「預約」開始預約"></div>
+          </div>
+        </div>
+
+        <!-- 主選單 -->
+        <div class="card">
+          <div class="card-head">
+            <div class="card-title">主選單文字</div>
+            <button class="btn btn-primary btn-sm" onclick="saveLineContent()">儲存</button>
+          </div>
+          <div class="card-body" style="display:grid;gap:14px;">
+            <div class="fg"><label>主選單副標題</label>
+              <input class="finput" type="text" id="lc-line_menu_title" placeholder="請選擇您要執行的操作"></div>
+            <div class="fg"><label>主選單說明文字</label>
+              <input class="finput" type="text" id="lc-line_menu_desc" placeholder="點選下方按鈕，或直接輸入指令操作。"></div>
+          </div>
+        </div>
+
+        <!-- 預約流程訊息 -->
+        <div class="card">
+          <div class="card-head">
+            <div class="card-title">預約流程訊息</div>
+            <button class="btn btn-primary btn-sm" onclick="saveLineContent()">儲存</button>
+          </div>
+          <div class="card-body" style="display:grid;gap:14px;">
+            <div class="fg"><label>手機綁定成功說明</label>
+              <textarea class="finput" id="lc-line_bind_body" rows="2" placeholder="往後預約成立或取消時，將自動推播通知給您。"></textarea></div>
+            <div class="fg"><label>預約逾時訊息 <span>（超過 2 分鐘無操作）</span></label>
+              <textarea class="finput" id="lc-line_timeout_msg" rows="2" placeholder="預約流程已逾時（超過 2 分鐘），已自動結束。&#10;如需重新預約請點選「預約」，或直接輸入問題由 AI 為您解答。"></textarea></div>
+            <div class="fg"><label>非會員提示訊息</label>
+              <textarea class="finput" id="lc-line_not_member_msg" rows="2" placeholder="請先至網站完成會員註冊並驗證 Email，才能使用預約功能。"></textarea></div>
+            <div class="fg"><label>Email 未驗證訊息</label>
+              <textarea class="finput" id="lc-line_email_unverified" rows="2" placeholder="您的帳號尚未完成 Email 驗證，請先至信箱點擊驗證連結，完成驗證後才能預約。"></textarea></div>
+            <div class="fg"><label>帳號停用訊息</label>
+              <textarea class="finput" id="lc-line_blocked_msg" rows="2" placeholder="您的帳號已被停用，無法進行預約。如有疑問請聯繫管理員。"></textarea></div>
+          </div>
+        </div>
+
+        <!-- AI 補充說明 -->
+        <div class="card">
+          <div class="card-head">
+            <div class="card-title">AI 助理補充說明</div>
+            <button class="btn btn-primary btn-sm" onclick="saveLineContent()">儲存</button>
+          </div>
+          <div class="card-body" style="display:grid;gap:14px;">
+            <p style="font-size:13px;color:var(--ink-60);">此欄位的文字會附加到 AI 的系統提示中，可補充特殊規則或服務說明。AI 也會自動帶入當天及近 3 天各會議室的即時可預約時段。</p>
+            <div class="fg"><label>AI 補充說明文字 <span>（選填，例如特殊假日規則、停車說明等）</span></label>
+              <textarea class="finput" id="lc-line_ai_hint" rows="4" placeholder="例：每月第一個週日全天不開放。停車場位於 B1，免費使用 2 小時。"></textarea></div>
+          </div>
+        </div>
+
+      </div>
+    </div>
+
     <!-- ── PAYMENT ── -->
     <div class="page" id="page-payment">
       <div style="display:grid;gap:20px;">
@@ -2505,7 +2587,7 @@ function showPage(id, navEl) {
   document.getElementById(`page-${id}`).classList.add('active');
   document.querySelectorAll('.nav-item').forEach(n => n.classList.remove('active'));
   if (navEl) navEl.classList.add('active');
-  const titles = { dashboard:'儀表板', bookings:'預約管理', rooms:'會議室管理', content:'文字內容編輯', photos:'照片管理', formfields:'表單欄位管理', blocked:'封鎖時段管理', lineusers:'LINE 用戶管理', members:'會員管理', tier:'會員等級設定', redemption:'點數兌換管理', coupons:'優惠券管理', points:'點數專區', consumption:'消費紀錄', scan:'掃碼累點', chat:'聊天記錄', lineqa:'QA 問答設定', payment:'付款設定', accounts:'帳號管理', logs:'登入紀錄' };
+  const titles = { dashboard:'儀表板', bookings:'預約管理', rooms:'會議室管理', content:'文字內容編輯', photos:'照片管理', formfields:'表單欄位管理', blocked:'封鎖時段管理', lineusers:'LINE 用戶管理', members:'會員管理', tier:'會員等級設定', redemption:'點數兌換管理', coupons:'優惠券管理', points:'點數專區', consumption:'消費紀錄', scan:'掃碼累點', chat:'聊天記錄', lineqa:'QA 問答設定', linecontent:'LINE 訊息文字', payment:'付款設定', accounts:'帳號管理', logs:'登入紀錄' };
   document.getElementById('topbarTitle').textContent = titles[id] || '';
   switch(id) {
     case 'dashboard':   initFloorDate(); loadDashboard(); loadFloorStatus(); break;
@@ -2525,8 +2607,9 @@ function showPage(id, navEl) {
     case 'consumption': loadConsumptionPage(); break;
     case 'scan':        initScanPage(); break;
     case 'chat':        loadChatSessions(); break;
-    case 'lineqa':      loadLineQA(); break;
-    case 'payment':     loadPaymentSettings(); break;
+    case 'lineqa':       loadLineQA(); break;
+    case 'linecontent':  loadLineContent(); break;
+    case 'payment':      loadPaymentSettings(); break;
     case 'logs':        loadLoginLogs(); break;
   }
 }
@@ -3101,6 +3184,41 @@ async function saveContent() {
   try {
     const res = await fetch('/admin/api/site-content', { method: 'POST', headers: { ...H, 'Content-Type': 'application/json' }, body: JSON.stringify(payload) });
     if (res.ok) toast('已儲存，前台將即時更新');
+    else toast('儲存失敗', 'error');
+  } catch { toast('儲存失敗', 'error'); }
+}
+
+// ── LINE 訊息文字 ──
+const _LC_KEYS = ['line_sys_name','line_welcome_subtitle','line_welcome_body',
+  'line_welcome_step1','line_welcome_step2','line_welcome_step3',
+  'line_menu_title','line_menu_desc','line_bind_body',
+  'line_timeout_msg','line_not_member_msg','line_email_unverified',
+  'line_blocked_msg','line_ai_hint'];
+
+async function loadLineContent() {
+  try {
+    const res = await fetch('/admin/api/site-content', { headers: H });
+    const data = await res.json();
+    _LC_KEYS.forEach(k => {
+      const el = document.getElementById(`lc-${k}`);
+      if (el && data[k] !== undefined) el.value = data[k];
+    });
+  } catch { toast('載入失敗', 'error'); }
+}
+
+async function saveLineContent() {
+  const payload = {};
+  _LC_KEYS.forEach(k => {
+    const el = document.getElementById(`lc-${k}`);
+    if (el) payload[k] = el.value;
+  });
+  try {
+    const res = await fetch('/admin/api/site-content', {
+      method: 'POST',
+      headers: { ...H, 'Content-Type': 'application/json' },
+      body: JSON.stringify(payload)
+    });
+    if (res.ok) toast('LINE 訊息文字已儲存，即時生效');
     else toast('儲存失敗', 'error');
   } catch { toast('儲存失敗', 'error'); }
 }

@@ -741,13 +741,37 @@ def _fmt_duration(dur_hours) -> str:
         return f'{h} 小時 {int((d-h)*60)} 分鐘'
 
 
+# ─── LINE 訊息文字設定（可由後台調整）────────────────────
+_LINE_CONTENT_DEFAULTS = {
+    'line_sys_name':         '會議室預約系統',
+    'line_welcome_subtitle': '歡迎使用',
+    'line_welcome_body':     '您可以直接在 LINE 上查詢時段、完成預約，並接收預約通知。',
+    'line_welcome_step1':    '已有帳號？輸入「綁定 手機號碼」\n例：綁定 0912345678',
+    'line_welcome_step2':    '尚未註冊？點下方按鈕前往網站註冊',
+    'line_welcome_step3':    '綁定後直接輸入「預約」開始預約',
+    'line_menu_title':       '請選擇您要執行的操作',
+    'line_menu_desc':        '點選下方按鈕，或直接輸入指令操作。',
+    'line_bind_body':        '往後預約成立或取消時，將自動推播通知給您。',
+    'line_timeout_msg':      '預約流程已逾時（超過 2 分鐘），已自動結束。\n如需重新預約請點選「預約」，或直接輸入問題由 AI 為您解答。',
+    'line_not_member_msg':   '請先至網站完成會員註冊並驗證 Email，才能使用預約功能。',
+    'line_blocked_msg':      '您的帳號已被停用，無法進行預約。如有疑問請聯繫管理員。',
+    'line_email_unverified': '您的帳號尚未完成 Email 驗證，請先至信箱點擊驗證連結，完成驗證後才能預約。',
+    'line_ai_hint':          '',
+}
+
+def _lc(key: str) -> str:
+    """取得 LINE 訊息文字，優先用後台設定，否則回預設值"""
+    return SiteContent.get(key, _LINE_CONTENT_DEFAULTS.get(key, ''))
+
+
 # ─── 主選單 Flex（歡迎 / 說明）────────────────────
 def flex_main_menu() -> dict:
+    sys_name = _lc('line_sys_name')
     return {
-        'type': 'flex', 'altText': '會議室預約系統 — 主選單',
+        'type': 'flex', 'altText': f'{sys_name} — 主選單',
         'contents': {
             'type': 'bubble', 'size': 'mega',
-            'header': _header_box('會議室預約系統', '請選擇您要執行的操作'),
+            'header': _header_box(sys_name, _lc('line_menu_title')),
             'body': {
                 'type': 'box', 'layout': 'vertical',
                 'backgroundColor': _C['bg'],
@@ -755,7 +779,7 @@ def flex_main_menu() -> dict:
                 'contents': [
                     # 說明文字
                     {'type': 'text',
-                     'text': '點選下方按鈕，或直接輸入指令操作。',
+                     'text': _lc('line_menu_desc'),
                      'size': 'sm', 'color': _C['ink60'], 'wrap': True,
                      'margin': 'none'},
                     _divider(),
@@ -886,7 +910,7 @@ def flex_bind_success(phone: str) -> dict:
                     _row('綁定號碼', phone),
                     _row('通知項目', '預約成立 / 取消'),
                     {'type': 'text',
-                     'text': '往後預約成立或取消時，將自動推播通知給您。',
+                     'text': _lc('line_bind_body'),
                      'size': 'sm', 'color': _C['ink60'],
                      'margin': 'md', 'wrap': True},
                 ]
@@ -941,10 +965,10 @@ def flex_welcome() -> dict:
                 'backgroundColor': _C['dark'],
                 'paddingAll': '24px',
                 'contents': [
-                    {'type': 'text', 'text': '歡迎使用',
+                    {'type': 'text', 'text': _lc('line_welcome_subtitle'),
                      'color': '#80B8B8',
                      'size': 'sm'},
-                    {'type': 'text', 'text': '會議室預約系統',
+                    {'type': 'text', 'text': _lc('line_sys_name'),
                      'color': _C['white'], 'size': 'xl',
                      'weight': 'bold', 'margin': 'xs'},
                 ]
@@ -955,15 +979,15 @@ def flex_welcome() -> dict:
                 'paddingAll': '16px', 'spacing': 'md',
                 'contents': [
                     {'type': 'text',
-                     'text': '您可以直接在 LINE 上查詢時段、完成預約，並接收預約通知。',
+                     'text': _lc('line_welcome_body'),
                      'size': 'sm', 'color': _C['ink60'], 'wrap': True},
                     _divider(),
                     {'type': 'text', 'text': '快速開始：',
                      'size': 'sm', 'weight': 'bold', 'color': _C['ink'],
                      'margin': 'md'},
-                    _step_row('1', '已有帳號？輸入「綁定 手機號碼」\n例：綁定 0912345678'),
-                    _step_row('2', '尚未註冊？點下方按鈕前往網站註冊'),
-                    _step_row('3', '綁定後直接輸入「預約」開始預約'),
+                    _step_row('1', _lc('line_welcome_step1')),
+                    _step_row('2', _lc('line_welcome_step2')),
+                    _step_row('3', _lc('line_welcome_step3')),
                 ]
             },
             'footer': {
@@ -1522,7 +1546,7 @@ class AdminUser(db.Model):
         import json as _j
         ALL = ['dashboard','bookings','rooms','content','photos','formfields','blocked',
                'lineusers','members','tier','redemption','coupons','points','consumption',
-               'scan','chat','lineqa','payment','accounts','logs']
+               'scan','chat','lineqa','linecontent','payment','accounts','logs']
         if self.role == 'superadmin':
             return ALL
         if self.permissions:
@@ -2891,7 +2915,7 @@ def _handle_booking_flow(uid: str, rtok: str, text: str, lu):
         if timed_out:
             _clear_sess(lu)
             reply_line(rtok, [{'type': 'text',
-                'text': '預約流程已逾時（超過 2 分鐘），已自動結束。\n如需重新預約請點選「預約」，或直接輸入問題由 AI 為您解答。'}])
+                'text': _lc('line_timeout_msg')}])
             return True
 
     # ── 全域指令：不論 session 狀態都不攔截，交給一般 handler ──
@@ -2934,7 +2958,7 @@ def _handle_booking_flow(uid: str, rtok: str, text: str, lu):
                         'type': 'box', 'layout': 'vertical',
                         'backgroundColor': _C['bg'], 'paddingAll': '16px', 'spacing': 'md',
                         'contents': [
-                            {'type': 'text', 'text': '請先至網站完成會員註冊並驗證 Email，才能使用預約功能。',
+                            {'type': 'text', 'text': _lc('line_not_member_msg'),
                              'size': 'sm', 'color': _C['ink'], 'wrap': True},
                             _divider(),
                             {'type': 'text', 'text': '已有帳號？',
@@ -2957,13 +2981,11 @@ def _handle_booking_flow(uid: str, rtok: str, text: str, lu):
             return True
 
         if member.is_verified_email is False and member.email:
-            reply_line(rtok, [{'type': 'text', 'text':
-                '您的帳號尚未完成 Email 驗證，請先至信箱點擊驗證連結，完成驗證後才能預約。'}])
+            reply_line(rtok, [{'type': 'text', 'text': _lc('line_email_unverified')}])
             return True
 
         if member.is_blocked:
-            reply_line(rtok, [{'type': 'text', 'text':
-                '您的帳號已被停用，無法進行預約。如有疑問請聯繫管理員。'}])
+            reply_line(rtok, [{'type': 'text', 'text': _lc('line_blocked_msg')}])
             return True
 
         rooms = Room.query.filter_by(is_active=True).all()
@@ -3204,6 +3226,37 @@ def _get_qa_rules_text():
         return ''
 
 
+def _get_availability_text(days: int = 3) -> str:
+    """回傳未來 N 天各會議室可預約時段的文字摘要，供 AI 參考"""
+    try:
+        from datetime import date as _date, timedelta as _td
+        tw_today = (datetime.now(timezone.utc) + timedelta(hours=8)).date()
+        rooms = Room.query.filter_by(is_active=True).order_by(
+            Room.sort_order.asc(), Room.created_at.asc()).all()
+        if not rooms:
+            return ''
+        weekdays = ['一', '二', '三', '四', '五', '六', '日']
+        lines = ['【即時可預約時段（台灣時間）】']
+        for offset in range(days):
+            d = tw_today + _td(days=offset)
+            date_str = d.strftime('%Y-%m-%d')
+            prefix = '今天' if offset == 0 else ('明天' if offset == 1 else '')
+            day_label = f'{prefix} {d.month}/{d.day}（週{weekdays[d.weekday()]}）'.strip()
+            lines.append(f'\n{day_label}')
+            for room in rooms:
+                booked = get_booked_slots(room.id, date_str)
+                if booked:
+                    slots_str = '、'.join(
+                        f"{s['start']}–{s['end']}" for s in booked)
+                    lines.append(f'  ・{room.name}：已佔用 {slots_str}（其餘時段可預約）')
+                else:
+                    lines.append(f'  ・{room.name}：全天可預約')
+        return '\n'.join(lines)
+    except Exception as e:
+        print(f'[availability_text error] {e}')
+        return ''
+
+
 def _get_ai_system_prompt():
     """建立 AI 系統提示，包含空間與預約資訊"""
     try:
@@ -3225,12 +3278,15 @@ def _get_ai_system_prompt():
     service_hours = SiteContent.get('service_hours', '')
     contact_phone = SiteContent.get('contact_phone', '')
     qa_rules = _get_qa_rules_text()
+    availability_text = _get_availability_text(3)
+    ai_hint = _lc('line_ai_hint')
 
     return f"""你是預約空間的 LINE 官方帳號助理，請用繁體中文、親切口語的方式回覆。
 
 【你能做的事】
 - 介紹各個空間、說明費用、協助了解預約流程
-- 回答使用者問題
+- 回答使用者關於時段、費用、空間的問題
+- 查詢並告知目前可預約時段
 
 【預約方式】
 1. LINE 預約：在此對話直接輸入「預約」即可開始預約流程
@@ -3240,11 +3296,14 @@ def _get_ai_system_prompt():
 【目前可預約空間】
 {rooms_info}
 
+{availability_text}
+
 【服務資訊】
 服務時間：{service_hours}
 聯絡電話：{contact_phone}
 
 {qa_rules}
+{('【補充說明】\n' + ai_hint) if ai_hint else ''}
 
 【回覆規則】
 - 簡潔親切，每則回覆 150 字以內
@@ -3614,7 +3673,7 @@ def _handle_line_text(uid, rtok, text):
                         'type': 'box', 'layout': 'vertical',
                         'backgroundColor': _C['bg'], 'paddingAll': '16px', 'spacing': 'md',
                         'contents': [
-                            {'type': 'text', 'text': '請先至網站完成會員註冊並驗證 Email，才能使用預約功能。',
+                            {'type': 'text', 'text': _lc('line_not_member_msg'),
                              'size': 'sm', 'color': _C['ink'], 'wrap': True},
                             _divider(),
                             {'type': 'text', 'text': '已有帳號？',
@@ -3720,7 +3779,7 @@ def admin_me():
                     'permissions': ['dashboard','bookings','rooms','content','photos',
                                     'formfields','blocked','lineusers','members','tier',
                                     'redemption','coupons','points','consumption','scan',
-                                    'chat','lineqa','payment','accounts','logs']})
+                                    'chat','lineqa','linecontent','payment','accounts','logs']})
 
 
 # ─────────────────────────────────────────────

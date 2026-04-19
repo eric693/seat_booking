@@ -1256,7 +1256,186 @@ footer {
 .cr-status.pending   { background: var(--gold-light);  color: #8a6a1e; }
 .cr-status.cancelled { background: var(--red-light);   color: var(--red); }
 .cr-status.completed { background: var(--teal-light);  color: var(--teal); }
+
+/* ── 會員卡面板 ── */
+.mc-card-btn {
+  display:flex;align-items:center;justify-content:center;gap:6px;
+  width:100%;margin-top:12px;padding:9px 16px;
+  background:rgba(255,255,255,0.15);border:1px solid rgba(255,255,255,0.3);
+  border-radius:10px;color:#fff;font-size:13px;font-weight:600;
+  cursor:pointer;transition:background .15s;
+}
+.mc-card-btn:hover{background:rgba(255,255,255,0.25);}
+.member-card-visual {
+  background:linear-gradient(145deg,#f9f9f9 0%,#ececec 100%);
+  border-radius:18px;padding:28px 24px 22px;
+  margin:0 auto 20px;max-width:320px;
+  box-shadow:0 6px 24px rgba(0,0,0,0.14);
+  position:relative;overflow:hidden;border:1px solid #ddd;
+}
+.mcard-dots {
+  position:absolute;inset:0;
+  background-image:radial-gradient(circle,rgba(0,0,0,0.06) 1px,transparent 1px);
+  background-size:12px 12px;pointer-events:none;
+}
+.mcard-top { display:flex;align-items:center;justify-content:space-between;margin-bottom:36px;position:relative; }
+.mcard-brand { display:flex;align-items:center;gap:8px; }
+.mcard-icon {
+  width:30px;height:30px;background:var(--teal);border-radius:6px;
+  display:flex;align-items:center;justify-content:center;
+  color:#fff;font-weight:800;font-size:13px;
+}
+.mcard-brand-name { font-size:16px;font-weight:700;color:var(--ink); }
+.mcard-corner-icon { opacity:0.3;font-size:20px; }
+.mcard-member-name { font-size:13px;color:var(--ink-60);margin-bottom:6px;position:relative; }
+.mcard-tagline { font-size:11px;color:var(--ink-60);position:relative;font-style:italic; }
+.member-barcode-wrap { text-align:center;padding:14px 0 6px; }
+.member-barcode-wrap svg { max-width:100%;width:280px; }
+.member-card-num {
+  font-size:15px;color:var(--ink);letter-spacing:2px;
+  margin-top:6px;font-family:'DM Mono',monospace;text-align:center;
+  font-weight:600;
+}
+/* Coupon status tabs */
+.coupon-status-tabs { display:flex;gap:20px;margin-bottom:14px;border-bottom:1px solid var(--border);padding-bottom:0; }
+.coupon-status-tab {
+  font-size:13px;font-weight:600;color:var(--ink-60);
+  cursor:pointer;padding-bottom:8px;
+  border-bottom:2px solid transparent;margin-bottom:-1px;
+}
+.coupon-status-tab.active { color:var(--ink);border-bottom-color:var(--ink); }
+/* Eslite-style coupon card */
+.coupon-card-eslite {
+  display:flex;border-radius:10px;overflow:hidden;
+  margin-bottom:10px;box-shadow:0 2px 8px rgba(0,0,0,0.08);
+}
+.coupon-card-eslite.used .ccl { background:#999; }
+.coupon-card-eslite.expired .ccl { background:#bbb; }
+.ccl {
+  background:#8b1a1a;width:72px;flex-shrink:0;
+  display:flex;flex-direction:column;align-items:center;justify-content:center;
+  padding:14px 6px;position:relative;color:#fff;
+}
+.ccl::after {
+  content:'';position:absolute;right:-8px;top:50%;transform:translateY(-50%);
+  width:16px;height:16px;
+  background:radial-gradient(circle at right,transparent 8px,#fff 8px);
+  z-index:1;
+}
+.ccl-amount { font-size:22px;font-weight:800;line-height:1; }
+.ccl-unit { font-size:11px;margin-top:3px;opacity:0.85; }
+.ccr {
+  flex:1;padding:12px 16px 12px 18px;
+  background:#fff;border:1px solid #eee;border-left:none;
+  display:flex;flex-direction:column;justify-content:center;
+}
+.ccr-name { font-size:14px;font-weight:700;margin-bottom:3px;color:var(--ink); }
+.ccr-min { font-size:11px;color:var(--ink-60);margin-bottom:5px; }
+.ccr-date { font-size:11px;color:var(--ink-60); }
+.ccr-tag {
+  display:inline-block;background:#999;color:#fff;
+  font-size:10px;font-weight:700;padding:2px 8px;
+  border-radius:10px;margin-left:6px;vertical-align:middle;
+}
+/* Points eslite style */
+.pts-hero {
+  background:#f8f2e7;border-radius:14px;padding:20px;
+  margin-bottom:14px;position:relative;overflow:hidden;
+}
+.pts-hero-bg { position:absolute;right:-8px;top:-8px;font-size:80px;opacity:0.08;line-height:1; }
+.pts-hero-label { font-size:12px;color:var(--ink-60);margin-bottom:4px; }
+.pts-hero-logo { font-size:11px;color:var(--ink-60);display:flex;align-items:center;gap:4px;margin-bottom:6px; }
+.pts-big { font-size:40px;font-weight:800;color:var(--ink);line-height:1; }
+.pts-big-unit { font-size:16px;font-weight:600;color:var(--ink-60);margin-left:2px; }
+.pts-expiry { font-size:12px;color:var(--ink-60);margin-top:6px; }
+.pts-divider { height:1px;background:rgba(0,0,0,0.1);margin:14px 0; }
+.pts-cash-row { display:flex;align-items:center;justify-content:space-between; }
+.pts-cash-label { font-size:12px;color:var(--ink-60);display:flex;align-items:center;gap:4px; }
+.pts-cash-val { font-size:22px;font-weight:700;color:var(--ink); }
+.pts-cash-unit { font-size:12px;color:var(--ink-60);margin-left:2px; }
+.pts-action-row {
+  display:flex;border:1px solid var(--border);border-radius:10px;
+  overflow:hidden;margin-bottom:16px;
+}
+.pts-action-btn {
+  flex:1;padding:14px 8px;text-align:center;
+  font-size:13px;font-weight:600;color:var(--ink);
+  cursor:pointer;transition:background .15s;
+  display:flex;align-items:center;justify-content:center;gap:6px;
+}
+.pts-action-btn:hover { background:var(--paper); }
+.pts-action-btn+.pts-action-btn { border-left:1px solid var(--border); }
+.pts-filter-select {
+  border:1px solid var(--border);border-radius:8px;
+  padding:10px 14px;margin-bottom:10px;
+  width:100%;font-size:13px;appearance:none;
+  background:#fff url("data:image/svg+xml,%3Csvg width='10' height='6' viewBox='0 0 10 6' fill='none' xmlns='http://www.w3.org/2000/svg'%3E%3Cpath d='M1 1l4 4 4-4' stroke='%23666' stroke-width='1.5' stroke-linecap='round'/%3E%3C/svg%3E") no-repeat right 12px center;
+  cursor:pointer;color:var(--ink);
+}
+.pts-hint { font-size:11px;color:var(--ink-60);margin-bottom:10px;line-height:1.6; }
+.pts-table-head {
+  display:grid;grid-template-columns:1.2fr 1fr 80px;
+  background:#555;color:#fff;
+  padding:8px 12px;font-size:12px;font-weight:600;
+  border-radius:8px 8px 0 0;
+}
+.pts-table-row {
+  display:grid;grid-template-columns:1.2fr 1fr 80px;
+  padding:9px 12px;font-size:12px;
+  border-bottom:1px solid var(--border);align-items:center;
+}
+.pts-table-row:last-child { border-bottom:none; }
+.pts-earn-val { color:var(--green);font-weight:700; }
+.pts-spend-val { color:var(--red);font-weight:700; }
+.pts-adjust-val { color:var(--teal);font-weight:700; }
+/* Consumption date filter */
+.mc-date-filter {
+  border:1px solid var(--border);border-radius:8px;
+  padding:12px 16px;margin-bottom:12px;
+  display:flex;align-items:center;justify-content:space-between;
+  font-size:13px;background:#fff;
+}
+.mc-date-filter select {
+  border:none;font-size:13px;color:var(--ink);
+  background:transparent;cursor:pointer;outline:none;
+  font-family:inherit;flex:1;appearance:none;
+}
+.mc-summary-card {
+  background:#fff;border:1px solid var(--border);
+  border-radius:12px;padding:20px;margin-bottom:14px;
+  display:flex;align-items:center;position:relative;overflow:hidden;
+}
+.mc-summary-card::before {
+  content:'';position:absolute;right:0;top:0;bottom:0;width:120px;
+  background-image:repeating-linear-gradient(60deg,transparent,transparent 8px,rgba(0,0,0,0.015) 8px,rgba(0,0,0,0.015) 9px);
+  pointer-events:none;
+}
+.mc-sum-item { flex:1;text-align:center; }
+.mc-sum-item+.mc-sum-item { border-left:1px solid var(--border); }
+.mc-sum-label { font-size:12px;color:var(--ink-60);margin-bottom:4px; }
+.mc-sum-val { font-size:26px;font-weight:700;color:var(--ink); }
+.mc-sum-unit { font-size:12px;color:var(--ink-60);margin-left:2px;font-weight:500; }
+/* Submenu for 預約系統 */
+.mc-submenu { padding:4px 0; }
+.mc-submenu-item {
+  display:flex;align-items:center;gap:14px;
+  padding:16px 4px;border-bottom:1px solid var(--border);
+  cursor:pointer;border-radius:8px;transition:background .15s;
+}
+.mc-submenu-item:hover { background:var(--paper); }
+.mc-submenu-item:last-child { border-bottom:none; }
+.mc-submenu-icon {
+  width:46px;height:46px;border-radius:12px;
+  background:var(--teal-light);display:flex;
+  align-items:center;justify-content:center;
+  font-size:24px;flex-shrink:0;
+}
+.mc-submenu-info { flex:1; }
+.mc-submenu-title { font-size:15px;font-weight:700;color:var(--ink); }
+.mc-submenu-desc { font-size:12px;color:var(--ink-60);margin-top:2px; }
+.mc-submenu-arrow { font-size:20px;color:var(--ink-60);font-weight:300; }
 </style>
+<script src="https://cdn.jsdelivr.net/npm/jsbarcode@3.11.5/dist/JsBarcode.all.min.js"></script>
 </head>
 <body>
 
@@ -1675,6 +1854,10 @@ footer {
           <div class="pt-unit">點</div>
         </div>
       </div>
+      <button class="mc-card-btn" onclick="openMcPanel('card')">
+        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><rect x="3" y="9" width="3" height="6"/><rect x="7" y="5" width="1" height="14"/><rect x="9" y="9" width="2" height="6"/><rect x="12" y="5" width="1" height="14"/><rect x="14" y="9" width="3" height="6"/><rect x="18" y="5" width="1" height="14"/><rect x="20" y="9" width="1" height="6"/></svg>
+        查看會員卡條碼
+      </button>
     </div>
 
     <!-- Icon Grid -->
@@ -1698,15 +1881,62 @@ footer {
       </button>
     </div>
 
+    <!-- 子面板：會員卡 -->
+    <div class="mc-panel" id="mc-panel-card">
+      <div class="mc-panel-title">
+        <button class="mc-panel-back" onclick="closeMcPanel()">‹ 返回</button>
+        會員卡
+      </div>
+      <!-- 卡片外觀 -->
+      <div class="member-card-visual">
+        <div class="mcard-dots"></div>
+        <div class="mcard-top">
+          <div class="mcard-brand">
+            <div class="mcard-icon" id="mc-card-icon">MR</div>
+            <div class="mcard-brand-name" id="mc-card-brand">空間預約系統</div>
+          </div>
+          <div class="mcard-corner-icon">&#10022;</div>
+        </div>
+        <div class="mcard-member-name" id="mc-card-name">—</div>
+        <div class="mcard-tagline">Space &amp; Meeting Booking</div>
+      </div>
+      <!-- 條碼 -->
+      <div class="member-barcode-wrap">
+        <svg id="member-barcode"></svg>
+        <div class="member-card-num" id="member-card-number">0000000000</div>
+      </div>
+      <div style="text-align:center;margin-top:10px;padding:10px 16px;background:var(--ink);color:#fff;border-radius:10px;font-size:12px;display:flex;align-items:center;justify-content:center;gap:6px;cursor:pointer;" onclick="closeMcPanel()">
+        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round"><rect x="3" y="9" width="3" height="6"/><rect x="7" y="5" width="1" height="14"/><rect x="9" y="9" width="2" height="6"/><rect x="12" y="5" width="1" height="14"/><rect x="14" y="9" width="3" height="6"/><rect x="18" y="5" width="1" height="14"/><rect x="20" y="9" width="1" height="6"/></svg>
+        手機條碼載具
+      </div>
+    </div>
+
     <!-- 子面板：優惠券 -->
     <div class="mc-panel" id="mc-panel-coupons">
       <div class="mc-panel-title">
         <button class="mc-panel-back" onclick="closeMcPanel()">‹ 返回</button>
-        🎟️ 我的優惠券
+        優惠券
       </div>
-      <div class="coupon-claim-row">
-        <input class="finput" type="text" id="mc-coupon-code" placeholder="輸入優惠碼領取" style="text-transform:uppercase;font-size:13px;">
-        <button class="book-btn" style="margin:0;padding:10px 16px;font-size:13px;" onclick="claimCoupon()">領取</button>
+      <!-- 優惠券歸戶 -->
+      <div style="margin-bottom:14px;">
+        <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:8px;">
+          <span style="font-size:13px;font-weight:600;">優惠券歸戶</span>
+          <span style="font-size:11px;color:var(--gold);cursor:pointer;">使用說明</span>
+        </div>
+        <div class="coupon-claim-row">
+          <input class="finput" type="text" id="mc-coupon-code" placeholder="活動序號或通關密語" style="text-transform:uppercase;font-size:13px;border-color:var(--gold);">
+          <button style="margin:0;padding:10px 18px;font-size:13px;background:#5a4a38;color:#fff;border:none;border-radius:8px;cursor:pointer;font-weight:600;white-space:nowrap;" onclick="claimCoupon()">確定</button>
+        </div>
+        <div style="font-size:11px;color:var(--ink-60);line-height:1.7;margin-top:6px;">
+          ※ 下方優惠券列表預設顯示可使用的優惠券。<br>
+          ※ 輸入活動序號或通關密語即可領取。
+        </div>
+      </div>
+      <!-- 狀態 tabs -->
+      <div class="coupon-status-tabs">
+        <div class="coupon-status-tab active" id="ctab-active" onclick="switchCouponTab('active')">可使用</div>
+        <div class="coupon-status-tab" id="ctab-used" onclick="switchCouponTab('used')">已使用</div>
+        <div class="coupon-status-tab" id="ctab-expired" onclick="switchCouponTab('expired')">已逾期</div>
       </div>
       <div id="mc-coupons-list"><div style="text-align:center;padding:30px;color:var(--ink-60);">載入中...</div></div>
     </div>
@@ -1715,34 +1945,116 @@ footer {
     <div class="mc-panel" id="mc-panel-points">
       <div class="mc-panel-title">
         <button class="mc-panel-back" onclick="closeMcPanel()">‹ 返回</button>
-        💰 點數專區
+        點數專區
       </div>
-      <div style="background:linear-gradient(135deg,var(--teal),#1a4d4d);border-radius:12px;padding:18px 20px;color:#fff;margin-bottom:16px;display:flex;justify-content:space-between;align-items:center;">
-        <div>
-          <div style="font-size:12px;opacity:0.8;margin-bottom:4px;">目前點數餘額</div>
-          <div style="font-size:32px;font-weight:800;" id="mc-pts-balance">—</div>
-          <div style="font-size:11px;opacity:0.7;margin-top:4px;">每消費 NT$10 獲得 1 點</div>
+      <!-- 點數卡 -->
+      <div class="pts-hero">
+        <div class="pts-hero-bg">★</div>
+        <div class="pts-hero-logo">
+          <div style="width:16px;height:16px;background:var(--teal);border-radius:3px;display:flex;align-items:center;justify-content:center;font-size:8px;font-weight:800;color:#fff;">M</div>
+          <span>會員點數</span>
+          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" style="margin-left:auto;cursor:pointer;opacity:0.5;"><circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="12"/><line x1="12" y1="16" x2="12.01" y2="16"/></svg>
         </div>
-        <div style="font-size:40px;opacity:0.4;">💎</div>
+        <div style="display:flex;align-items:baseline;gap:4px;">
+          <div class="pts-big" id="mc-pts-balance">0</div>
+          <div class="pts-big-unit">點</div>
+        </div>
+        <div class="pts-expiry" id="mc-pts-expiry">—</div>
+        <div class="pts-divider"></div>
+        <div class="pts-cash-row">
+          <div class="pts-cash-label">
+            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><path d="M12 8v4l3 3"/></svg>
+            可折抵金額
+          </div>
+          <div style="display:flex;align-items:baseline;gap:2px;">
+            <div class="pts-cash-val" id="mc-pts-cash">0</div>
+            <div class="pts-cash-unit">元</div>
+          </div>
+        </div>
       </div>
-      <div style="font-size:13px;font-weight:600;margin-bottom:8px;color:var(--ink-60);">點數明細</div>
-      <div id="mc-points-list"><div style="text-align:center;padding:30px;color:var(--ink-60);">載入中...</div></div>
+      <!-- 動作按鈕 -->
+      <div class="pts-action-row">
+        <div class="pts-action-btn">
+          <span>🎁</span> 點數兌換
+        </div>
+        <div class="pts-action-btn">
+          <span>👥</span> 點數轉移
+        </div>
+      </div>
+      <!-- 日期篩選 -->
+      <select class="pts-filter-select" id="pts-period-select" onchange="loadMcPoints()">
+        <option value="3">近三個月</option>
+        <option value="6">近六個月</option>
+        <option value="12">近一年</option>
+      </select>
+      <div class="pts-hint">*消費點數於發票開立後 2 個工作日內歸戶，活動贈點依活動說明為準。</div>
+      <!-- 點數明細表 -->
+      <div class="pts-table-head"><div>歸戶日期</div><div>類別</div><div style="text-align:right;">點數</div></div>
+      <div id="mc-points-list"><div style="text-align:center;padding:20px;color:var(--ink-60);">載入中...</div></div>
     </div>
 
     <!-- 子面板：消費紀錄 -->
     <div class="mc-panel" id="mc-panel-consumption">
       <div class="mc-panel-title">
         <button class="mc-panel-back" onclick="closeMcPanel()">‹ 返回</button>
-        🧾 消費紀錄
+        消費紀錄
+      </div>
+      <!-- 日期篩選 -->
+      <div class="mc-date-filter">
+        <select id="consumption-period" onchange="loadMcConsumption()" style="border:none;font-size:13px;color:var(--ink);background:transparent;cursor:pointer;outline:none;font-family:inherit;flex:1;appearance:none;">
+          <option value="1">近一個月</option>
+          <option value="3">近三個月</option>
+          <option value="6">近六個月</option>
+          <option value="12">近一年</option>
+        </select>
+        <svg width="12" height="8" viewBox="0 0 12 8" fill="none"><path d="M1 1l5 5 5-5" stroke="#666" stroke-width="1.5" stroke-linecap="round"/></svg>
+      </div>
+      <!-- 累計 -->
+      <div class="mc-summary-card">
+        <div style="position:absolute;top:10px;left:50%;transform:translateX(-50%);font-size:11px;color:var(--ink-60);white-space:nowrap;letter-spacing:2px;">查詢區間發票金額累計</div>
+        <div class="mc-sum-item" style="margin-top:20px;">
+          <div class="mc-sum-val" id="consumption-total">0</div>
+          <div class="mc-sum-unit">元</div>
+        </div>
+        <div class="mc-sum-item" style="margin-top:20px;">
+          <div class="mc-sum-val" id="consumption-count">0</div>
+          <div class="mc-sum-unit">次</div>
+        </div>
       </div>
       <div id="mc-consumption-list"><div style="text-align:center;padding:30px;color:var(--ink-60);">載入中...</div></div>
     </div>
 
-    <!-- 子面板：預約系統 -->
+    <!-- 子面板：預約系統（導覽） -->
     <div class="mc-panel" id="mc-panel-bookings">
       <div class="mc-panel-title">
         <button class="mc-panel-back" onclick="closeMcPanel()">‹ 返回</button>
-        📅 我的預約
+        預約系統
+      </div>
+      <div class="mc-submenu">
+        <div class="mc-submenu-item" onclick="goToBooking()">
+          <div class="mc-submenu-icon">🏢</div>
+          <div class="mc-submenu-info">
+            <div class="mc-submenu-title">空間預約</div>
+            <div class="mc-submenu-desc">選擇空間、日期與時段立即預約</div>
+          </div>
+          <div class="mc-submenu-arrow">›</div>
+        </div>
+        <div class="mc-submenu-item" onclick="openMcSubPanel('mybookings')">
+          <div class="mc-submenu-icon">📋</div>
+          <div class="mc-submenu-info">
+            <div class="mc-submenu-title">我的預約</div>
+            <div class="mc-submenu-desc">查看預約記錄、確認狀態</div>
+          </div>
+          <div class="mc-submenu-arrow">›</div>
+        </div>
+      </div>
+    </div>
+
+    <!-- 子面板：我的預約（第三層） -->
+    <div class="mc-panel" id="mc-panel-mybookings">
+      <div class="mc-panel-title">
+        <button class="mc-panel-back" onclick="openMcPanel('bookings')">‹ 返回</button>
+        我的預約
       </div>
       <div id="mc-bookings-list"><div style="text-align:center;padding:30px;color:var(--ink-60);">載入中...</div></div>
     </div>
@@ -3627,20 +3939,20 @@ async function cancelMemberBooking(bid) {
 
 // ── 會員中心 ──────────────────────────────────────────────
 
+let _mcAllCoupons = [];
+let _mcCouponTab = 'active';
+
 function openMemberCenter() {
   document.getElementById('member-dropdown')?.classList.remove('open');
   const m = _currentMember;
   if (!m) { openAuthModal(); return; }
-  // 填入 header 資訊
   const initial = (m.name || '我')[0].toUpperCase();
   document.getElementById('mc-avatar-letter').textContent = initial;
   document.getElementById('mc-user-name').textContent = m.name || '會員';
   document.getElementById('mc-user-sub').textContent = m.email || m.phone || '';
   document.getElementById('mc-points-val').textContent = (m.points ?? '—');
-  // 顯示 overlay，重置到 icon grid
   closeMcPanel();
   document.getElementById('mcOverlay').classList.add('open');
-  // 背景預載優惠券數量
   _loadMcCouponBadge();
 }
 
@@ -3658,11 +3970,17 @@ function openMcPanel(name) {
   document.querySelectorAll('.mc-panel').forEach(p => p.classList.remove('open'));
   const panel = document.getElementById(`mc-panel-${name}`);
   if (panel) panel.classList.add('open');
-  // 載入對應資料
+  if (name === 'card')        renderMemberCard();
   if (name === 'coupons')     loadMcCoupons();
   if (name === 'points')      loadMcPoints();
   if (name === 'consumption') loadMcConsumption();
-  if (name === 'bookings')    loadMcBookings();
+}
+
+function openMcSubPanel(name) {
+  document.querySelectorAll('.mc-panel').forEach(p => p.classList.remove('open'));
+  const panel = document.getElementById(`mc-panel-${name}`);
+  if (panel) panel.classList.add('open');
+  if (name === 'mybookings') loadMcBookings();
 }
 
 function closeMcPanel() {
@@ -3670,16 +3988,93 @@ function closeMcPanel() {
   document.querySelectorAll('.mc-panel').forEach(p => p.classList.remove('open'));
 }
 
+function goToBooking() {
+  closeMemberCenter();
+  window.scrollTo({ top: 0, behavior: 'smooth' });
+}
+
+// ── 會員卡條碼 ──
+function renderMemberCard() {
+  const m = _currentMember;
+  if (!m) return;
+  const num = m.member_number || String(m.id || 0).padStart(10, '0');
+  document.getElementById('member-card-number').textContent = num;
+  document.getElementById('mc-card-name').textContent = m.name || '會員';
+  const siteTitle = document.getElementById('hdr-title')?.textContent || '空間預約系統';
+  document.getElementById('mc-card-brand').textContent = siteTitle;
+  const logoText = (document.getElementById('header-logo-wrap')?.textContent || 'MR').trim().slice(0,2).toUpperCase();
+  document.getElementById('mc-card-icon').textContent = logoText;
+  if (typeof JsBarcode !== 'undefined') {
+    try {
+      JsBarcode('#member-barcode', num, {
+        format: 'CODE128', width: 2.2, height: 72,
+        displayValue: false, background: 'transparent', lineColor: '#1a1a1a',
+        margin: 0
+      });
+    } catch(e) {}
+  }
+}
+
+// ── 優惠券 ──
 async function _loadMcCouponBadge() {
   try {
     const res = await fetch(`${API}/api/member/coupons`, { credentials: 'include' });
     if (!res.ok) return;
     const coupons = await res.json();
-    const unused = coupons.filter(c => !c.is_used && c.is_active).length;
+    const today = new Date().toISOString().slice(0,10);
+    const unused = coupons.filter(c => !c.is_used && c.is_active && (!c.end_date || c.end_date >= today)).length;
     const badge = document.getElementById('mc-badge-coupons');
     if (unused > 0) { badge.textContent = unused; badge.style.display = 'block'; }
     else badge.style.display = 'none';
   } catch(e) {}
+}
+
+function switchCouponTab(tab) {
+  _mcCouponTab = tab;
+  ['active','used','expired'].forEach(t => {
+    document.getElementById(`ctab-${t}`)?.classList.toggle('active', t === tab);
+  });
+  _renderCoupons();
+}
+
+function _renderCoupons() {
+  const el = document.getElementById('mc-coupons-list');
+  const today = new Date().toISOString().slice(0,10);
+  let filtered = _mcAllCoupons;
+  if (_mcCouponTab === 'active') {
+    filtered = _mcAllCoupons.filter(c => !c.is_used && c.is_active && (!c.end_date || c.end_date >= today));
+  } else if (_mcCouponTab === 'used') {
+    filtered = _mcAllCoupons.filter(c => c.is_used);
+  } else {
+    filtered = _mcAllCoupons.filter(c => !c.is_used && c.end_date && c.end_date < today);
+  }
+  if (!filtered.length) {
+    const msgs = { active:'目前沒有可使用的優惠券', used:'尚無已使用的優惠券', expired:'尚無已逾期的優惠券' };
+    el.innerHTML = `<div style="text-align:center;padding:30px;color:var(--ink-60);">${msgs[_mcCouponTab]}</div>`;
+    return;
+  }
+  el.innerHTML = filtered.map(c => {
+    const isUsed = c.is_used;
+    const isExpired = !isUsed && c.end_date && c.end_date < today;
+    const extraCls = isUsed ? ' used' : isExpired ? ' expired' : '';
+    const amountStr = c.discount_type === 'percent' ? `${c.discount_value}%` : `${Math.round(c.discount_value)}`;
+    const unitStr = c.discount_type === 'percent' ? '折扣' : '元';
+    const minStr = c.min_spend ? `單筆滿$${c.min_spend}即可折抵` : '無最低消費限制';
+    const dateStr = (c.start_date && c.end_date) ? `${c.start_date.replace(/-/g,'/')} ～ ${c.end_date.replace(/-/g,'/')}` :
+                    c.end_date ? `至 ${c.end_date.replace(/-/g,'/')}` : '無使用期限';
+    const tag = isUsed ? '<span class="ccr-tag">已使用</span>' : isExpired ? '<span class="ccr-tag" style="background:#bbb;">已逾期</span>' : '';
+    return `<div class="coupon-card-eslite${extraCls}">
+      <div class="ccl">
+        <div class="ccl-amount">${amountStr}</div>
+        <div class="ccl-unit">${unitStr}</div>
+      </div>
+      <div class="ccr">
+        <div class="ccr-name">${c.name}${tag}</div>
+        <div class="ccr-min">${minStr}</div>
+        <div class="ccr-date">${dateStr}</div>
+      </div>
+    </div>`;
+  }).join('');
 }
 
 async function loadMcCoupons() {
@@ -3687,26 +4082,9 @@ async function loadMcCoupons() {
   el.innerHTML = '<div style="text-align:center;padding:30px;color:var(--ink-60);">載入中...</div>';
   try {
     const res = await fetch(`${API}/api/member/coupons`, { credentials: 'include' });
-    const coupons = await res.json();
-    if (!Array.isArray(coupons) || !coupons.length) {
-      el.innerHTML = '<div style="text-align:center;padding:30px;color:var(--ink-60);">尚無優惠券，輸入優惠碼立即領取！</div>';
-      return;
-    }
-    el.innerHTML = coupons.map(c => {
-      const discStr = c.discount_type === 'percent' ? `${c.discount_value}%<small>折扣</small>` : `$${c.discount_value}<small>折抵</small>`;
-      const expStr = c.end_date ? `有效期至 ${c.end_date}` : '無使用期限';
-      const minStr = c.min_spend ? `滿 NT$${c.min_spend} 可用` : '無最低消費限制';
-      const usedCls = c.is_used ? ' used' : '';
-      return `<div class="coupon-card${usedCls}">
-        <div class="coupon-discount">${discStr}</div>
-        <div class="coupon-info">
-          <div class="coupon-name">${c.name}</div>
-          <div class="coupon-desc">${c.description || ''}</div>
-          <div class="coupon-meta">${minStr} &nbsp;·&nbsp; ${expStr}</div>
-        </div>
-        ${c.is_used ? '<div class="coupon-used-tag">已使用</div>' : ''}
-      </div>`;
-    }).join('');
+    _mcAllCoupons = await res.json();
+    if (!Array.isArray(_mcAllCoupons)) _mcAllCoupons = [];
+    _renderCoupons();
   } catch(e) {
     el.innerHTML = '<div style="color:var(--red);text-align:center;padding:20px;">載入失敗</div>';
   }
@@ -3730,35 +4108,37 @@ async function claimCoupon() {
     } else {
       alert(data.error || '領取失敗');
     }
-  } catch(e) {
-    alert('網路錯誤，請稍後再試');
-  }
+  } catch(e) { alert('網路錯誤，請稍後再試'); }
 }
 
+// ── 點數 ──
 async function loadMcPoints() {
   const listEl = document.getElementById('mc-points-list');
-  const balEl  = document.getElementById('mc-pts-balance');
   listEl.innerHTML = '<div style="text-align:center;padding:20px;color:var(--ink-60);">載入中...</div>';
   try {
     const res = await fetch(`${API}/api/member/points`, { credentials: 'include' });
     const data = await res.json();
-    balEl.textContent = (data.balance ?? 0).toLocaleString();
-    // 同步更新 header 點數
-    document.getElementById('mc-points-val').textContent = data.balance ?? 0;
-    const txs = data.transactions || [];
+    const bal = data.balance ?? 0;
+    document.getElementById('mc-pts-balance').textContent = bal.toLocaleString();
+    document.getElementById('mc-pts-cash').textContent = Math.floor(bal).toLocaleString();
+    document.getElementById('mc-points-val').textContent = bal;
+    const yr = new Date().getFullYear();
+    document.getElementById('mc-pts-expiry').textContent = `${yr}年到期：0點，${yr+1}年到期：0點`;
+    const months = parseInt(document.getElementById('pts-period-select')?.value || '3', 10);
+    const cutoff = new Date(); cutoff.setMonth(cutoff.getMonth() - months);
+    const txs = (data.transactions || []).filter(t => !t.created_at || new Date(t.created_at) >= cutoff);
     if (!txs.length) {
-      listEl.innerHTML = '<div style="text-align:center;padding:20px;color:var(--ink-60);">尚無點數記錄</div>';
+      listEl.innerHTML = '<div style="text-align:center;padding:20px;color:var(--ink-60);">區間內無點數記錄</div>';
       return;
     }
     listEl.innerHTML = txs.map(t => {
       const sign = t.points > 0 ? '+' : '';
-      const cls = t.type === 'earn' ? 'pt-earn' : t.type === 'spend' ? 'pt-spend' : 'pt-adjust';
-      return `<div class="pt-row">
-        <div>
-          <div class="pt-row-info">${t.description || (t.type === 'earn' ? '消費獲得' : t.type === 'spend' ? '點數使用' : '點數調整')}</div>
-          <div class="pt-row-date">${t.created_at}</div>
-        </div>
-        <div class="${cls}">${sign}${t.points} 點</div>
+      const valCls = t.type === 'earn' ? 'pts-earn-val' : t.type === 'spend' ? 'pts-spend-val' : 'pts-adjust-val';
+      const catStr = t.type === 'earn' ? '消費獲得' : t.type === 'spend' ? '點數使用' : '點數調整';
+      return `<div class="pts-table-row">
+        <div style="color:var(--ink-60);">${(t.created_at||'').slice(0,10)}</div>
+        <div>${t.description || catStr}</div>
+        <div class="${valCls}" style="text-align:right;">${sign}${t.points}</div>
       </div>`;
     }).join('');
   } catch(e) {
@@ -3766,14 +4146,23 @@ async function loadMcPoints() {
   }
 }
 
+// ── 消費紀錄 ──
 async function loadMcConsumption() {
   const el = document.getElementById('mc-consumption-list');
   el.innerHTML = '<div style="text-align:center;padding:30px;color:var(--ink-60);">載入中...</div>';
   try {
     const res = await fetch(`${API}/api/member/consumption`, { credentials: 'include' });
-    const records = await res.json();
-    if (!Array.isArray(records) || !records.length) {
-      el.innerHTML = '<div style="text-align:center;padding:30px;color:var(--ink-60);">尚無消費記錄</div>';
+    const all = await res.json();
+    if (!Array.isArray(all)) { el.innerHTML = ''; return; }
+    const months = parseInt(document.getElementById('consumption-period')?.value || '1', 10);
+    const cutoff = new Date(); cutoff.setMonth(cutoff.getMonth() - months);
+    const records = all.filter(r => !r.created_at || new Date(r.created_at) >= cutoff);
+    // Update summary
+    const confirmed = records.filter(r => r.status === 'confirmed' || r.status === 'completed');
+    document.getElementById('consumption-total').textContent = confirmed.reduce((s,r) => s+(r.total_price||0), 0).toLocaleString();
+    document.getElementById('consumption-count').textContent = records.length;
+    if (!records.length) {
+      el.innerHTML = '<div style="text-align:center;padding:30px;color:var(--ink-60);">區間內無消費紀錄</div>';
       return;
     }
     const statusMap = { pending:'待審核', confirmed:'已確認', cancelled:'已取消', completed:'已完成' };
@@ -3794,6 +4183,7 @@ async function loadMcConsumption() {
   }
 }
 
+// ── 我的預約 ──
 async function loadMcBookings() {
   const el = document.getElementById('mc-bookings-list');
   el.innerHTML = '<div style="text-align:center;padding:30px;color:var(--ink-60);">載入中...</div>';

@@ -1615,6 +1615,7 @@ class Member(db.Model):
         return {
             'id': self.id, 'name': self.name,
             'phone': self.phone, 'email': self.email,
+            'member_number': str(self.id).zfill(10),
             'is_verified_email': self.is_verified_email,
             'is_verified_phone': self.is_verified_phone,
             'is_blocked': self.is_blocked,

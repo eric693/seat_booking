@@ -1220,6 +1220,47 @@ footer {
   position: absolute; right: -10px; top: 50%; transform: translateY(-50%);
   opacity: 0.06; pointer-events: none;
 }
+/* Tier-themed card box */
+.mc-member-card-box.tier-white {
+  background: #fff;
+  border: 1.5px solid #e0e0e0;
+}
+.mc-member-card-box.tier-green {
+  background: linear-gradient(135deg,#1a3a2a 0%,#2d5e3e 60%,#3a7a52 100%);
+  box-shadow: 0 6px 24px rgba(26,58,42,0.28);
+}
+.mc-member-card-box.tier-green .mc-card-type-badge,
+.mc-member-card-box.tier-green .mc-card-cumul-label,
+.mc-member-card-box.tier-green .mc-card-validity,
+.mc-member-card-box.tier-green .mc-card-visits-u,
+.mc-member-card-box.tier-green .mc-upgrade-hint,
+.mc-member-card-box.tier-green .mc-card-cumul-sep { color: rgba(255,255,255,0.7); }
+.mc-member-card-box.tier-green .mc-card-cumul-val,
+.mc-member-card-box.tier-green .mc-card-visits { color: #fff; }
+.mc-member-card-box.tier-green .badge-arrow { background: rgba(255,255,255,0.25); }
+.mc-member-card-box.tier-green .mc-upgrade-bar-track { background: rgba(255,255,255,0.15); }
+.mc-member-card-box.tier-green .mc-upgrade-bar-fill { background: linear-gradient(90deg,#7ecf9e,#c8f5db); }
+.mc-member-card-box.tier-green .mc-card-deco { opacity: 0.12; filter: invert(1); }
+.mc-member-card-box.tier-green button[onclick*="openMcPanel"] { border-color:rgba(255,255,255,0.3)!important; color:rgba(255,255,255,0.8)!important; }
+
+.mc-member-card-box.tier-black {
+  background: linear-gradient(135deg,#111 0%,#252525 60%,#1e1e1e 100%);
+  box-shadow: 0 6px 24px rgba(0,0,0,0.4);
+}
+.mc-member-card-box.tier-black .mc-card-type-badge,
+.mc-member-card-box.tier-black .mc-card-cumul-label,
+.mc-member-card-box.tier-black .mc-card-validity,
+.mc-member-card-box.tier-black .mc-card-visits-u,
+.mc-member-card-box.tier-black .mc-upgrade-hint,
+.mc-member-card-box.tier-black .mc-card-cumul-sep { color: rgba(255,255,255,0.55); }
+.mc-member-card-box.tier-black .mc-card-cumul-val,
+.mc-member-card-box.tier-black .mc-card-visits { color: #fff; }
+.mc-member-card-box.tier-black .mc-card-type-badge { color: var(--gold); }
+.mc-member-card-box.tier-black .badge-arrow { background: var(--gold); color: #111; }
+.mc-member-card-box.tier-black .mc-upgrade-bar-track { background: rgba(255,255,255,0.1); }
+.mc-member-card-box.tier-black .mc-upgrade-bar-fill { background: linear-gradient(90deg,var(--gold-light),var(--gold)); }
+.mc-member-card-box.tier-black .mc-card-deco { opacity: 0.1; filter: invert(1); }
+.mc-member-card-box.tier-black button[onclick*="openMcPanel"] { border-color:rgba(255,255,255,0.2)!important; color:rgba(255,255,255,0.6)!important; }
 /* Stats row */
 .mc-stats-row {
   display: grid; grid-template-columns: repeat(4, 1fr); gap: 0;
@@ -2441,13 +2482,13 @@ footer {
       </div>
 
       <!-- Member card box -->
-      <div class="mc-member-card-box">
+      <div class="mc-member-card-box tier-white" id="mc-card-box">
         <div class="mc-card-deco">
           <svg width="120" height="120" viewBox="0 0 24 24" fill="none" stroke="#000" stroke-width="0.6"><polygon points="12 2 22 8.5 22 15.5 12 22 2 15.5 2 8.5"/><line x1="2" y1="8.5" x2="22" y2="8.5"/><line x1="12" y1="2" x2="12" y2="22"/></svg>
         </div>
         <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:4px;">
           <div class="mc-card-type-badge">
-            標準會員
+            <span id="mc-card-tier-label">白卡會員</span>
             <span class="badge-arrow">›</span>
           </div>
           <button onclick="openMcPanel('card')" style="background:none;border:1px solid var(--border);border-radius:6px;padding:3px 10px;font-size:11px;cursor:pointer;color:var(--ink-60);display:flex;align-items:center;gap:4px;">
@@ -5073,9 +5114,34 @@ async function _loadMcStats() {
       if (visitsEl) visitsEl.textContent = confirmed.length;
       const consEl = document.getElementById('mc-stat-consumption');
       if (consEl) consEl.textContent = confirmed.length;
-      // Progress bar (arbitrary: every $1000 = 5%, max at $20000)
-      const pct = Math.min(100, Math.round(total / 200));
+      // Fetch tier thresholds and apply card theme
+      let gt = 6000, bt = 20000;
+      try {
+        const ts = _tierData || await fetch('/api/tier-settings').then(r=>r.json());
+        _tierData = ts;
+        gt = Number(ts.green_threshold) || 6000;
+        bt = Number(ts.black_threshold) || 20000;
+      } catch {}
+      const cardBox = document.getElementById('mc-card-box');
+      const tierLabel = document.getElementById('mc-card-tier-label');
+      const hintEl = document.getElementById('mc-upgrade-hint-text');
       const bar = document.getElementById('mc-upgrade-bar');
+      let tierName, tierClass, pct;
+      if (total >= bt) {
+        tierName = '黑卡會員'; tierClass = 'tier-black';
+        pct = 100;
+        if (hintEl) hintEl.textContent = '頂級黑卡會員';
+      } else if (total >= gt) {
+        tierName = '綠卡會員'; tierClass = 'tier-green';
+        pct = Math.min(99, Math.round((total - gt) / (bt - gt) * 100));
+        if (hintEl) hintEl.textContent = `再累計 $${(bt - total).toLocaleString()} 升等黑卡`;
+      } else {
+        tierName = '白卡會員'; tierClass = 'tier-white';
+        pct = Math.min(99, Math.round(total / gt * 100));
+        if (hintEl) hintEl.textContent = `再累計 $${(gt - total).toLocaleString()} 升等綠卡`;
+      }
+      if (cardBox) { cardBox.className = 'mc-member-card-box ' + tierClass; }
+      if (tierLabel) tierLabel.textContent = tierName;
       if (bar) bar.style.width = pct + '%';
     }
   } catch(e) {}

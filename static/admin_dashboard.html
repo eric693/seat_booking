@@ -983,6 +983,35 @@ input[list]::-webkit-calendar-picker-indicator { display: none !important; }
                 <button type="button" onclick="addQuickReplyRow()" style="background:var(--teal-light);color:var(--teal);border:1px solid var(--teal);border-radius:6px;padding:6px 16px;font-size:13px;cursor:pointer;font-family:inherit;font-weight:500;">＋ 新增按鈕</button>
               </div>
             </div>
+            <!-- 累點設定 -->
+            <div class="content-section" style="grid-column:1/-1;">
+              <div class="cs-head">會員條碼累點設定</div>
+              <div class="cs-body">
+                <div class="fgrid">
+                  <div class="cs-field">
+                    <label class="cs-label">累點比率（每幾元 NT$ 累積 1 點）</label>
+                    <div style="display:flex;align-items:center;gap:8px;">
+                      <span style="font-size:14px;font-weight:600;color:var(--ink-60);">每</span>
+                      <input class="finput" type="number" id="c-points_per_amount" placeholder="10" min="1" step="1" style="width:100px;text-align:center;font-size:16px;font-weight:700;">
+                      <span style="font-size:14px;font-weight:600;color:var(--ink-60);">元 累積 1 點</span>
+                    </div>
+                    <p style="font-size:11px;color:var(--ink-60);margin-top:6px;">例：填 10 → 消費 NT$100 得 10 點；填 20 → 消費 NT$100 得 5 點</p>
+                  </div>
+                  <div class="cs-field">
+                    <label class="cs-label">預覽</label>
+                    <div style="background:var(--paper);border-radius:8px;padding:14px 16px;border:1px solid var(--border);">
+                      <div style="font-size:13px;color:var(--ink-60);">依目前設定：</div>
+                      <div id="points-rate-preview" style="font-size:15px;font-weight:700;margin-top:6px;color:var(--teal);">每 NT$10 消費 = 1 點</div>
+                    </div>
+                  </div>
+                </div>
+                <div class="cs-field" style="margin-top:12px;">
+                  <label class="cs-label">會員卡使用說明（前台條碼頁顯示）</label>
+                  <textarea class="ftarea" id="c-barcode_instructions" rows="4" placeholder="例：&#10;1. 在收銀台出示此條碼給服務人員&#10;2. 服務人員掃描後輸入消費金額&#10;3. 每消費 NT$10 自動累積 1 點&#10;4. 點數可於結帳時折抵消費"></textarea>
+                  <p style="font-size:11px;color:var(--ink-60);margin-top:4px;">每行一條說明，前台自動逐條顯示。留空則使用系統預設文字。</p>
+                </div>
+              </div>
+            </div>
             <div class="content-section" style="grid-column:1/-1;">
               <div class="cs-head">預約須知（最多 5 條）</div>
               <div class="cs-body">
@@ -1152,7 +1181,10 @@ input[list]::-webkit-calendar-picker-indicator { display: none !important; }
         <div>
           <!-- 掃碼輸入 -->
           <div class="card" style="margin-bottom:20px;">
-            <div class="card-head"><h2 class="card-title">掃碼累點</h2></div>
+            <div class="card-head">
+              <h2 class="card-title">掃碼累點</h2>
+              <span id="scan-rate-badge" style="font-size:12px;background:var(--teal-light);color:var(--teal);padding:4px 10px;border-radius:20px;font-weight:600;">每消費 NT$10 = 1 點</span>
+            </div>
             <div class="card-body">
               <div style="margin-bottom:16px;">
                 <label style="font-size:13px;font-weight:600;display:block;margin-bottom:6px;color:var(--ink-60);">掃描或輸入會員條碼</label>
@@ -1211,7 +1243,7 @@ input[list]::-webkit-calendar-picker-indicator { display: none !important; }
                   <div>
                     <div style="font-size:12px;color:var(--ink-60);">本次將獲得</div>
                     <div style="font-size:28px;font-weight:800;color:var(--green);" id="scan-pts-earn">0</div>
-                    <div style="font-size:12px;color:var(--ink-60);margin-top:1px;">點（每 NT$10 = 1 點）</div>
+                    <div style="font-size:12px;color:var(--ink-60);margin-top:1px;">點（<span id="scan-rate-note">每 NT$10 = 1 點</span>）</div>
                   </div>
                   <div style="text-align:right;">
                     <div style="font-size:12px;color:var(--ink-60);">累積後點數</div>
@@ -2471,8 +2503,9 @@ async function loadContent() {
   try {
     const res = await fetch('/admin/api/site-content', { headers: H });
     const data = await res.json();
-    const keys = ['site_title','hero_title','hero_badge','site_subtitle','site_description','step1_title','step2_title','step3_title','service_hours','contact_phone','contact_email','footer_text','notice_1','notice_2','notice_3','notice_4','notice_5'];
+    const keys = ['site_title','hero_title','hero_badge','site_subtitle','site_description','step1_title','step2_title','step3_title','service_hours','contact_phone','contact_email','footer_text','notice_1','notice_2','notice_3','notice_4','notice_5','points_per_amount','barcode_instructions'];
     keys.forEach(k => { const el = document.getElementById(`c-${k}`); if (el && data[k] !== undefined) el.value = data[k]; });
+    _updatePointsRatePreview();
     // 載入 toggle 開關
     setSwitchState('c-show_chat_widget', data.show_chat_widget !== '0');
     setSwitchState('c-reg_show_email', data.reg_show_email !== '0');
@@ -2493,7 +2526,7 @@ async function loadContent() {
 
 async function saveContent() {
   if (!_contentLoaded) { toast('設定尚未載入完成，請稍候再儲存', 'error'); return; }
-  const keys = ['site_title','hero_title','hero_badge','site_subtitle','site_description','step1_title','step2_title','step3_title','service_hours','contact_phone','contact_email','footer_text','notice_1','notice_2','notice_3','notice_4','notice_5'];
+  const keys = ['site_title','hero_title','hero_badge','site_subtitle','site_description','step1_title','step2_title','step3_title','service_hours','contact_phone','contact_email','footer_text','notice_1','notice_2','notice_3','notice_4','notice_5','points_per_amount','barcode_instructions'];
   const payload = {};
   keys.forEach(k => { const el = document.getElementById(`c-${k}`); if (el) payload[k] = el.value.trim(); });
   // 儲存 toggle 開關
@@ -2511,6 +2544,20 @@ async function saveContent() {
     else toast('儲存失敗', 'error');
   } catch { toast('儲存失敗', 'error'); }
 }
+
+function _updatePointsRatePreview() {
+  const input = document.getElementById('c-points_per_amount');
+  const preview = document.getElementById('points-rate-preview');
+  if (!input || !preview) return;
+  const val = parseFloat(input.value) || 10;
+  const eg100 = Math.floor(100 / val);
+  preview.textContent = `每 NT$${val} 消費 = 1 點（NT$100 → ${eg100} 點）`;
+}
+// wire live preview
+setTimeout(() => {
+  const el = document.getElementById('c-points_per_amount');
+  if (el) el.addEventListener('input', _updatePointsRatePreview);
+}, 800);
 
 // ── PHOTOS (★ 完整重寫，支援拖曳排序) ──
 async function loadPhotos() {
@@ -4565,10 +4612,21 @@ startStatsAutoRefresh();
 // 掃碼累點
 // ─────────────────────────────────────────────
 let _scanMember = null;
+let _scanPointsRate = 10;
 
-function initScanPage() {
+async function initScanPage() {
   clearScan();
   loadScanHistory();
+  // Load current points rate from config
+  try {
+    const res = await fetch('/admin/api/scan/config', { headers: H });
+    if (res.ok) {
+      const cfg = await res.json();
+      _scanPointsRate = cfg.points_per_amount || 10;
+      const rateEl = document.getElementById('scan-rate-badge');
+      if (rateEl) rateEl.textContent = `每消費 NT$${_scanPointsRate} = 1 點`;
+    }
+  } catch(e) {}
   setTimeout(() => document.getElementById('scan-barcode-input')?.focus(), 100);
 }
 
@@ -4635,10 +4693,12 @@ function updatePointsPreview() {
   const amount = parseFloat(document.getElementById('scan-amount-input').value) || 0;
   const preview = document.getElementById('scan-points-preview');
   if (!_scanMember || amount <= 0) { preview.style.display = 'none'; return; }
-  const pts = Math.floor(amount / 10);
+  const pts = Math.floor(amount / _scanPointsRate);
   preview.style.display = 'block';
   document.getElementById('scan-pts-earn').textContent = pts;
   document.getElementById('scan-pts-after').textContent = ((_scanMember.points || 0) + pts).toLocaleString();
+  const rateNote = document.getElementById('scan-rate-note');
+  if (rateNote) rateNote.textContent = `每 NT$${_scanPointsRate} = 1 點`;
 }
 
 async function doScanEarnPoints() {

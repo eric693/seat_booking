@@ -1915,13 +1915,15 @@ footer {
           </button>
         </div>
       </div>
-      <!-- 說明 -->
+      <!-- 說明（動態從後台載入） -->
       <div style="background:#f8f8f8;border-radius:10px;padding:12px 14px;font-size:11px;color:var(--ink-60);line-height:1.8;margin-bottom:12px;">
         <div style="font-weight:600;color:var(--ink);margin-bottom:4px;font-size:12px;">如何使用？</div>
-        <div>1. 在收銀台出示此條碼給服務人員</div>
-        <div>2. 服務人員掃描後輸入消費金額</div>
-        <div>3. 每消費 <strong>NT$10</strong> 自動累積 <strong>1 點</strong></div>
-        <div>4. 點數可於結帳時折抵消費</div>
+        <div id="mc-barcode-instructions">
+          <div>1. 在收銀台出示此條碼給服務人員</div>
+          <div>2. 服務人員掃描後輸入消費金額</div>
+          <div>3. 每消費 <strong>NT$<span class="mc-pts-rate-text">10</span></strong> 自動累積 <strong>1 點</strong></div>
+          <div>4. 點數可於結帳時折抵消費</div>
+        </div>
       </div>
       <!-- 載具按鈕 -->
       <div style="padding:12px 16px;background:var(--ink);color:#fff;border-radius:10px;font-size:13px;font-weight:600;display:flex;align-items:center;justify-content:center;gap:8px;cursor:default;opacity:0.85;">
@@ -2007,6 +2009,7 @@ footer {
         <option value="12">近一年</option>
       </select>
       <div class="pts-hint">*消費點數於發票開立後 2 個工作日內歸戶，活動贈點依活動說明為準。</div>
+      <div class="pts-hint pts-hint-rate" style="color:var(--teal);font-weight:600;">每消費 NT$<span class="mc-pts-rate-text">10</span> 獲得 1 點</div>
       <!-- 點數明細表 -->
       <div class="pts-table-head"><div>歸戶日期</div><div>類別</div><div style="text-align:right;">點數</div></div>
       <div id="mc-points-list"><div style="text-align:center;padding:20px;color:var(--ink-60);">載入中...</div></div>
@@ -2357,7 +2360,29 @@ async function loadContent() {
       const fields = typeof c.form_fields === 'string' ? JSON.parse(c.form_fields) : c.form_fields;
       if (fields && fields.length) renderFormFields(fields);
     } catch(e2) {}
+
+    // 累點比率 & 條碼說明（動態更新）
+    _applyPointsConfig(c);
   } catch (e) { console.warn('Content load failed', e); }
+}
+
+function _applyPointsConfig(c) {
+  const rate = parseFloat(c.points_per_amount) || 10;
+  // 更新所有顯示累點比率的元素
+  document.querySelectorAll('.mc-pts-rate-text').forEach(el => {
+    el.textContent = rate;
+  });
+  // 更新點數專區下方提示
+  const ptsHintEl = document.querySelector('#mc-panel-points .pts-hint-rate');
+  if (ptsHintEl) ptsHintEl.textContent = `每消費 NT$${rate} 獲得 1 點`;
+  // 更新條碼說明文字
+  const instrEl = document.getElementById('mc-barcode-instructions');
+  if (instrEl && c.barcode_instructions && c.barcode_instructions.trim()) {
+    const lines = c.barcode_instructions.trim().split('\n').filter(l => l.trim());
+    instrEl.innerHTML = lines.map((l, i) =>
+      `<div>${l.trim()}</div>`
+    ).join('');
+  }
 }
 
 // ── Load rooms ──

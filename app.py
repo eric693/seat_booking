@@ -1944,11 +1944,12 @@ def uploaded_file(filename):
 @app.route('/api/site-content')
 def get_site_content():
     keys = ['site_title', 'site_subtitle', 'site_description', 'hero_badge',
-            'hero_title',        
+            'hero_title',
             'step1_title', 'step2_title', 'step3_title',
             'service_hours', 'contact_phone', 'contact_email', 'footer_text',
             'notice_1', 'notice_2', 'notice_3', 'notice_4', 'notice_5', 'logo_url',
-            'reg_show_email', 'reg_show_phone', 'show_chat_widget']
+            'reg_show_email', 'reg_show_phone', 'show_chat_widget',
+            'points_per_amount', 'barcode_instructions']
 
     data = {k: SiteContent.get(k) for k in keys}
     # chat_quick_replies：若未設定則回傳預設值
@@ -5373,6 +5374,15 @@ def admin_adjust_points(mid):
 # 掃碼累點 API
 # ─────────────────────────────────────────────
 
+@app.route('/admin/api/scan/config', methods=['GET'])
+def scan_get_config():
+    err = check_admin()
+    if err: return err
+    per = float(SiteContent.get('points_per_amount') or '10') or 10
+    instructions = SiteContent.get('barcode_instructions') or ''
+    return jsonify({'points_per_amount': per, 'barcode_instructions': instructions})
+
+
 @app.route('/admin/api/scan/member', methods=['GET'])
 def scan_lookup_member():
     err = check_admin()
@@ -5415,9 +5425,10 @@ def scan_earn_points():
     m = Member.query.get(mid)
     if not m:
         return jsonify({'error': '查無此會員'}), 404
-    pts = int(amount // 10)
+    per = float(SiteContent.get('points_per_amount') or '10') or 10
+    pts = int(amount // per)
     if pts <= 0:
-        return jsonify({'error': f'消費金額 NT${amount:.0f} 不足以獲得點數（每 NT$10 = 1 點）'}), 400
+        return jsonify({'error': f'消費金額 NT${amount:.0f} 不足以獲得點數（每 NT${per:.0f} = 1 點）'}), 400
     desc = f'掃碼累點 NT${amount:.0f}' + (f'（{note}）' if note else '')
     m.points = (m.points or 0) + pts
     db.session.add(PointTransaction(
@@ -5430,6 +5441,7 @@ def scan_earn_points():
         'earned': pts,
         'new_balance': m.points,
         'description': desc,
+        'points_rate': per,
     })
 
 

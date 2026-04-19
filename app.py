@@ -1619,6 +1619,8 @@ class Member(db.Model):
     residence             = db.Column(db.String(20), default='')   # taiwan/mainland/hk/other
     address               = db.Column(db.String(200), default='')
     invite_code           = db.Column(db.String(30), default='')
+    vip_discount          = db.Column(db.Integer, default=0)       # 0=無; 85=85折; 90=9折
+    vip_card_note         = db.Column(db.String(200), default='')
 
     def set_password(self, pw):
         self.password_hash = generate_password_hash(pw)
@@ -1646,6 +1648,8 @@ class Member(db.Model):
             'residence': self.residence or '',
             'address': self.address or '',
             'invite_code': self.invite_code or '',
+            'vip_discount': self.vip_discount or 0,
+            'vip_card_note': self.vip_card_note or '',
         }
 
 
@@ -2200,6 +2204,15 @@ def create_booking():
         price = original_price
         coupon_code    = ''
         discount_amount = 0
+        # ── VIP 鼎極卡自動折扣 ──
+        _mid = session.get('member_id')
+        _vip_member = Member.query.get(_mid) if _mid else None
+        _vip_pct = (_vip_member.vip_discount or 0) if _vip_member else 0
+        if _vip_pct > 0:
+            _vip_disc = round(original_price * (1 - _vip_pct / 100))
+            discount_amount += _vip_disc
+            price = max(0, price - _vip_disc)
+            coupon_code = f'VIP鼎極卡{_vip_pct}折'
         # ── 優惠碼套用 ──
         _coupon_code = (data.get('coupon_code') or '').strip().upper()
         if _coupon_code:
@@ -2215,11 +2228,13 @@ def create_booking():
                         member_id=session.get('member_id'), coupon_id=_c.id).first()
                     if _mc and not _mc.is_used:
                         if _c.discount_type == 'percent':
-                            discount_amount = round(original_price * (_c.discount_value / 100))
+                            _coupon_disc = round(price * (_c.discount_value / 100))
                         else:
-                            discount_amount = min(int(_c.discount_value), original_price)
-                        price = max(0, original_price - discount_amount)
-                        coupon_code = _coupon_code
+                            _coupon_disc = min(int(_c.discount_value), price)
+                        discount_amount += _coupon_disc
+                        price = max(0, price - _coupon_disc)
+                        coupon_code = (_coupon_code if not coupon_code
+                                       else coupon_code + '+' + _coupon_code)
 
         line_uid = data.get('line_user_id', '')
         if not line_uid and data.get('phone'):
@@ -4429,6 +4444,8 @@ with app.app_context():
                 'residence':              "ALTER TABLE members ADD COLUMN residence VARCHAR(20) DEFAULT ''",
                 'address':                "ALTER TABLE members ADD COLUMN address VARCHAR(200) DEFAULT ''",
                 'invite_code':            "ALTER TABLE members ADD COLUMN invite_code VARCHAR(30) DEFAULT ''",
+                'vip_discount':           'ALTER TABLE members ADD COLUMN vip_discount INTEGER DEFAULT 0',
+                'vip_card_note':          "ALTER TABLE members ADD COLUMN vip_card_note VARCHAR(200) DEFAULT ''",
             }
             for col, sql in _member_cols.items():
                 if col not in _mb_cols:
@@ -5622,6 +5639,21 @@ def admin_adjust_points(mid):
     db.session.add(PointTransaction(member_id=m.id, type='adjust', points=pts, description=desc))
     db.session.commit()
     return jsonify({'success': True, 'balance': m.points})
+
+
+@app.route('/admin/api/members/<int:mid>/vip', methods=['PATCH'])
+def admin_set_vip_card(mid):
+    err = check_admin()
+    if err: return err
+    m = Member.query.get_or_404(mid)
+    d = request.get_json() or {}
+    disc = int(d.get('vip_discount', 0))
+    if disc < 0 or disc > 99:
+        return jsonify({'error': '折扣需在 0~99 之間'}), 400
+    m.vip_discount  = disc
+    m.vip_card_note = (d.get('vip_card_note') or '').strip()[:200]
+    db.session.commit()
+    return jsonify({'success': True, 'member': m.to_dict()})
 
 
 @app.route('/admin/api/points/transactions', methods=['GET'])

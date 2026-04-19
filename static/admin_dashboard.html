@@ -1880,6 +1880,33 @@ input[list]::-webkit-calendar-picker-indicator { display: none !important; }
 
 
 
+    <!-- ── VIP 鼎極卡 Modal ── -->
+    <div class="modal" id="vipCardModal">
+      <div class="modal-box" style="max-width:420px;padding:36px;">
+        <h3 style="font-family:'DM Serif Display',serif;font-size:22px;margin-bottom:4px;">🃏 VIP 鼎極卡設定</h3>
+        <p id="vip-card-member-name" style="font-size:14px;color:var(--ink-60);margin-bottom:20px;"></p>
+        <div class="fgroup" style="margin-bottom:16px;">
+          <label style="font-size:13px;font-weight:600;">折扣（輸入折數，0 = 取消鼎極卡）</label>
+          <div style="display:flex;align-items:center;gap:8px;margin-top:6px;">
+            <input class="finput" id="vip-discount-input" type="number" min="0" max="99" placeholder="例：85" style="width:100px;font-size:22px;font-weight:700;text-align:center;">
+            <span style="font-size:18px;font-weight:600;color:var(--ink-60);">折</span>
+          </div>
+          <p style="font-size:11px;color:var(--ink-60);margin-top:6px;">1~99 為折扣（85 = 85折，即九五折打八五折）；0 表示取消鼎極卡</p>
+        </div>
+        <div class="fgroup" style="margin-bottom:20px;">
+          <label style="font-size:13px;font-weight:600;">備註（內部用，不顯示給會員）</label>
+          <input class="finput" id="vip-card-note-input" type="text" placeholder="例：VIP客戶、合作廠商..." style="margin-top:6px;">
+        </div>
+        <input type="hidden" id="vip-card-member-id">
+        <div id="vip-card-error" style="display:none;color:var(--red);font-size:13px;margin-bottom:12px;"></div>
+        <div style="display:flex;gap:10px;">
+          <button class="btn btn-primary" style="flex:1;background:linear-gradient(135deg,#b8860b,#ffd700);border:none;" onclick="saveVipCard()">儲存</button>
+          <button class="btn btn-outline" style="flex:1;" onclick="document.getElementById('vipCardModal').classList.remove('show')">取消</button>
+        </div>
+        <button onclick="document.getElementById('vipCardModal').classList.remove('show')" style="position:absolute;top:16px;right:20px;background:none;border:none;font-size:22px;color:var(--ink-60);cursor:pointer;">×</button>
+      </div>
+    </div>
+
     <!-- ── CHAT ── -->
     <div class="page" id="page-chat">
       <div style="display:grid;grid-template-columns:320px 1fr;gap:20px;height:calc(100vh - 140px);">
@@ -4833,7 +4860,10 @@ async function loadMembers() {
     }
     tbody.innerHTML = members.map(m => `
       <tr style="${m.is_blocked ? 'opacity:0.55;' : ''}">
-        <td><strong>${m.name}</strong></td>
+        <td>
+          <strong>${m.name}</strong>
+          ${m.vip_discount > 0 ? `<span style="display:inline-block;margin-left:6px;background:linear-gradient(135deg,#b8860b,#ffd700);color:#fff;font-size:10px;font-weight:700;padding:2px 7px;border-radius:10px;letter-spacing:.04em;">鼎極卡 ${m.vip_discount}折</span>` : ''}
+        </td>
         <td style="font-size:13px;max-width:180px;overflow:hidden;text-overflow:ellipsis;">${m.email || '—'}</td>
         <td style="font-size:13px;">${m.phone || '—'}</td>
         <td>
@@ -4862,6 +4892,7 @@ async function loadMembers() {
           <div style="display:flex;gap:6px;flex-wrap:wrap;">
             <button class="btn btn-outline btn-sm" onclick="openMemberBookings(${m.id},'${(m.name||'').replace(/'/g,"\\'")}')" style="white-space:nowrap;">預約記錄</button>
             <button class="btn btn-outline btn-sm" onclick="openEditMemberModal(${m.id},'${(m.name||'').replace(/'/g,"\\'")}','${m.email||''}','${m.phone||''}')" style="border-color:var(--teal);color:var(--teal);white-space:nowrap;">編輯</button>
+            <button class="btn btn-sm" onclick="openVipCardModal(${m.id},'${(m.name||'').replace(/'/g,"\\'")}',${m.vip_discount||0},'${(m.vip_card_note||'').replace(/'/g,"\\'")}')" style="background:linear-gradient(135deg,#b8860b,#ffd700);color:#fff;border:none;white-space:nowrap;font-weight:600;">🃏 鼎極卡</button>
             ${m.is_blocked
               ? `<button class="btn btn-outline btn-sm" onclick="unblockMember(${m.id})" style="white-space:nowrap;">解除停用</button>`
               : `<button class="btn btn-sm" onclick="openBlockModal(${m.id})" style="background:#fff0ee;color:var(--red);border:1px solid #ffcdd2;white-space:nowrap;">停用</button>`}
@@ -4927,6 +4958,47 @@ function openBlockModal(id) {
   document.getElementById('block-reason').value = '';
   document.getElementById('blockMemberModal').classList.add('show');
 }
+
+// ── VIP 鼎極卡 ──
+function openVipCardModal(id, name, discount, note) {
+  document.getElementById('vip-card-member-id').value = id;
+  document.getElementById('vip-card-member-name').textContent = '會員：' + name;
+  document.getElementById('vip-discount-input').value = discount || 0;
+  document.getElementById('vip-card-note-input').value = note || '';
+  document.getElementById('vip-card-error').style.display = 'none';
+  document.getElementById('vipCardModal').classList.add('show');
+}
+
+async function saveVipCard() {
+  const id   = document.getElementById('vip-card-member-id').value;
+  const disc = parseInt(document.getElementById('vip-discount-input').value, 10);
+  const note = document.getElementById('vip-card-note-input').value.trim();
+  const errEl = document.getElementById('vip-card-error');
+  errEl.style.display = 'none';
+  if (isNaN(disc) || disc < 0 || disc > 99) {
+    errEl.textContent = '折扣需在 0~99 之間';
+    errEl.style.display = 'block';
+    return;
+  }
+  const res = await fetch(`/admin/api/members/${id}/vip`, {
+    method: 'PATCH',
+    headers: { ...H, 'Content-Type': 'application/json' },
+    body: JSON.stringify({ vip_discount: disc, vip_card_note: note })
+  });
+  if (res.ok) {
+    toast(disc > 0 ? `已設定 VIP 鼎極卡 ${disc}折` : '已取消 VIP 鼎極卡', 'success');
+    document.getElementById('vipCardModal').classList.remove('show');
+    loadMembers();
+  } else {
+    const d = await res.json().catch(() => ({}));
+    errEl.textContent = d.error || '儲存失敗';
+    errEl.style.display = 'block';
+  }
+}
+
+document.getElementById('vipCardModal')?.addEventListener('click', function(e) {
+  if (e.target === this) this.classList.remove('show');
+});
 
 async function confirmBlockMember() {
   const id     = document.getElementById('block-member-id').value;

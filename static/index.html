@@ -37,15 +37,7 @@ body {
 }
 
 /* ── HEADER ── */
-header {
-  background: var(--hero-bg);
-  color: var(--white);
-  padding: 0;
-  position: sticky;
-  top: 0;
-  z-index: 100;
-  border-bottom: 2px solid var(--gold);
-}
+header { display: none; }
 
 .header-inner {
   max-width: 1300px;
@@ -2008,7 +2000,8 @@ footer {
   .hp-features-grid { grid-template-columns: repeat(2, 1fr); }
   .footer-cols { grid-template-columns: 1fr; }
   .hp-login-banner { padding: 28px 24px; }
-  .sub-nav-inner { overflow-x: auto; }
+  .sub-nav-inner { overflow-x: auto; flex-wrap: nowrap; }
+  .snav-brand { display: none !important; }
   .booking-section-head { padding: 28px 20px 0; }
 }
 
@@ -2129,19 +2122,14 @@ footer {
 </head>
 <body>
 
-<header>
-  <div class="header-inner">
-    <div class="brand">
-      <div class="brand-icon" id="header-logo-wrap">MR</div>
-      <div class="brand-name" id="hdr-title">會議室預約系統</div>
-    </div>
-    <span id="hdr-phone" style="display:none;"></span>
-  </div>
-</header>
-
 <!-- SECONDARY NAV -->
 <nav class="sub-nav">
   <div class="sub-nav-inner">
+    <!-- Brand in nav -->
+    <div class="snav-brand" onclick="scrollToBooking(event)" style="display:flex;align-items:center;gap:8px;cursor:pointer;margin-right:16px;flex-shrink:0;">
+      <div class="brand-icon" id="header-logo-wrap" style="width:28px;height:28px;font-size:14px;">MR</div>
+      <span class="brand-name" id="hdr-title" style="font-size:15px;color:#fff;white-space:nowrap;">會議室預約系統</span>
+    </div>
     <a class="snav-item active" onclick="scrollToBooking(event)">空間預約</a>
     <a class="snav-item" onclick="requireLogin(() => openMemberCenter())">會員中心</a>
     <a class="snav-item" onclick="requireLogin(() => { openMemberCenter(); openMcPanel('coupons'); })">優惠券</a>
@@ -2385,6 +2373,10 @@ footer {
         <div class="sum-row">
           <div class="sum-lbl">聯絡人</div>
           <div class="sum-val empty" id="sum-name">請填寫</div>
+        </div>
+        <div class="sum-row" id="sum-vip-discount-row" style="display:none;">
+          <div class="sum-lbl" style="color:#b8860b;">🃏 鼎極卡折扣</div>
+          <div class="sum-val" id="sum-vip-discount" style="color:#b8860b;font-weight:700;">-NT$ 0</div>
         </div>
         <div class="sum-row" id="sum-discount-row" style="display:none;">
           <div class="sum-lbl" style="color:var(--red);">優惠折抵</div>
@@ -2769,6 +2761,9 @@ footer {
             <div class="mc-upgrade-bar-fill" id="mc-upgrade-bar" style="width:0%"></div>
           </div>
           <div class="mc-upgrade-hint" id="mc-upgrade-hint-text">累積消費提升會員等級</div>
+        </div>
+        <div id="mc-vip-badge" style="display:none;margin-top:10px;background:linear-gradient(135deg,#b8860b,#ffd700);color:#fff;border-radius:20px;padding:4px 14px;font-size:12px;font-weight:700;letter-spacing:.04em;text-align:center;">
+          🃏 VIP 鼎極卡 · <span id="mc-vip-pct"></span>折優惠
         </div>
       </div>
 
@@ -3294,13 +3289,6 @@ async function initLiff() {
     const profile = await liff.getProfile();
     window._liffUserId  = profile.userId;
     window._liffProfile = profile;
-
-    const bar = document.getElementById('liff-user-bar');
-    if (bar) {
-      document.getElementById('liff-avatar').src = profile.pictureUrl || '';
-      document.getElementById('liff-name').textContent = profile.displayName || '';
-      bar.style.display = 'flex';
-    }
 
     autoFillContactForm();
 
@@ -5265,6 +5253,12 @@ function openMemberCenter() {
   document.getElementById('mcOverlay').classList.add('open');
   _loadMcCouponBadge();
   _loadMcStats();
+  // VIP 鼎極卡 badge
+  const vipBadge = document.getElementById('mc-vip-badge');
+  const vipPct   = document.getElementById('mc-vip-pct');
+  const vip = (m && m.vip_discount) || 0;
+  if (vipBadge) vipBadge.style.display = vip > 0 ? '' : 'none';
+  if (vipPct) vipPct.textContent = vip;
 }
 
 function closeMemberCenter() {
@@ -5863,10 +5857,27 @@ function _refreshCouponDisplay() {
 }
 
 function _setBookingOriginalPrice(price) {
-  if (!_bookingCoupon) _bookingOriginalPrice = price;
-  else {
-    _bookingOriginalPrice = price;
-    _refreshCouponDisplay();
+  _bookingOriginalPrice = price;
+  _refreshVipDiscount();
+  if (_bookingCoupon) _refreshCouponDisplay();
+}
+
+function _refreshVipDiscount() {
+  const vip = (_currentMember && _currentMember.vip_discount) || 0;
+  const vipRow  = document.getElementById('sum-vip-discount-row');
+  const vipEl   = document.getElementById('sum-vip-discount');
+  const priceEl = document.getElementById('sum-price');
+  if (!vipRow) return;
+  if (vip > 0 && _bookingOriginalPrice) {
+    const disc = Math.round(_bookingOriginalPrice * (1 - vip / 100));
+    vipRow.style.display = '';
+    if (vipEl) vipEl.textContent = `-NT$ ${disc.toLocaleString()}`;
+    // reflect on price display only when no coupon is active
+    if (!_bookingCoupon && priceEl) {
+      priceEl.textContent = `NT$ ${Math.max(0, _bookingOriginalPrice - disc).toLocaleString()}`;
+    }
+  } else {
+    vipRow.style.display = 'none';
   }
 }
 

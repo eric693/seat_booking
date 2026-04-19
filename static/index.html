@@ -2797,181 +2797,8 @@ footer {
       <div class="terms-header-title">會員權益與服務條款</div>
       <button class="terms-close" onclick="closeMemberTerms()">×</button>
     </div>
-    <div class="terms-body">
-
-      <!-- 加入會員 -->
-      <div class="terms-section-title">加入會員</div>
-      <p class="terms-para">即日起於本平台完成會員註冊，立即成為<strong>白卡會員</strong>，享有各通路會員權益、消費累點等服務。<br>依照累計消費金額自動升等為綠卡或黑卡會員，享有更多專屬權益。</p>
-
-      <!-- 會員優惠與權益對照表 -->
-      <div class="terms-section-title">會員優惠與權益</div>
-      <div class="tier-compare-wrap">
-        <table class="tier-compare-table">
-          <thead>
-            <tr>
-              <th>卡別</th>
-              <th>
-                <div class="tier-hd-card tier-hd-white" style="margin:0 auto;">
-                  <div class="tier-hd-dot"></div>
-                  <div class="tier-hd-name">白卡</div>
-                  <div class="tier-hd-sub">White</div>
-                </div>
-              </th>
-              <th>
-                <div class="tier-hd-card tier-hd-green" style="margin:0 auto;">
-                  <div class="tier-hd-dot"></div>
-                  <div class="tier-hd-name">綠卡</div>
-                  <div class="tier-hd-sub">Green</div>
-                </div>
-              </th>
-              <th>
-                <div class="tier-hd-card tier-hd-black" style="margin:0 auto;">
-                  <div class="tier-hd-dot"></div>
-                  <div class="tier-hd-name">黑卡</div>
-                  <div class="tier-hd-sub">Black</div>
-                </div>
-              </th>
-            </tr>
-          </thead>
-          <tbody>
-            <tr><td>升等門檻（累計消費）</td><td class="tier-val">—（新會員）</td><td class="tier-val">滿 $6,000</td><td class="tier-val">滿 $20,000</td></tr>
-            <tr class="tier-group-row"><td colspan="4">入會禮</td></tr>
-            <tr><td>線上 $50 優惠券（滿$500可抵用）</td><td><span class="tier-check">✓</span></td><td><span class="tier-dash">—</span></td><td><span class="tier-dash">—</span></td></tr>
-            <tr class="tier-group-row"><td colspan="4">生日禮</td></tr>
-            <tr><td>線上優惠券</td><td class="tier-val">$50<br><small style="font-weight:400;color:var(--ink-60);">(滿$499可抵)</small></td><td class="tier-val">$100<br><small style="font-weight:400;color:var(--ink-60);">(滿$1,000可抵)</small></td><td class="tier-val">$150<br><small style="font-weight:400;color:var(--ink-60);">(滿$1,500可抵)</small></td></tr>
-            <tr><td>生日當月升等抽獎</td><td><span class="tier-check">✓</span></td><td><span class="tier-dash">—</span></td><td><span class="tier-dash">—</span></td></tr>
-            <tr><td>門市85折優惠券（2張）</td><td><span class="tier-dash">—</span></td><td><span class="tier-check">✓</span></td><td><span class="tier-check">✓</span></td></tr>
-            <tr><td>實體書店 $100 優惠券</td><td><span class="tier-dash">—</span></td><td><span class="tier-dash">—</span></td><td><span class="tier-check">✓</span></td></tr>
-            <tr class="tier-group-row"><td colspan="4">通路優惠</td></tr>
-            <tr><td>週一/三/五 滿$777享9折起</td><td><span class="tier-check">✓</span></td><td><span class="tier-check">✓</span></td><td><span class="tier-check">✓</span></td></tr>
-            <tr><td>電影票優惠 NT$250/張（限4張）</td><td><span class="tier-check">✓</span></td><td><span class="tier-check">✓</span></td><td><span class="tier-check">✓</span></td></tr>
-            <tr><td>空間預約專屬折扣</td><td><span class="tier-dash">—</span></td><td class="tier-val">95折</td><td class="tier-val">9折</td></tr>
-            <tr class="tier-group-row"><td colspan="4">點數回饋</td></tr>
-            <tr><td>消費點數回饋率</td><td class="tier-val">每$10得1點</td><td class="tier-val">每$10得1.5點</td><td class="tier-val">每$10得2點</td></tr>
-            <tr><td>專屬客服</td><td><span class="tier-dash">—</span></td><td><span class="tier-dash">—</span></td><td><span class="tier-check">✓</span></td></tr>
-          </tbody>
-        </table>
-      </div>
-
-      <!-- 各等級詳細說明 -->
-      <div class="terms-section-title">會員各等級權益說明</div>
-      <div class="tier-tabs">
-        <button class="tier-tab-btn active-white" id="ttab-white" onclick="switchTierTab('white')">白卡會員</button>
-        <button class="tier-tab-btn" id="ttab-green" onclick="switchTierTab('green')">綠卡會員</button>
-        <button class="tier-tab-btn" id="ttab-black" onclick="switchTierTab('black')">黑卡會員</button>
-      </div>
-
-      <!-- 白卡 -->
-      <div class="tier-tab-pane active" id="tpane-white">
-        <div class="tier-benefit-group">
-          <div class="tier-bg-title">【免費申辦，立享優惠】</div>
-          <ul class="tier-blist">
-            <li class="tier-bitem"><span class="tier-bdot tier-bdot-white"></span><span>線上申辦：於本平台完成會員註冊，即成為白卡會員。</span></li>
-            <li class="tier-bitem"><span class="tier-bdot tier-bdot-white"></span><span>累計期限：白卡會員於白卡會籍有效期間，消費累計滿 <strong>$6,000（含）</strong>即可升等為綠卡會員。</span></li>
-            <li class="tier-bitem"><span class="tier-bdot tier-bdot-white"></span><span>帳戶連續 5 年（含）無消費紀錄，會籍資格將自動終止；點數或優惠券請於終止前兌換使用。</span></li>
-          </ul>
-        </div>
-        <div class="tier-benefit-group">
-          <div class="tier-bg-title">【通路優惠，聰明消費】</div>
-          <ul class="tier-blist">
-            <li class="tier-bitem"><span class="tier-bdot tier-bdot-white"></span><span>每週一/三/五單筆消費滿 NT$777（含）以上享 9折起優惠。</span></li>
-            <li class="tier-bitem"><span class="tier-bdot tier-bdot-white"></span><span>電影票優惠 NT$250/張（單場限購4張）。</span></li>
-            <li class="tier-bitem"><span class="tier-bdot tier-bdot-white"></span><span>新會員入會禮：<strong>$50 線上優惠券</strong>（滿$500可抵用）。</span></li>
-          </ul>
-        </div>
-        <div class="tier-benefit-group">
-          <div class="tier-bg-title">【生日禮】</div>
-          <ul class="tier-blist">
-            <li class="tier-bitem"><span class="tier-bdot tier-bdot-white"></span><span>生日當月享 <strong>$50 線上優惠券</strong>（滿$499可抵用）。</span></li>
-            <li class="tier-bitem"><span class="tier-bdot tier-bdot-white"></span><span>生日當月消費享「升等綠卡」抽獎資格。</span></li>
-          </ul>
-        </div>
-        <div class="tier-benefit-group">
-          <div class="tier-bg-title">【點數回饋】</div>
-          <ul class="tier-blist">
-            <li class="tier-bitem"><span class="tier-bdot tier-bdot-white"></span><span>每消費 NT$10 累積 <strong>1 點</strong>，點數可於結帳時折抵消費。</span></li>
-          </ul>
-        </div>
-        <div class="tier-upgrade-hint">升等提示：累計消費達 <strong>$6,000</strong> 自動升等為綠卡會員，享有更多回饋與優惠。</div>
-      </div>
-
-      <!-- 綠卡 -->
-      <div class="tier-tab-pane" id="tpane-green">
-        <div class="tier-benefit-group">
-          <div class="tier-bg-title">【升等資格】</div>
-          <ul class="tier-blist">
-            <li class="tier-bitem"><span class="tier-bdot tier-bdot-green"></span><span>白卡會籍有效期間累計消費達 <strong>$6,000（含）</strong> 自動升等。</span></li>
-            <li class="tier-bitem"><span class="tier-bdot tier-bdot-green"></span><span>綠卡有效期限：升等起算 <strong>2 年</strong>；期間累計消費未達黑卡門檻，續卡須重新累積至$6,000。</span></li>
-          </ul>
-        </div>
-        <div class="tier-benefit-group">
-          <div class="tier-bg-title">【通路優惠】</div>
-          <ul class="tier-blist">
-            <li class="tier-bitem"><span class="tier-bdot tier-bdot-green"></span><span>每週一/三/五單筆消費滿 NT$777（含）以上享 9折起優惠。</span></li>
-            <li class="tier-bitem"><span class="tier-bdot tier-bdot-green"></span><span>電影票優惠 NT$250/張（單場限購4張）。</span></li>
-            <li class="tier-bitem"><span class="tier-bdot tier-bdot-green"></span><span>空間預約享 <strong>95折</strong> 專屬折扣。</span></li>
-          </ul>
-        </div>
-        <div class="tier-benefit-group">
-          <div class="tier-bg-title">【生日禮】</div>
-          <ul class="tier-blist">
-            <li class="tier-bitem"><span class="tier-bdot tier-bdot-green"></span><span>生日當月享 <strong>$100 線上優惠券</strong>（滿$1,000可抵用）。</span></li>
-            <li class="tier-bitem"><span class="tier-bdot tier-bdot-green"></span><span>門市 85折優惠券 2 張。</span></li>
-          </ul>
-        </div>
-        <div class="tier-benefit-group">
-          <div class="tier-bg-title">【點數回饋】</div>
-          <ul class="tier-blist">
-            <li class="tier-bitem"><span class="tier-bdot tier-bdot-green"></span><span>每消費 NT$10 累積 <strong>1.5 點</strong>，點數可於結帳時折抵消費。</span></li>
-          </ul>
-        </div>
-        <div class="tier-upgrade-hint">升等提示：累計消費達 <strong>$20,000</strong> 自動升等為黑卡會員，享頂級尊榮服務。</div>
-      </div>
-
-      <!-- 黑卡 -->
-      <div class="tier-tab-pane" id="tpane-black">
-        <div class="tier-benefit-group">
-          <div class="tier-bg-title">【升等資格】</div>
-          <ul class="tier-blist">
-            <li class="tier-bitem"><span class="tier-bdot tier-bdot-black"></span><span>綠卡有效期間累計消費達 <strong>$20,000（含）</strong> 自動升等為黑卡會員。</span></li>
-            <li class="tier-bitem"><span class="tier-bdot tier-bdot-black"></span><span>黑卡有效期限：升等起算 <strong>2 年</strong>，期間續卡條件為重新累積消費達$20,000。</span></li>
-          </ul>
-        </div>
-        <div class="tier-benefit-group">
-          <div class="tier-bg-title">【通路優惠】</div>
-          <ul class="tier-blist">
-            <li class="tier-bitem"><span class="tier-bdot tier-bdot-black"></span><span>每週一/三/五單筆消費滿 NT$777（含）以上享 9折起優惠。</span></li>
-            <li class="tier-bitem"><span class="tier-bdot tier-bdot-black"></span><span>電影票優惠 NT$250/張（單場限購4張）。</span></li>
-            <li class="tier-bitem"><span class="tier-bdot tier-bdot-black"></span><span>空間預約享 <strong>9折</strong> 頂級專屬折扣。</span></li>
-            <li class="tier-bitem"><span class="tier-bdot tier-bdot-black"></span><span>專屬客服優先服務通道。</span></li>
-          </ul>
-        </div>
-        <div class="tier-benefit-group">
-          <div class="tier-bg-title">【生日禮】</div>
-          <ul class="tier-blist">
-            <li class="tier-bitem"><span class="tier-bdot tier-bdot-black"></span><span>生日當月享 <strong>$150 線上優惠券</strong>（滿$1,500可抵用）。</span></li>
-            <li class="tier-bitem"><span class="tier-bdot tier-bdot-black"></span><span>門市 85折優惠券 2 張。</span></li>
-            <li class="tier-bitem"><span class="tier-bdot tier-bdot-black"></span><span>實體書店 <strong>$100 專屬優惠券</strong>。</span></li>
-          </ul>
-        </div>
-        <div class="tier-benefit-group">
-          <div class="tier-bg-title">【點數回饋】</div>
-          <ul class="tier-blist">
-            <li class="tier-bitem"><span class="tier-bdot tier-bdot-black"></span><span>每消費 NT$10 累積 <strong>2 點</strong>，最高回饋率，點數可於結帳時折抵消費。</span></li>
-          </ul>
-        </div>
-        <div class="tier-upgrade-hint" style="background:#1a1a1a;color:rgba(255,255,255,0.75);">您已是頂級 <strong style="color:var(--gold);">黑卡會員</strong>，感謝您的長期支持與信任。</div>
-      </div>
-
-      <!-- 服務條款 -->
-      <div class="terms-section-title">服務條款</div>
-      <p class="terms-para"><strong>一、會籍管理</strong><br>本平台保留修改、終止會員資格之權利，如有重大違規行為（惡意刷單、盜用帳號等），本平台得立即終止會籍並沒收點數及優惠券。</p>
-      <p class="terms-para"><strong>二、點數使用</strong><br>點數不可轉讓、不可兌換現金。點數有效期限依本平台規定，逾期點數自動歸零。每筆消費之點數將於發票開立後 2 個工作日內歸戶。</p>
-      <p class="terms-para"><strong>三、優惠券規範</strong><br>優惠券限會員本人使用，不得轉售或轉讓。各優惠券使用限制以券面標示為準，逾期不補發。</p>
-      <p class="terms-para"><strong>四、升等規則</strong><br>升等以實際消費金額（不含點數折抵、優惠券折抵部分）為計算基準。跨等級時，舊等級剩餘點數及優惠券保留至有效期限為止。</p>
-      <p class="terms-para"><strong>五、條款修改</strong><br>本平台得依業務需要修改本服務條款，修改後將公告於官網及 APP，修改後繼續使用本服務，視為同意修改後之條款。</p>
-      <p class="terms-para" style="color:var(--ink-60);font-size:12px;">最後更新日期：2026年4月19日</p>
-
+    <div class="terms-body" id="terms-body-content">
+      <div style="text-align:center;padding:40px;color:var(--ink-60);">載入中...</div>
     </div>
   </div>
 </div>
@@ -5043,9 +4870,18 @@ function closeMcPanel() {
   document.querySelectorAll('.mc-panel').forEach(p => p.classList.remove('open'));
 }
 
-function openMemberTerms() {
+let _tierData = null;
+
+async function openMemberTerms() {
   document.getElementById('memberTermsOverlay').classList.add('open');
   document.body.style.overflow = 'hidden';
+  if (!_tierData) {
+    try {
+      const res = await fetch('/api/tier-settings');
+      _tierData = await res.json();
+    } catch { _tierData = {}; }
+  }
+  _renderTierTerms(_tierData);
   switchTierTab('white');
 }
 function closeMemberTerms() {
@@ -5062,6 +4898,152 @@ function switchTierTab(tier) {
     if (btn) { btn.className = 'tier-tab-btn'; if (t === tier) btn.classList.add('active-' + t); }
     if (pane) pane.classList.toggle('active', t === tier);
   });
+}
+
+function _dot(color) { return `<span class="tier-bdot tier-bdot-${color}"></span>`; }
+function _check() { return '<span class="tier-check">✓</span>'; }
+function _dash() { return '<span class="tier-dash">—</span>'; }
+
+function _renderTierTerms(s) {
+  const gt = s.green_threshold || '6,000';
+  const bt = s.black_threshold || '20,000';
+  const gf = Number(gt).toLocaleString();
+  const bf = Number(bt).toLocaleString();
+  const gvy = s.green_validity_years || '2';
+  const bvy = s.black_validity_years || '2';
+  const wiy = s.white_inactive_years || '5';
+  const wMin = s.weekly_discount_min || '777';
+  const mov = s.movie_ticket_price || '250';
+  const movLim = s.movie_ticket_limit || '4';
+  const sd = s.store_discount || '85';
+  const gDisc = s.green_booking_discount || '95';
+  const bDisc = s.black_booking_discount || '90';
+  const gDiscLabel = Math.floor(gDisc / 10) === gDisc / 10 ? `${gDisc/10}折` : `${gDisc}折`;
+  const bDiscLabel = Math.floor(bDisc / 10) === bDisc / 10 ? `${bDisc/10}折` : `${bDisc}折`;
+  const joinAmt = s.join_coupon_amount || '50';
+  const joinMin = s.join_coupon_min || '500';
+  const bwA = s.bday_white_amount || '50'; const bwM = s.bday_white_min || '499';
+  const bgA = s.bday_green_amount || '100'; const bgM = s.bday_green_min || '1,000';
+  const bbA = s.bday_black_amount || '150'; const bbM = s.bday_black_min || '1,500';
+  const prW = s.pts_rate_white || '1';
+  const prG = s.pts_rate_green || '1.5';
+  const prB = s.pts_rate_black || '2';
+  const joinDesc = s.join_desc || '即日起於本平台完成會員註冊，立即成為白卡會員，享有各通路會員權益、消費累點等服務。依照累計消費金額自動升等為綠卡或黑卡會員，享有更多專屬權益。';
+  const today = new Date().toLocaleDateString('zh-TW',{year:'numeric',month:'long',day:'numeric'});
+
+  document.getElementById('terms-body-content').innerHTML = `
+    <div class="terms-section-title">加入會員</div>
+    <p class="terms-para">${joinDesc.replace(/\n/g,'<br>')}</p>
+
+    <div class="terms-section-title">會員優惠與權益</div>
+    <div class="tier-compare-wrap">
+      <table class="tier-compare-table">
+        <thead><tr>
+          <th>卡別</th>
+          <th><div class="tier-hd-card tier-hd-white" style="margin:0 auto;"><div class="tier-hd-dot"></div><div class="tier-hd-name">白卡</div><div class="tier-hd-sub">White</div></div></th>
+          <th><div class="tier-hd-card tier-hd-green" style="margin:0 auto;"><div class="tier-hd-dot"></div><div class="tier-hd-name">綠卡</div><div class="tier-hd-sub">Green</div></div></th>
+          <th><div class="tier-hd-card tier-hd-black" style="margin:0 auto;"><div class="tier-hd-dot"></div><div class="tier-hd-name">黑卡</div><div class="tier-hd-sub">Black</div></div></th>
+        </tr></thead>
+        <tbody>
+          <tr><td>升等門檻（累計消費）</td><td class="tier-val">—（新會員）</td><td class="tier-val">滿 $${gf}</td><td class="tier-val">滿 $${bf}</td></tr>
+          <tr class="tier-group-row"><td colspan="4">入會禮</td></tr>
+          <tr><td>線上 $${joinAmt} 優惠券（滿$${joinMin}可抵用）</td><td>${_check()}</td><td>${_dash()}</td><td>${_dash()}</td></tr>
+          <tr class="tier-group-row"><td colspan="4">生日禮</td></tr>
+          <tr><td>線上優惠券</td>
+            <td class="tier-val">$${bwA}<br><small style="font-weight:400;color:var(--ink-60);">(滿$${bwM}可抵)</small></td>
+            <td class="tier-val">$${bgA}<br><small style="font-weight:400;color:var(--ink-60);">(滿$${bgM}可抵)</small></td>
+            <td class="tier-val">$${bbA}<br><small style="font-weight:400;color:var(--ink-60);">(滿$${bbM}可抵)</small></td>
+          </tr>
+          <tr><td>生日當月升等抽獎</td><td>${_check()}</td><td>${_dash()}</td><td>${_dash()}</td></tr>
+          <tr><td>門市${sd}折優惠券（2張）</td><td>${_dash()}</td><td>${_check()}</td><td>${_check()}</td></tr>
+          <tr class="tier-group-row"><td colspan="4">通路優惠</td></tr>
+          <tr><td>週一/三/五 滿$${wMin}享折起優惠</td><td>${_check()}</td><td>${_check()}</td><td>${_check()}</td></tr>
+          <tr><td>電影票優惠 NT$${mov}/張（限${movLim}張）</td><td>${_check()}</td><td>${_check()}</td><td>${_check()}</td></tr>
+          <tr><td>空間預約專屬折扣</td><td>${_dash()}</td><td class="tier-val">${gDiscLabel}</td><td class="tier-val">${bDiscLabel}</td></tr>
+          <tr class="tier-group-row"><td colspan="4">點數回饋</td></tr>
+          <tr><td>消費點數回饋率</td><td class="tier-val">每$10得${prW}點</td><td class="tier-val">每$10得${prG}點</td><td class="tier-val">每$10得${prB}點</td></tr>
+          <tr><td>專屬客服</td><td>${_dash()}</td><td>${_dash()}</td><td>${_check()}</td></tr>
+        </tbody>
+      </table>
+    </div>
+
+    <div class="terms-section-title">會員各等級權益說明</div>
+    <div class="tier-tabs">
+      <button class="tier-tab-btn active-white" id="ttab-white" onclick="switchTierTab('white')">白卡會員</button>
+      <button class="tier-tab-btn" id="ttab-green" onclick="switchTierTab('green')">綠卡會員</button>
+      <button class="tier-tab-btn" id="ttab-black" onclick="switchTierTab('black')">黑卡會員</button>
+    </div>
+
+    <div class="tier-tab-pane active" id="tpane-white">
+      <div class="tier-benefit-group"><div class="tier-bg-title">【免費申辦，立享優惠】</div><ul class="tier-blist">
+        <li class="tier-bitem">${_dot('white')}<span>線上申辦：於本平台完成會員註冊，即成為白卡會員。</span></li>
+        <li class="tier-bitem">${_dot('white')}<span>累計期限：白卡會員於白卡會籍有效期間，消費累計滿 <strong>$${gf}（含）</strong>即可升等為綠卡會員。</span></li>
+        <li class="tier-bitem">${_dot('white')}<span>帳戶連續 <strong>${wiy} 年（含）</strong>無消費紀錄，會籍資格將自動終止；點數或優惠券請於終止前兌換使用。</span></li>
+      </ul></div>
+      <div class="tier-benefit-group"><div class="tier-bg-title">【通路優惠，聰明消費】</div><ul class="tier-blist">
+        <li class="tier-bitem">${_dot('white')}<span>每週一/三/五單筆消費滿 NT$${wMin}（含）以上享折起優惠。</span></li>
+        <li class="tier-bitem">${_dot('white')}<span>電影票優惠 NT$${mov}/張（單場限購${movLim}張）。</span></li>
+        <li class="tier-bitem">${_dot('white')}<span>新會員入會禮：<strong>$${joinAmt} 線上優惠券</strong>（滿$${joinMin}可抵用）。</span></li>
+      </ul></div>
+      <div class="tier-benefit-group"><div class="tier-bg-title">【生日禮】</div><ul class="tier-blist">
+        <li class="tier-bitem">${_dot('white')}<span>生日當月享 <strong>$${bwA} 線上優惠券</strong>（滿$${bwM}可抵用）。</span></li>
+        <li class="tier-bitem">${_dot('white')}<span>生日當月消費享「升等綠卡」抽獎資格。</span></li>
+      </ul></div>
+      <div class="tier-benefit-group"><div class="tier-bg-title">【點數回饋】</div><ul class="tier-blist">
+        <li class="tier-bitem">${_dot('white')}<span>每消費 NT$10 累積 <strong>${prW} 點</strong>，點數可於結帳時折抵消費。</span></li>
+      </ul></div>
+      <div class="tier-upgrade-hint">升等提示：累計消費達 <strong>$${gf}</strong> 自動升等為綠卡會員，享有更多回饋與優惠。</div>
+    </div>
+
+    <div class="tier-tab-pane" id="tpane-green">
+      <div class="tier-benefit-group"><div class="tier-bg-title">【升等資格】</div><ul class="tier-blist">
+        <li class="tier-bitem">${_dot('green')}<span>白卡會籍有效期間累計消費達 <strong>$${gf}（含）</strong> 自動升等。</span></li>
+        <li class="tier-bitem">${_dot('green')}<span>綠卡有效期限：升等起算 <strong>${gvy} 年</strong>；期間累計消費未達黑卡門檻，續卡須重新累積至$${gf}。</span></li>
+      </ul></div>
+      <div class="tier-benefit-group"><div class="tier-bg-title">【通路優惠】</div><ul class="tier-blist">
+        <li class="tier-bitem">${_dot('green')}<span>每週一/三/五單筆消費滿 NT$${wMin}（含）以上享折起優惠。</span></li>
+        <li class="tier-bitem">${_dot('green')}<span>電影票優惠 NT$${mov}/張（單場限購${movLim}張）。</span></li>
+        <li class="tier-bitem">${_dot('green')}<span>空間預約享 <strong>${gDiscLabel}</strong> 專屬折扣。</span></li>
+      </ul></div>
+      <div class="tier-benefit-group"><div class="tier-bg-title">【生日禮】</div><ul class="tier-blist">
+        <li class="tier-bitem">${_dot('green')}<span>生日當月享 <strong>$${bgA} 線上優惠券</strong>（滿$${bgM}可抵用）。</span></li>
+        <li class="tier-bitem">${_dot('green')}<span>門市 <strong>${sd}折</strong>優惠券 2 張。</span></li>
+      </ul></div>
+      <div class="tier-benefit-group"><div class="tier-bg-title">【點數回饋】</div><ul class="tier-blist">
+        <li class="tier-bitem">${_dot('green')}<span>每消費 NT$10 累積 <strong>${prG} 點</strong>，點數可於結帳時折抵消費。</span></li>
+      </ul></div>
+      <div class="tier-upgrade-hint">升等提示：累計消費達 <strong>$${bf}</strong> 自動升等為黑卡會員，享頂級尊榮服務。</div>
+    </div>
+
+    <div class="tier-tab-pane" id="tpane-black">
+      <div class="tier-benefit-group"><div class="tier-bg-title">【升等資格】</div><ul class="tier-blist">
+        <li class="tier-bitem">${_dot('black')}<span>綠卡有效期間累計消費達 <strong>$${bf}（含）</strong> 自動升等為黑卡會員。</span></li>
+        <li class="tier-bitem">${_dot('black')}<span>黑卡有效期限：升等起算 <strong>${bvy} 年</strong>，期間續卡條件為重新累積消費達$${bf}。</span></li>
+      </ul></div>
+      <div class="tier-benefit-group"><div class="tier-bg-title">【通路優惠】</div><ul class="tier-blist">
+        <li class="tier-bitem">${_dot('black')}<span>每週一/三/五單筆消費滿 NT$${wMin}（含）以上享折起優惠。</span></li>
+        <li class="tier-bitem">${_dot('black')}<span>電影票優惠 NT$${mov}/張（單場限購${movLim}張）。</span></li>
+        <li class="tier-bitem">${_dot('black')}<span>空間預約享 <strong>${bDiscLabel}</strong> 頂級專屬折扣。</span></li>
+        <li class="tier-bitem">${_dot('black')}<span>專屬客服優先服務通道。</span></li>
+      </ul></div>
+      <div class="tier-benefit-group"><div class="tier-bg-title">【生日禮】</div><ul class="tier-blist">
+        <li class="tier-bitem">${_dot('black')}<span>生日當月享 <strong>$${bbA} 線上優惠券</strong>（滿$${bbM}可抵用）。</span></li>
+        <li class="tier-bitem">${_dot('black')}<span>門市 <strong>${sd}折</strong>優惠券 2 張。</span></li>
+      </ul></div>
+      <div class="tier-benefit-group"><div class="tier-bg-title">【點數回饋】</div><ul class="tier-blist">
+        <li class="tier-bitem">${_dot('black')}<span>每消費 NT$10 累積 <strong>${prB} 點</strong>，最高回饋率，點數可於結帳時折抵消費。</span></li>
+      </ul></div>
+      <div class="tier-upgrade-hint" style="background:#1a1a1a;color:rgba(255,255,255,0.75);">您已是頂級 <strong style="color:var(--gold);">黑卡會員</strong>，感謝您的長期支持與信任。</div>
+    </div>
+
+    <div class="terms-section-title">服務條款</div>
+    <p class="terms-para"><strong>一、會籍管理</strong><br>${s.terms_management || ''}</p>
+    <p class="terms-para"><strong>二、點數使用</strong><br>${s.terms_points || ''}</p>
+    <p class="terms-para"><strong>三、優惠券規範</strong><br>${s.terms_coupons || ''}</p>
+    <p class="terms-para"><strong>四、升等規則</strong><br>${s.terms_upgrade || ''}</p>
+    <p class="terms-para"><strong>五、條款修改</strong><br>${s.terms_modification || ''}</p>
+    <p class="terms-para" style="color:var(--ink-60);font-size:12px;">最後更新日期：${today}</p>
+  `;
 }
 
 async function _loadMcStats() {

@@ -5422,12 +5422,43 @@ def admin_consumption():
 # 會員制度 / 分級設定 API
 # ─────────────────────────────────────────────
 
+_TIER_DEFAULTS = {
+    'tier_green_threshold':        '6000',
+    'tier_black_threshold':        '20000',
+    'tier_pts_rate_white':         '1',
+    'tier_pts_rate_green':         '1.5',
+    'tier_pts_rate_black':         '2',
+    'tier_join_coupon_amount':     '50',
+    'tier_join_coupon_min':        '500',
+    'tier_bday_white_amount':      '50',
+    'tier_bday_white_min':         '499',
+    'tier_bday_green_amount':      '100',
+    'tier_bday_green_min':         '1000',
+    'tier_bday_black_amount':      '150',
+    'tier_bday_black_min':         '1500',
+    'tier_green_booking_discount': '95',
+    'tier_black_booking_discount': '90',
+    'tier_green_validity_years':   '2',
+    'tier_black_validity_years':   '2',
+    'tier_white_inactive_years':   '5',
+    'tier_store_discount':         '85',
+    'tier_weekly_discount_min':    '777',
+    'tier_movie_ticket_price':     '250',
+    'tier_movie_ticket_limit':     '4',
+    'tier_join_desc':              '即日起於本平台完成會員註冊，立即成為白卡會員，享有各通路會員權益、消費累點等服務。依照累計消費金額自動升等為綠卡或黑卡會員，享有更多專屬權益。',
+    'tier_terms_management':       '本平台保留修改、終止會員資格之權利，如有重大違規行為（惡意刷單、盜用帳號等），本平台得立即終止會籍並沒收點數及優惠券。',
+    'tier_terms_points':           '點數不可轉讓、不可兌換現金。點數有效期限依本平台規定，逾期點數自動歸零。每筆消費之點數將於發票開立後 2 個工作日內歸戶。',
+    'tier_terms_coupons':          '優惠券限會員本人使用，不得轉售或轉讓。各優惠券使用限制以券面標示為準，逾期不補發。',
+    'tier_terms_upgrade':          '升等以實際消費金額（不含點數折抵、優惠券折抵部分）為計算基準。跨等級時，舊等級剩餘點數及優惠券保留至有效期限為止。',
+    'tier_terms_modification':     '本平台得依業務需要修改本服務條款，修改後將公告於官網及 APP，修改後繼續使用本服務，視為同意修改後之條款。',
+}
+
+def _get_all_tier_settings():
+    return {k.replace('tier_', ''): SiteContent.get(k) or v for k, v in _TIER_DEFAULTS.items()}
+
 @app.route('/api/tier-settings', methods=['GET'])
 def public_tier_settings():
-    return jsonify({
-        'green_threshold': int(SiteContent.get('tier_green_threshold') or '6000'),
-        'black_threshold': int(SiteContent.get('tier_black_threshold') or '20000'),
-    })
+    return jsonify(_get_all_tier_settings())
 
 
 @app.route('/admin/api/tier-settings', methods=['GET', 'POST'])
@@ -5435,19 +5466,19 @@ def admin_tier_settings():
     err = check_admin()
     if err: return err
     if request.method == 'GET':
-        return jsonify({
-            'green_threshold': int(SiteContent.get('tier_green_threshold') or '6000'),
-            'black_threshold': int(SiteContent.get('tier_black_threshold') or '20000'),
-        })
+        return jsonify(_get_all_tier_settings())
     d = request.get_json() or {}
-    for key in ('green_threshold', 'black_threshold'):
-        val = d.get(key)
+    for bare_key, default in _TIER_DEFAULTS.items():
+        full_key = bare_key
+        val = d.get(bare_key.replace('tier_', ''))
+        if val is None:
+            val = d.get(bare_key)
         if val is not None:
-            obj = SiteContent.query.filter_by(key=f'tier_{key}').first()
+            obj = SiteContent.query.filter_by(key=full_key).first()
             if obj:
-                obj.value = str(int(val))
+                obj.value = str(val)
             else:
-                db.session.add(SiteContent(key=f'tier_{key}', value=str(int(val))))
+                db.session.add(SiteContent(key=full_key, value=str(val)))
     db.session.commit()
     return jsonify({'success': True})
 

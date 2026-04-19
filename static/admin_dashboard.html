@@ -737,6 +737,9 @@ input[list]::-webkit-calendar-picker-indicator { display: none !important; }
     <div class="nav-item" onclick="showPage('members',this)">
       <span class="nav-icon"><svg width="16" height="16" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><circle cx="5" cy="5" r="2.5"/><path d="M1 14c0-2.8 2.2-5 5-5"/><circle cx="11.5" cy="7" r="2"/><path d="M9 14c0-1.7 1.1-3 2.5-3s2.5 1.3 2.5 3"/><path d="M14 10l-1 1-2-2" stroke-linecap="round" stroke-linejoin="round"/></svg></span> 會員管理
     </div>
+    <div class="nav-item" onclick="showPage('tier',this)">
+      <span class="nav-icon"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><rect x="2" y="14" width="6" height="8"/><rect x="9" y="9" width="6" height="13"/><rect x="16" y="4" width="6" height="18"/></svg></span> 會員等級設定
+    </div>
     <div class="nav-item" onclick="showPage('coupons',this)">
       <span class="nav-icon"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><path d="M2 9a1 1 0 011-1h18a1 1 0 011 1v1.5a2.5 2.5 0 000 5V17a1 1 0 01-1 1H3a1 1 0 01-1-1v-1.5a2.5 2.5 0 000-5V9z"/><line x1="9" y1="8" x2="9" y2="16" stroke-dasharray="2 2"/></svg></span> 優惠券管理
     </div>
@@ -1468,6 +1471,190 @@ input[list]::-webkit-calendar-picker-indicator { display: none !important; }
     </div>
 
     <!-- ── MEMBERS ── -->
+    <!-- ── 會員等級設定 ── -->
+    <div class="page" id="page-tier">
+      <div class="card" style="margin-bottom:20px;">
+        <div class="card-head">
+          <div class="card-title">會員等級與條款設定</div>
+          <button class="btn btn-primary" onclick="saveTierSettings()">儲存所有變更</button>
+        </div>
+        <div class="card-body">
+          <div class="content-sections">
+
+            <!-- 升等門檻 -->
+            <div class="content-section">
+              <div class="cs-head">升等門檻（累計消費金額）</div>
+              <div class="cs-body">
+                <div class="cs-field">
+                  <label class="cs-label">綠卡門檻（NT$）</label>
+                  <input class="finput" type="number" id="t-green_threshold" min="1" step="100" placeholder="6000">
+                  <p style="font-size:11px;color:var(--ink-60);margin-top:4px;">白卡累積消費達此金額自動升等綠卡</p>
+                </div>
+                <div class="cs-field">
+                  <label class="cs-label">黑卡門檻（NT$）</label>
+                  <input class="finput" type="number" id="t-black_threshold" min="1" step="100" placeholder="20000">
+                  <p style="font-size:11px;color:var(--ink-60);margin-top:4px;">綠卡累積消費達此金額自動升等黑卡</p>
+                </div>
+              </div>
+            </div>
+
+            <!-- 點數回饋倍率 -->
+            <div class="content-section">
+              <div class="cs-head">點數回饋倍率</div>
+              <div class="cs-body">
+                <div class="cs-field">
+                  <label class="cs-label">白卡 每 NT$<span id="t-base-rate-preview">10</span> 得幾點</label>
+                  <input class="finput" type="number" id="t-pts_rate_white" min="0.1" step="0.1" placeholder="1">
+                </div>
+                <div class="cs-field">
+                  <label class="cs-label">綠卡 每 NT$<span id="t-base-rate-preview2">10</span> 得幾點</label>
+                  <input class="finput" type="number" id="t-pts_rate_green" min="0.1" step="0.1" placeholder="1.5">
+                </div>
+                <div class="cs-field">
+                  <label class="cs-label">黑卡 每 NT$<span id="t-base-rate-preview3">10</span> 得幾點</label>
+                  <input class="finput" type="number" id="t-pts_rate_black" min="0.1" step="0.1" placeholder="2">
+                </div>
+                <p style="font-size:11px;color:var(--ink-60);grid-column:1/-1;">基礎累點比率（每幾元1點）在「文字內容編輯 → 會員條碼累點設定」中調整。</p>
+              </div>
+            </div>
+
+            <!-- 入會禮 -->
+            <div class="content-section">
+              <div class="cs-head">入會禮（白卡新會員）</div>
+              <div class="cs-body">
+                <div class="cs-field">
+                  <label class="cs-label">優惠券金額（NT$）</label>
+                  <input class="finput" type="number" id="t-join_coupon_amount" min="0" step="10" placeholder="50">
+                </div>
+                <div class="cs-field">
+                  <label class="cs-label">最低消費門檻（NT$，滿此金額可抵用）</label>
+                  <input class="finput" type="number" id="t-join_coupon_min" min="0" step="50" placeholder="500">
+                </div>
+              </div>
+            </div>
+
+            <!-- 生日禮 -->
+            <div class="content-section" style="grid-column:1/-1;">
+              <div class="cs-head">生日禮（各等級線上優惠券）</div>
+              <div class="cs-body">
+                <div class="fgrid" style="grid-template-columns:repeat(3,1fr);gap:16px;">
+                  <div>
+                    <div style="font-size:12px;font-weight:700;color:var(--ink-60);margin-bottom:10px;text-transform:uppercase;letter-spacing:.06em;">白卡</div>
+                    <div class="cs-field"><label class="cs-label">優惠券金額（NT$）</label><input class="finput" type="number" id="t-bday_white_amount" min="0" step="10" placeholder="50"></div>
+                    <div class="cs-field"><label class="cs-label">最低消費門檻（NT$）</label><input class="finput" type="number" id="t-bday_white_min" min="0" step="50" placeholder="499"></div>
+                  </div>
+                  <div>
+                    <div style="font-size:12px;font-weight:700;color:#2d5e3e;margin-bottom:10px;text-transform:uppercase;letter-spacing:.06em;">綠卡</div>
+                    <div class="cs-field"><label class="cs-label">優惠券金額（NT$）</label><input class="finput" type="number" id="t-bday_green_amount" min="0" step="10" placeholder="100"></div>
+                    <div class="cs-field"><label class="cs-label">最低消費門檻（NT$）</label><input class="finput" type="number" id="t-bday_green_min" min="0" step="50" placeholder="1000"></div>
+                  </div>
+                  <div>
+                    <div style="font-size:12px;font-weight:700;color:var(--ink);margin-bottom:10px;text-transform:uppercase;letter-spacing:.06em;">黑卡</div>
+                    <div class="cs-field"><label class="cs-label">優惠券金額（NT$）</label><input class="finput" type="number" id="t-bday_black_amount" min="0" step="10" placeholder="150"></div>
+                    <div class="cs-field"><label class="cs-label">最低消費門檻（NT$）</label><input class="finput" type="number" id="t-bday_black_min" min="0" step="50" placeholder="1500"></div>
+                  </div>
+                </div>
+              </div>
+            </div>
+
+            <!-- 通路優惠 -->
+            <div class="content-section" style="grid-column:1/-1;">
+              <div class="cs-head">通路優惠設定</div>
+              <div class="cs-body">
+                <div class="fgrid">
+                  <div class="cs-field">
+                    <label class="cs-label">週一/三/五 最低消費（NT$，享折扣門檻）</label>
+                    <input class="finput" type="number" id="t-weekly_discount_min" min="0" step="10" placeholder="777">
+                  </div>
+                  <div class="cs-field">
+                    <label class="cs-label">門市生日折扣（%，例：85 代表85折）</label>
+                    <input class="finput" type="number" id="t-store_discount" min="1" max="100" step="1" placeholder="85">
+                  </div>
+                  <div class="cs-field">
+                    <label class="cs-label">電影票優惠價（NT$/張）</label>
+                    <input class="finput" type="number" id="t-movie_ticket_price" min="0" step="10" placeholder="250">
+                  </div>
+                  <div class="cs-field">
+                    <label class="cs-label">電影票單場限購（張）</label>
+                    <input class="finput" type="number" id="t-movie_ticket_limit" min="1" step="1" placeholder="4">
+                  </div>
+                  <div class="cs-field">
+                    <label class="cs-label">綠卡空間預約折扣（%，例：95 代表95折）</label>
+                    <input class="finput" type="number" id="t-green_booking_discount" min="1" max="100" step="1" placeholder="95">
+                  </div>
+                  <div class="cs-field">
+                    <label class="cs-label">黑卡空間預約折扣（%，例：90 代表9折）</label>
+                    <input class="finput" type="number" id="t-black_booking_discount" min="1" max="100" step="1" placeholder="90">
+                  </div>
+                </div>
+              </div>
+            </div>
+
+            <!-- 會籍有效期 -->
+            <div class="content-section">
+              <div class="cs-head">會籍有效期限</div>
+              <div class="cs-body">
+                <div class="cs-field">
+                  <label class="cs-label">綠卡有效年限（年）</label>
+                  <input class="finput" type="number" id="t-green_validity_years" min="1" step="1" placeholder="2">
+                </div>
+                <div class="cs-field">
+                  <label class="cs-label">黑卡有效年限（年）</label>
+                  <input class="finput" type="number" id="t-black_validity_years" min="1" step="1" placeholder="2">
+                </div>
+                <div class="cs-field">
+                  <label class="cs-label">白卡閒置終止（連續幾年無消費即終止）</label>
+                  <input class="finput" type="number" id="t-white_inactive_years" min="1" step="1" placeholder="5">
+                </div>
+              </div>
+            </div>
+
+            <!-- 加入會員說明文字 -->
+            <div class="content-section" style="grid-column:1/-1;">
+              <div class="cs-head">加入會員說明文字</div>
+              <div class="cs-body">
+                <div class="cs-field" style="grid-column:1/-1;">
+                  <label class="cs-label">說明段落（顯示於「會員權益與服務條款」頁頂端）</label>
+                  <textarea class="ftarea" id="t-join_desc" rows="3"></textarea>
+                </div>
+              </div>
+            </div>
+
+            <!-- 服務條款文字 -->
+            <div class="content-section" style="grid-column:1/-1;">
+              <div class="cs-head">服務條款各條文字</div>
+              <div class="cs-body" style="display:flex;flex-direction:column;gap:14px;">
+                <div class="cs-field">
+                  <label class="cs-label">一、會籍管理</label>
+                  <textarea class="ftarea" id="t-terms_management" rows="2"></textarea>
+                </div>
+                <div class="cs-field">
+                  <label class="cs-label">二、點數使用</label>
+                  <textarea class="ftarea" id="t-terms_points" rows="2"></textarea>
+                </div>
+                <div class="cs-field">
+                  <label class="cs-label">三、優惠券規範</label>
+                  <textarea class="ftarea" id="t-terms_coupons" rows="2"></textarea>
+                </div>
+                <div class="cs-field">
+                  <label class="cs-label">四、升等規則</label>
+                  <textarea class="ftarea" id="t-terms_upgrade" rows="2"></textarea>
+                </div>
+                <div class="cs-field">
+                  <label class="cs-label">五、條款修改</label>
+                  <textarea class="ftarea" id="t-terms_modification" rows="2"></textarea>
+                </div>
+              </div>
+            </div>
+
+          </div>
+          <div style="margin-top:20px;text-align:right;">
+            <button class="btn btn-primary" onclick="saveTierSettings()" style="padding:12px 28px;font-size:15px;">儲存所有變更</button>
+          </div>
+        </div>
+      </div>
+    </div>
+
     <div class="page" id="page-members">
       <div class="card" style="margin-bottom:20px;">
         <div class="card-head">
@@ -2074,7 +2261,7 @@ function showPage(id, navEl) {
   document.getElementById(`page-${id}`).classList.add('active');
   document.querySelectorAll('.nav-item').forEach(n => n.classList.remove('active'));
   if (navEl) navEl.classList.add('active');
-  const titles = { dashboard:'儀表板', bookings:'預約管理', rooms:'會議室管理', content:'文字內容編輯', photos:'照片管理', formfields:'表單欄位管理', blocked:'封鎖時段管理', lineusers:'LINE 用戶管理', members:'會員管理', coupons:'優惠券管理', points:'點數專區', consumption:'消費紀錄', scan:'掃碼累點', chat:'聊天記錄', lineqa:'QA 問答設定', payment:'付款設定', accounts:'帳號管理', logs:'登入紀錄' };
+  const titles = { dashboard:'儀表板', bookings:'預約管理', rooms:'會議室管理', content:'文字內容編輯', photos:'照片管理', formfields:'表單欄位管理', blocked:'封鎖時段管理', lineusers:'LINE 用戶管理', members:'會員管理', tier:'會員等級設定', coupons:'優惠券管理', points:'點數專區', consumption:'消費紀錄', scan:'掃碼累點', chat:'聊天記錄', lineqa:'QA 問答設定', payment:'付款設定', accounts:'帳號管理', logs:'登入紀錄' };
   document.getElementById('topbarTitle').textContent = titles[id] || '';
   switch(id) {
     case 'dashboard':   initFloorDate(); loadDashboard(); loadFloorStatus(); break;
@@ -2087,6 +2274,7 @@ function showPage(id, navEl) {
     case 'accounts':    loadAccounts(); break;
     case 'lineusers':   loadLineUsers(); break;
     case 'members':     loadMembers(); break;
+    case 'tier':        loadTierSettings(); break;
     case 'coupons':     loadCoupons(); break;
     case 'points':      loadPointsPage(); break;
     case 'consumption': loadConsumptionPage(); break;
@@ -5088,6 +5276,58 @@ async function loadScanHistory() {
   } catch(e) {
     tbody.innerHTML = '<tr><td colspan="4" style="text-align:center;color:var(--red);padding:20px;">載入失敗</td></tr>';
   }
+}
+
+// ── 會員等級設定 ──
+const _TIER_KEYS = [
+  'green_threshold','black_threshold',
+  'pts_rate_white','pts_rate_green','pts_rate_black',
+  'join_coupon_amount','join_coupon_min',
+  'bday_white_amount','bday_white_min',
+  'bday_green_amount','bday_green_min',
+  'bday_black_amount','bday_black_min',
+  'green_booking_discount','black_booking_discount',
+  'green_validity_years','black_validity_years','white_inactive_years',
+  'store_discount','weekly_discount_min',
+  'movie_ticket_price','movie_ticket_limit',
+  'join_desc',
+  'terms_management','terms_points','terms_coupons','terms_upgrade','terms_modification'
+];
+
+async function loadTierSettings() {
+  try {
+    // Sync base rate label from site content
+    const sc = await fetch('/admin/api/site-content', { headers: H });
+    if (sc.ok) {
+      const scd = await sc.json();
+      const base = scd.points_per_amount || '10';
+      document.querySelectorAll('[id^="t-base-rate-preview"]').forEach(el => el.textContent = base);
+    }
+    const res = await fetch('/admin/api/tier-settings', { headers: H });
+    if (!res.ok) throw new Error();
+    const data = await res.json();
+    _TIER_KEYS.forEach(k => {
+      const el = document.getElementById(`t-${k}`);
+      if (el && data[k] !== undefined) el.value = data[k];
+    });
+    toast('會員等級設定已載入');
+  } catch { toast('載入失敗', 'error'); }
+}
+
+async function saveTierSettings() {
+  const payload = {};
+  _TIER_KEYS.forEach(k => {
+    const el = document.getElementById(`t-${k}`);
+    if (el) payload[k] = el.value.trim();
+  });
+  try {
+    const res = await fetch('/admin/api/tier-settings', {
+      method: 'POST', headers: { ...H, 'Content-Type': 'application/json' },
+      body: JSON.stringify(payload)
+    });
+    if (res.ok) toast('已儲存，前台條款頁將即時更新');
+    else toast('儲存失敗', 'error');
+  } catch { toast('儲存失敗', 'error'); }
 }
 </script>
 </body>

@@ -2049,7 +2049,6 @@ footer {
   .footer-cols { grid-template-columns: 1fr; }
   .hp-login-banner { padding: 28px 24px; }
   .sub-nav-inner { overflow-x: auto; flex-wrap: nowrap; padding: 0 12px; }
-  .snav-brand { display: none !important; }
   .snav-item { font-size: 12px; padding: 11px 12px; }
   .booking-section-head { padding: 20px 16px 0; }
   /* Hide hero on mobile — show booking immediately */
@@ -2182,12 +2181,10 @@ footer {
 <!-- SECONDARY NAV -->
 <nav class="sub-nav">
   <div class="sub-nav-inner">
-    <!-- Brand in nav -->
-    <div class="snav-brand" onclick="scrollToBooking(event)" style="display:flex;align-items:center;gap:8px;cursor:pointer;margin-right:16px;flex-shrink:0;">
-      <div class="brand-icon" id="header-logo-wrap" style="width:28px;height:28px;font-size:14px;">MR</div>
-      <span class="brand-name" id="hdr-title" style="font-size:15px;color:#fff;white-space:nowrap;">會議室預約系統</span>
-    </div>
-    <a class="snav-item active" onclick="scrollToBooking(event)">空間預約</a>
+    <!-- hidden compat elements for JS that reads brand text -->
+    <span id="hdr-title" style="display:none;">漫悠悠-線上預約</span>
+    <span id="header-logo-wrap" style="display:none;">MR</span>
+<a class="snav-item active" onclick="scrollToBooking(event)">空間預約</a>
     <a class="snav-item" onclick="requireLogin(() => openMemberCenter())">會員中心</a>
     <a class="snav-item" onclick="requireLogin(() => { openMemberCenter(); openMcPanel('coupons'); })">優惠券</a>
     <a class="snav-item" onclick="requireLogin(() => { openMemberCenter(); openMcPanel('points'); })">點數專區</a>

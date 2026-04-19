@@ -1480,6 +1480,176 @@ footer {
 .mc-submenu-title { font-size:15px;font-weight:700;color:var(--ink); }
 .mc-submenu-desc { font-size:12px;color:var(--ink-60);margin-top:2px; }
 .mc-submenu-arrow { font-size:20px;color:var(--ink-60);font-weight:300; }
+
+/* ── SECONDARY NAV ── */
+.sub-nav {
+  background: #222; border-bottom: 1px solid rgba(255,255,255,0.07);
+  position: sticky; top: 64px; z-index: 90;
+}
+.sub-nav-inner {
+  max-width: 1300px; margin: 0 auto; padding: 0 40px; display: flex;
+}
+.snav-item {
+  color: rgba(255,255,255,0.5); font-size: 13px; font-weight: 500;
+  padding: 13px 18px; text-decoration: none; cursor: pointer;
+  border-bottom: 2px solid transparent; transition: all 0.2s;
+  letter-spacing: 0.03em; white-space: nowrap;
+}
+.snav-item:hover { color: rgba(255,255,255,0.9); }
+.snav-item.active { color: var(--gold); border-bottom-color: var(--gold); }
+
+/* ── HERO OVERRIDE ── */
+.hero { padding: 80px 0 90px; }
+.hero-inner { grid-template-columns: 1fr 400px; }
+.hero-visual-card {
+  background: rgba(255,255,255,0.05); border: 1px solid rgba(255,255,255,0.1);
+  border-radius: 16px; padding: 28px 24px; display: flex; flex-direction: column; gap: 14px;
+}
+.hvc-title { font-size: 11px; text-transform: uppercase; letter-spacing: 0.12em; color: rgba(255,255,255,0.4); margin-bottom: 4px; }
+.hvc-stat-row {
+  display: flex; gap: 0;
+  border: 1px solid rgba(255,255,255,0.1); border-radius: 10px; overflow: hidden;
+}
+.hvc-stat { flex: 1; padding: 16px; border-right: 1px solid rgba(255,255,255,0.1); }
+.hvc-stat:last-child { border-right: none; }
+.hvc-stat-val { font-family: 'DM Serif Display', serif; font-size: 28px; color: #fff; line-height: 1; }
+.hvc-stat-lbl { font-size: 11px; color: rgba(255,255,255,0.45); margin-top: 4px; }
+.hvc-feature-row { display: flex; flex-direction: column; gap: 8px; }
+.hvc-feature-item {
+  display: flex; align-items: center; gap: 12px;
+  padding: 12px 14px; border-radius: 8px;
+  background: rgba(255,255,255,0.04); border: 1px solid rgba(255,255,255,0.07);
+}
+.hvc-feat-icon {
+  width: 34px; height: 34px; border-radius: 8px; background: var(--teal);
+  display: flex; align-items: center; justify-content: center; flex-shrink: 0;
+}
+.hvc-feat-name { font-size: 13px; font-weight: 600; color: rgba(255,255,255,0.85); }
+.hvc-feat-sub { font-size: 11px; color: rgba(255,255,255,0.4); margin-top: 1px; }
+
+/* ── HOMEPAGE SECTIONS ── */
+.hp-section { max-width: 1300px; margin: 0 auto; padding: 64px 40px; }
+.hp-section-title {
+  font-family: 'DM Serif Display', serif; font-size: 30px; margin-bottom: 6px; color: var(--ink);
+}
+.hp-section-sub { font-size: 14px; color: var(--ink-60); margin-bottom: 36px; line-height: 1.6; }
+
+/* Member features grid */
+.hp-features-grid { display: grid; grid-template-columns: repeat(4, 1fr); gap: 14px; }
+.hp-feature-card {
+  background: white; border: 1.5px solid var(--border); border-radius: 14px;
+  padding: 28px 20px 24px; text-align: center;
+  cursor: pointer; transition: all 0.22s;
+}
+.hp-feature-card:hover {
+  border-color: var(--gold); box-shadow: 0 6px 24px rgba(0,0,0,0.09);
+  transform: translateY(-3px);
+}
+.hp-feature-icon {
+  width: 56px; height: 56px; border-radius: 14px; background: var(--teal-light);
+  display: flex; align-items: center; justify-content: center; margin: 0 auto 14px;
+}
+.hp-feature-title { font-size: 15px; font-weight: 700; color: var(--ink); margin-bottom: 5px; }
+.hp-feature-desc { font-size: 12px; color: var(--ink-60); line-height: 1.55; }
+
+/* Login prompt banner */
+.hp-login-banner {
+  background: linear-gradient(130deg, #181818 0%, #252525 100%);
+  border-radius: 16px; padding: 44px 48px; display: grid;
+  grid-template-columns: 1fr auto; gap: 40px; align-items: center;
+  border: 1px solid rgba(255,255,255,0.07);
+}
+.hp-login-title {
+  font-family: 'DM Serif Display', serif; font-size: 30px; color: #fff; margin-bottom: 10px; line-height: 1.2;
+}
+.hp-login-sub { font-size: 14px; color: rgba(255,255,255,0.55); line-height: 1.7; margin-bottom: 28px; }
+.hp-login-btns { display: flex; gap: 12px; flex-wrap: wrap; }
+.hp-btn-primary {
+  background: var(--gold); color: #fff; border: none;
+  padding: 13px 32px; border-radius: 3px; font-size: 14px; font-weight: 600;
+  cursor: pointer; font-family: inherit; transition: all 0.2s; letter-spacing: 0.03em;
+}
+.hp-btn-primary:hover { background: #9e7940; }
+.hp-btn-outline {
+  background: transparent; color: rgba(255,255,255,0.75);
+  border: 1.5px solid rgba(255,255,255,0.2);
+  padding: 13px 32px; border-radius: 3px; font-size: 14px; font-weight: 600;
+  cursor: pointer; font-family: inherit; transition: all 0.2s;
+}
+.hp-btn-outline:hover { border-color: rgba(255,255,255,0.6); color: #fff; }
+.hp-login-deco {
+  display: grid; grid-template-columns: 1fr 1fr; gap: 10px; width: 260px;
+}
+.hp-login-deco-card {
+  background: rgba(255,255,255,0.06); border: 1px solid rgba(255,255,255,0.1);
+  border-radius: 10px; padding: 16px 14px; text-align: center;
+}
+.hp-deco-val { font-family: 'DM Serif Display', serif; font-size: 22px; color: var(--gold); }
+.hp-deco-lbl { font-size: 11px; color: rgba(255,255,255,0.4); margin-top: 3px; }
+
+/* Section divider */
+.hp-section-divider {
+  border: none; border-top: 1px solid var(--border);
+  max-width: 1300px; margin: 0 auto; padding: 0 40px;
+}
+.hp-divider-line { border-top: 1px solid var(--border); }
+
+/* Space booking section heading */
+.booking-section-head {
+  background: var(--paper); border-top: 1px solid var(--border);
+  padding: 40px 40px 0; max-width: 100%;
+}
+.booking-section-head-inner {
+  max-width: 1300px; margin: 0 auto; padding-bottom: 28px;
+  border-bottom: 1px solid var(--border);
+  display: flex; align-items: baseline; justify-content: space-between;
+}
+.booking-section-head-title {
+  font-family: 'DM Serif Display', serif; font-size: 28px; color: var(--ink);
+}
+.booking-section-head-sub { font-size: 13px; color: var(--ink-60); }
+
+/* ── FOOTER REDESIGN ── */
+footer {
+  background: #111; border-top: 2px solid var(--gold);
+  padding: 0; text-align: left; color: rgba(255,255,255,0.55);
+}
+.footer-main { max-width: 1300px; margin: 0 auto; padding: 56px 40px 48px; display: grid; grid-template-columns: 260px 1fr; gap: 64px; }
+.footer-brand-name { font-family: 'DM Serif Display', serif; font-size: 20px; color: #fff; margin-bottom: 10px; }
+.footer-brand-desc { font-size: 13px; line-height: 1.75; color: rgba(255,255,255,0.45); margin-bottom: 20px; }
+.footer-brand-contact { font-size: 12px; color: rgba(255,255,255,0.35); line-height: 2; }
+.footer-cols { display: grid; grid-template-columns: repeat(3, 1fr); gap: 40px; }
+.footer-col-title { font-size: 11px; font-weight: 700; letter-spacing: 0.12em; text-transform: uppercase; color: #fff; margin-bottom: 16px; }
+.footer-col-links { list-style: none; display: flex; flex-direction: column; gap: 9px; }
+.footer-col-links li a, .footer-col-links li span {
+  font-size: 13px; color: rgba(255,255,255,0.45); text-decoration: none; cursor: pointer; transition: color 0.15s;
+}
+.footer-col-links li a:hover, .footer-col-links li span:hover { color: var(--gold); }
+.footer-bottom {
+  border-top: 1px solid rgba(255,255,255,0.07); padding: 20px 40px;
+  max-width: 1300px; margin: 0 auto; font-size: 12px; color: rgba(255,255,255,0.3);
+  display: flex; justify-content: space-between; align-items: center;
+}
+.footer-bottom a { color: rgba(255,255,255,0.3); text-decoration: none; }
+.footer-bottom a:hover { color: var(--gold); }
+
+@media(max-width:1024px){
+  .hero-inner { grid-template-columns: 1fr; }
+  .hero-visual-card { display: none; }
+  .hp-features-grid { grid-template-columns: repeat(2, 1fr); }
+  .hp-login-banner { grid-template-columns: 1fr; }
+  .hp-login-deco { display: none; }
+  .footer-main { grid-template-columns: 1fr; gap: 40px; }
+  .footer-cols { grid-template-columns: repeat(2, 1fr); }
+  .sub-nav-inner { padding: 0 20px; }
+}
+@media(max-width:700px){
+  .hp-features-grid { grid-template-columns: repeat(2, 1fr); }
+  .footer-cols { grid-template-columns: 1fr; }
+  .hp-login-banner { padding: 28px 24px; }
+  .sub-nav-inner { overflow-x: auto; }
+  .booking-section-head { padding: 28px 20px 0; }
+}
 </style>
 <script src="https://cdn.jsdelivr.net/npm/jsbarcode@3.11.5/dist/JsBarcode.all.min.js"></script>
 </head>
@@ -1516,6 +1686,17 @@ footer {
   </div>
 </header>
 
+<!-- SECONDARY NAV -->
+<nav class="sub-nav">
+  <div class="sub-nav-inner">
+    <a class="snav-item active" onclick="scrollToBooking(event)">空間預約</a>
+    <a class="snav-item" onclick="requireLogin(() => openMemberCenter())">會員中心</a>
+    <a class="snav-item" onclick="requireLogin(() => { openMemberCenter(); openMcPanel('coupons'); })">優惠券</a>
+    <a class="snav-item" onclick="requireLogin(() => { openMemberCenter(); openMcPanel('points'); })">點數專區</a>
+    <a class="snav-item" onclick="scrollToFooter(event)">聯絡我們</a>
+  </div>
+</nav>
+
 <!-- HERO -->
 <section class="hero">
   <div class="hero-inner">
@@ -1524,16 +1705,116 @@ footer {
         <span style="width:5px;height:5px;border-radius:50%;background:rgba(255,255,255,0.5);display:inline-block;"></span>
         <span id="hero-badge">閱讀工作空間</span>
       </div>
-      <h1 class="hero-title" id="hero-title-el">企業會議室・即時預約</h1>
-      <p class="hero-desc" id="hero-desc">提供多種類型空間，彈性時段預約，滿足各種商務需求。</p>
+      <h1 class="hero-title" id="hero-title-el">企業空間・即時預約</h1>
+      <p class="hero-desc" id="hero-desc">提供多種類型空間，彈性時段預約，滿足各種商務需求。加入會員，享有專屬優惠與點數回饋。</p>
+      <div style="display:flex;gap:12px;margin-bottom:32px;flex-wrap:wrap;">
+        <button class="hp-btn-primary" onclick="requireLogin(() => scrollToBooking())">立即預約空間</button>
+        <button class="hp-btn-outline" onclick="openAuthModal('register')">免費加入會員</button>
+      </div>
       <div class="hero-meta">
         <div class="meta-row"><div class="meta-dot"></div><span id="meta-hours">週一至週五 08:00 – 22:00</span></div>
-        <div class="meta-row"><div class="meta-dot"></div><span id="meta-email"><a href="/cdn-cgi/l/email-protection" class="__cf_email__" data-cfemail="ed8f82828684838aad88958c809d8188c38e8280">[email&#160;protected]</a></span></div>
+        <div class="meta-row"><div class="meta-dot"></div><span id="meta-email"></span></div>
+      </div>
+    </div>
+
+    <!-- Hero right: stats + features visual card -->
+    <div class="hero-visual-card">
+      <div class="hvc-title">空間概覽</div>
+      <div class="hvc-stat-row" id="hvc-stat-row">
+        <div class="hvc-stat"><div class="hvc-stat-val" id="hvc-stat-rooms">—</div><div class="hvc-stat-lbl">可用空間</div></div>
+        <div class="hvc-stat"><div class="hvc-stat-val">24h</div><div class="hvc-stat-lbl">線上預約</div></div>
+        <div class="hvc-stat"><div class="hvc-stat-val">NT$0</div><div class="hvc-stat-lbl">入會費用</div></div>
+      </div>
+      <div class="hvc-title" style="margin-top:4px;">會員專屬功能</div>
+      <div class="hvc-feature-row">
+        <div class="hvc-feature-item">
+          <div class="hvc-feat-icon"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="1.8" stroke-linecap="round"><rect x="3" y="4" width="18" height="18" rx="2"/><line x1="3" y1="9" x2="21" y2="9"/><line x1="8" y1="2" x2="8" y2="6"/><line x1="16" y1="2" x2="16" y2="6"/></svg></div>
+          <div><div class="hvc-feat-name">空間預約管理</div><div class="hvc-feat-sub">隨時查看・取消・更改</div></div>
+        </div>
+        <div class="hvc-feature-item">
+          <div class="hvc-feat-icon" style="background:var(--gold);"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="1.8" stroke-linecap="round"><path d="M2 9a1 1 0 011-1h18a1 1 0 011 1v1.5a2.5 2.5 0 000 5V17a1 1 0 01-1 1H3a1 1 0 01-1-1v-1.5a2.5 2.5 0 000-5V9z"/><line x1="9" y1="8" x2="9" y2="16" stroke-dasharray="2 2"/></svg></div>
+          <div><div class="hvc-feat-name">優惠券與點數</div><div class="hvc-feat-sub">消費回饋・專屬折扣</div></div>
+        </div>
+        <div class="hvc-feature-item">
+          <div class="hvc-feat-icon" style="background:#5a6b7d;"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="1.8" stroke-linecap="round"><rect x="5" y="2" width="14" height="20" rx="2"/><line x1="12" y1="18" x2="12.01" y2="18" stroke-width="2.5"/></svg></div>
+          <div><div class="hvc-feat-name">電子會員卡</div><div class="hvc-feat-sub">條碼掃描・快速累點</div></div>
+        </div>
       </div>
     </div>
 
   </div>
 </section>
+
+<!-- HOMEPAGE: Login Prompt (non-member) -->
+<div id="hp-login-banner-wrap">
+  <div class="hp-section" style="padding-top:52px;padding-bottom:0;">
+    <div class="hp-login-banner">
+      <div>
+        <div class="hp-login-title">您好，請先登入<br>若尚未成為會員，請先註冊</div>
+        <div class="hp-login-sub">加入後即可享有完整的空間預約、優惠券、點數回饋與消費紀錄等會員專屬功能。</div>
+        <div class="hp-login-btns">
+          <button class="hp-btn-primary" onclick="openAuthModal('login')">會員登入</button>
+          <button class="hp-btn-outline" onclick="openAuthModal('register')">註冊會員</button>
+        </div>
+      </div>
+      <div class="hp-login-deco">
+        <div class="hp-login-deco-card"><div class="hp-deco-val" id="hp-deco-rooms">—</div><div class="hp-deco-lbl">可預約空間</div></div>
+        <div class="hp-login-deco-card"><div class="hp-deco-val">$0</div><div class="hp-deco-lbl">入會費用</div></div>
+        <div class="hp-login-deco-card"><div class="hp-deco-val" id="hp-deco-pts">10</div><div class="hp-deco-lbl">消費獲點率</div></div>
+        <div class="hp-login-deco-card"><div class="hp-deco-val">24h</div><div class="hp-deco-lbl">線上預約</div></div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- HOMEPAGE: Member features grid -->
+<div class="hp-section" id="hp-features-section">
+  <div class="hp-section-title">會員專屬功能</div>
+  <div class="hp-section-sub">登入後解鎖全部功能，享有完整的預約管理與會員權益。</div>
+  <div class="hp-features-grid">
+    <div class="hp-feature-card" onclick="requireLogin(() => { openMemberCenter(); openMcPanel('bookings'); })">
+      <div class="hp-feature-icon">
+        <svg width="26" height="26" viewBox="0 0 24 24" fill="none" stroke="var(--teal)" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="4" width="18" height="18" rx="2"/><line x1="3" y1="9" x2="21" y2="9"/><line x1="8" y1="2" x2="8" y2="6"/><line x1="16" y1="2" x2="16" y2="6"/></svg>
+      </div>
+      <div class="hp-feature-title">我的預約</div>
+      <div class="hp-feature-desc">查看預約記錄、狀態與詳情</div>
+    </div>
+    <div class="hp-feature-card" onclick="requireLogin(() => { openMemberCenter(); openMcPanel('coupons'); })">
+      <div class="hp-feature-icon">
+        <svg width="26" height="26" viewBox="0 0 24 24" fill="none" stroke="var(--teal)" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><path d="M2 9a1 1 0 011-1h18a1 1 0 011 1v1.5a2.5 2.5 0 000 5V17a1 1 0 01-1 1H3a1 1 0 01-1-1v-1.5a2.5 2.5 0 000-5V9z"/><line x1="9" y1="8" x2="9" y2="16" stroke-dasharray="2 2"/></svg>
+      </div>
+      <div class="hp-feature-title">優惠券</div>
+      <div class="hp-feature-desc">查看可用優惠、專屬折扣碼</div>
+    </div>
+    <div class="hp-feature-card" onclick="requireLogin(() => { openMemberCenter(); openMcPanel('points'); })">
+      <div class="hp-feature-icon">
+        <svg width="26" height="26" viewBox="0 0 24 24" fill="none" stroke="var(--teal)" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><polygon points="12 2 22 8.5 22 15.5 12 22 2 15.5 2 8.5"/><line x1="2" y1="8.5" x2="22" y2="8.5"/><line x1="12" y1="2" x2="12" y2="22"/></svg>
+      </div>
+      <div class="hp-feature-title">點數專區</div>
+      <div class="hp-feature-desc">查看累積點數、兌換好禮</div>
+    </div>
+    <div class="hp-feature-card" onclick="requireLogin(() => { openMemberCenter(); openMcPanel('consumption'); })">
+      <div class="hp-feature-icon">
+        <svg width="26" height="26" viewBox="0 0 24 24" fill="none" stroke="var(--teal)" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><path d="M4 2v20l2-1 2 1 2-1 2 1 2-1 2 1 2-1V2l-2 1-2-1-2 1-2-1-2 1-2-1z"/><line x1="8" y1="9" x2="16" y2="9"/><line x1="8" y1="13" x2="16" y2="13"/><line x1="8" y1="17" x2="12" y2="17"/></svg>
+      </div>
+      <div class="hp-feature-title">消費紀錄</div>
+      <div class="hp-feature-desc">查看歷次消費明細與發票</div>
+    </div>
+  </div>
+</div>
+
+<!-- Booking section heading -->
+<div class="booking-section-head" id="booking-section-anchor">
+  <div class="booking-section-head-inner">
+    <div>
+      <div class="booking-section-head-title" id="txt-step1-title-hp">空間預約</div>
+      <div class="booking-section-head-sub">選擇合適的空間開始預約，需先登入會員</div>
+    </div>
+    <div id="hp-login-gate-hint" style="display:none;">
+      <button class="hp-btn-primary" onclick="openAuthModal('login')" style="font-size:13px;padding:10px 22px;">登入後預約</button>
+    </div>
+  </div>
+</div>
 
 <div class="page-wrapper">
   <div>
@@ -2164,8 +2445,55 @@ footer {
   </div>
 </div>
 
-<footer>
-  <div id="footerText">© 2026 會議室預約系統 · 版權所有</div>
+<footer id="site-footer">
+  <div class="footer-main">
+    <div>
+      <div class="footer-brand-name" id="footer-brand-name">空間預約系統</div>
+      <div class="footer-brand-desc" id="footer-brand-desc">提供企業級空間預約服務，彈性時段、即時確認。加入會員，享有點數回饋與專屬優惠券。</div>
+      <div class="footer-brand-contact" id="footer-brand-contact">
+        <div id="footer-hours">週一至週五 08:00 – 22:00</div>
+        <div id="footer-email"></div>
+      </div>
+    </div>
+    <div class="footer-cols">
+      <div>
+        <div class="footer-col-title">服務項目</div>
+        <ul class="footer-col-links">
+          <li><span onclick="scrollToBooking()">空間預約</span></li>
+          <li><span onclick="requireLogin(() => openMemberCenter())">會員中心</span></li>
+          <li><span onclick="requireLogin(() => { openMemberCenter(); openMcPanel('coupons'); })">優惠券</span></li>
+          <li><span onclick="requireLogin(() => { openMemberCenter(); openMcPanel('points'); })">點數專區</span></li>
+        </ul>
+      </div>
+      <div>
+        <div class="footer-col-title">會員服務</div>
+        <ul class="footer-col-links">
+          <li><span onclick="openAuthModal('login')">會員登入</span></li>
+          <li><span onclick="openAuthModal('register')">免費註冊</span></li>
+          <li><span onclick="requireLogin(() => openMemberProfile())">帳號設定</span></li>
+          <li><span onclick="requireLogin(() => { openMemberCenter(); openMcPanel('consumption'); })">消費紀錄</span></li>
+        </ul>
+      </div>
+      <div>
+        <div class="footer-col-title">客服支援</div>
+        <ul class="footer-col-links">
+          <li><span onclick="toggleAiChat()">線上客服</span></li>
+          <li><a id="footer-email-link" href="#">聯絡我們</a></li>
+          <li><span>常見問題</span></li>
+          <li><span>預約須知</span></li>
+        </ul>
+      </div>
+    </div>
+  </div>
+  <div style="border-top:1px solid rgba(255,255,255,0.07);">
+    <div class="footer-bottom">
+      <div id="footerText">© 2026 空間預約系統 · 版權所有</div>
+      <div style="display:flex;gap:20px;">
+        <span style="cursor:pointer;transition:color .15s;" onmouseover="this.style.color='var(--gold)'" onmouseout="this.style.color=''">隱私權政策</span>
+        <span style="cursor:pointer;transition:color .15s;" onmouseover="this.style.color='var(--gold)'" onmouseout="this.style.color=''">服務條款</span>
+      </div>
+    </div>
+  </div>
 </footer>
 
 <!-- ── AI 助理聊天視窗 ── -->
@@ -2380,6 +2708,21 @@ async function loadContent() {
     if (c.contact_phone) { phoneEl.textContent = c.contact_phone; phoneEl.style.display = ''; }
     else { phoneEl.style.display = 'none'; }
     sc('footerText', c.footer_text, true);
+    // Footer brand info
+    if (c.site_title) {
+      const fn = document.getElementById('footer-brand-name'); if (fn) fn.textContent = c.site_title;
+    }
+    if (c.service_hours) {
+      const fh = document.getElementById('footer-hours'); if (fh) fh.textContent = c.service_hours;
+    }
+    if (c.contact_email) {
+      const fe = document.getElementById('footer-email'); if (fe) fe.textContent = c.contact_email;
+      const fa = document.getElementById('footer-email-link'); if (fa) { fa.href = 'mailto:' + c.contact_email; fa.textContent = c.contact_email; }
+    }
+    // Homepage points rate deco
+    if (c.points_per_amount) {
+      const pd = document.getElementById('hp-deco-pts'); if (pd) pd.textContent = c.points_per_amount;
+    }
     sc('txt-step1-title', c.step1_title);
     sc('txt-step2-title', c.step2_title);
     sc('txt-step3-title', c.step3_title);
@@ -2525,6 +2868,12 @@ async function loadRooms() {
           </div>
         </div>`;
     }).join('');
+    // Update hero stat + homepage deco
+    const cnt = rooms.length;
+    const statEl = document.getElementById('hvc-stat-rooms');
+    if (statEl) statEl.textContent = cnt;
+    const decoEl = document.getElementById('hp-deco-rooms');
+    if (decoEl) decoEl.textContent = cnt;
   } catch (e) {
     document.getElementById('roomsGrid').innerHTML = '<div style="grid-column:1/-1;padding:40px;text-align:center;color:red;">載入失敗，請重新整理</div>';
   }
@@ -2557,6 +2906,10 @@ function carouselDot(e, dot, roomId) {
 }
 
 function selectRoom(el) {
+  if (!_currentMember) {
+    requireLogin(() => selectRoom(el));
+    return;
+  }
   const id       = parseInt(el.dataset.id);
   const name     = el.dataset.name;
   const rate     = parseFloat(el.dataset.rate);
@@ -3652,6 +4005,37 @@ function _buildRoomsForAI() {
 
 let _currentMember = null;
 let _pendingMemberId = null; // for phone verification after register
+let _pendingLoginAction = null;
+
+function requireLogin(fn) {
+  if (_currentMember) { fn(); return; }
+  _pendingLoginAction = fn;
+  openAuthModal('login');
+}
+
+function scrollToBooking(e) {
+  if (e) e.preventDefault();
+  const el = document.getElementById('booking-section-anchor');
+  if (el) el.scrollIntoView({ behavior: 'smooth', block: 'start' });
+}
+
+function scrollToFooter(e) {
+  if (e) e.preventDefault();
+  const el = document.getElementById('site-footer');
+  if (el) el.scrollIntoView({ behavior: 'smooth', block: 'start' });
+}
+
+function _updateHomepageAuthState() {
+  const banner = document.getElementById('hp-login-banner-wrap');
+  const gateHint = document.getElementById('hp-login-gate-hint');
+  if (_currentMember) {
+    if (banner) banner.style.display = 'none';
+    if (gateHint) gateHint.style.display = 'none';
+  } else {
+    if (banner) banner.style.display = '';
+    if (gateHint) gateHint.style.display = '';
+  }
+}
 
 // ── Init: check existing session ──
 async function initMemberSession() {
@@ -3684,6 +4068,7 @@ function updateMemberUI() {
     if (loginBtn) loginBtn.style.display = '';
     if (loggedInEl) loggedInEl.style.display = 'none';
   }
+  _updateHomepageAuthState();
 }
 
 // ── Modal open/close ──
@@ -3769,6 +4154,7 @@ async function doLogin() {
       _currentMember = data.member;
       updateMemberUI();
       closeAuthModal();
+      if (_pendingLoginAction) { const fn = _pendingLoginAction; _pendingLoginAction = null; setTimeout(fn, 200); }
     } else {
       errEl.textContent = data.error || '登入失敗';
       errEl.style.display = 'block';
@@ -4605,6 +4991,7 @@ document.addEventListener('DOMContentLoaded', function() {
   initMemberSession();
   initChatSession();
   checkResetPasswordToken();
+  _updateHomepageAuthState();
 });
 
 // BFCache 還原時（LINE in-app browser 返回頁面）強制關閉聊天視窗

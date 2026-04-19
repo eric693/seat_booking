@@ -1139,22 +1139,21 @@ footer {
 /* ── 會員中心 ── */
 .mc-overlay {
   display: none; position: fixed; inset: 0; z-index: 500;
-  background: rgba(0,0,0,0.45); align-items: flex-end; justify-content: center;
+  background: rgba(0,0,0,0.5); align-items: center; justify-content: center;
+  padding: 16px;
 }
 .mc-overlay.open { display: flex; }
 .mc-sheet {
-  background: #f5f5f5; width: 100%; max-width: 480px;
-  border-radius: 20px 20px 0 0;
+  background: #f5f5f5; width: 100%; max-width: 460px;
+  border-radius: 18px;
   padding: 0 0 env(safe-area-inset-bottom,0);
-  max-height: 92vh; overflow-y: auto;
-  animation: slideUp .3s ease;
+  max-height: 88vh; overflow-y: auto;
+  animation: popIn .25s ease;
+  box-shadow: 0 20px 60px rgba(0,0,0,0.25);
 }
-@keyframes slideUp { from { transform:translateY(60px); opacity:0; } to { transform:translateY(0); opacity:1; } }
-/* Drag handle */
-.mc-drag-handle {
-  width: 36px; height: 4px; border-radius: 2px; background: rgba(0,0,0,0.15);
-  margin: 10px auto 0;
-}
+@keyframes popIn { from { transform:scale(0.94); opacity:0; } to { transform:scale(1); opacity:1; } }
+/* Drag handle (hidden for centered modal) */
+.mc-drag-handle { display: none; }
 /* Top bar */
 .mc-top-bar {
   display: flex; align-items: center; justify-content: space-between;
@@ -1670,16 +1669,39 @@ footer {
 
 /* Login prompt banner */
 .hp-login-banner {
-  background: linear-gradient(130deg, #181818 0%, #252525 100%);
-  border-radius: 16px; padding: 44px 48px; display: grid;
-  grid-template-columns: 1fr auto; gap: 40px; align-items: center;
+  background: #3b2f2a;
+  border-radius: 16px; padding: 56px 40px 52px;
+  display: flex; flex-direction: column; align-items: center; justify-content: center;
+  text-align: center; position: relative; overflow: hidden;
   border: 1px solid rgba(255,255,255,0.07);
+  min-height: 260px;
+}
+.hp-login-banner-deco {
+  position: absolute; inset: 0; pointer-events: none; opacity: 0.08;
+  background-image: repeating-linear-gradient(
+    45deg,
+    rgba(255,255,255,0.5) 0px, rgba(255,255,255,0.5) 1px,
+    transparent 1px, transparent 22px
+  ),
+  repeating-linear-gradient(
+    -45deg,
+    rgba(255,255,255,0.5) 0px, rgba(255,255,255,0.5) 1px,
+    transparent 1px, transparent 22px
+  );
+}
+.hp-login-divider {
+  display: flex; align-items: center; gap: 16px;
+  width: 100%; max-width: 420px; margin-bottom: 16px;
+}
+.hp-login-divider::before, .hp-login-divider::after {
+  content: ''; flex: 1; height: 1px; background: rgba(255,255,255,0.22);
 }
 .hp-login-title {
-  font-family: 'DM Serif Display', serif; font-size: 30px; color: #fff; margin-bottom: 10px; line-height: 1.2;
+  font-family: 'DM Serif Display', serif; font-size: 28px; color: #fff;
+  line-height: 1.2; white-space: nowrap;
 }
-.hp-login-sub { font-size: 14px; color: rgba(255,255,255,0.55); line-height: 1.7; margin-bottom: 28px; }
-.hp-login-btns { display: flex; gap: 12px; flex-wrap: wrap; }
+.hp-login-sub { font-size: 13px; color: rgba(255,255,255,0.5); line-height: 1.7; margin: 12px 0 28px; max-width: 360px; }
+.hp-login-btns { display: flex; gap: 12px; flex-wrap: wrap; justify-content: center; }
 .hp-btn-primary {
   background: var(--gold); color: #fff; border: none;
   padding: 13px 32px; border-radius: 3px; font-size: 14px; font-weight: 600;
@@ -1693,6 +1715,12 @@ footer {
   cursor: pointer; font-family: inherit; transition: all 0.2s;
 }
 .hp-btn-outline:hover { border-color: rgba(255,255,255,0.6); color: #fff; }
+.hp-btn-white {
+  background: #fff; color: #3b2f2a; border: none;
+  padding: 14px 48px; border-radius: 3px; font-size: 14px; font-weight: 700;
+  cursor: pointer; font-family: inherit; transition: all 0.2s; letter-spacing: 0.04em;
+}
+.hp-btn-white:hover { background: #f0e8e0; }
 .hp-login-deco {
   display: grid; grid-template-columns: 1fr 1fr; gap: 10px; width: 260px;
 }
@@ -1825,7 +1853,7 @@ footer {
       <p class="hero-desc" id="hero-desc">提供多種類型空間，彈性時段預約，滿足各種商務需求。加入會員，享有專屬優惠與點數回饋。</p>
       <div style="display:flex;gap:12px;margin-bottom:32px;flex-wrap:wrap;">
         <button class="hp-btn-primary" onclick="requireLogin(() => scrollToBooking())">立即預約空間</button>
-        <button class="hp-btn-outline" onclick="openAuthModal('register')">免費加入會員</button>
+        <button class="hp-btn-outline" onclick="openAuthModal('login')">立即登入／申辦會員</button>
       </div>
       <div class="hero-meta">
         <div class="meta-row"><div class="meta-dot"></div><span id="meta-hours">週一至週五 08:00 – 22:00</span></div>
@@ -1839,7 +1867,7 @@ footer {
       <div class="hvc-stat-row" id="hvc-stat-row">
         <div class="hvc-stat"><div class="hvc-stat-val" id="hvc-stat-rooms">—</div><div class="hvc-stat-lbl">可用空間</div></div>
         <div class="hvc-stat"><div class="hvc-stat-val">24h</div><div class="hvc-stat-lbl">線上預約</div></div>
-        <div class="hvc-stat"><div class="hvc-stat-val">NT$0</div><div class="hvc-stat-lbl">入會費用</div></div>
+        <div class="hvc-stat"><div class="hvc-stat-val" id="hvc-stat-pts">—</div><div class="hvc-stat-lbl">會員點數</div></div>
       </div>
       <div class="hvc-title" style="margin-top:4px;">會員專屬功能</div>
       <div class="hvc-feature-row">
@@ -1865,20 +1893,16 @@ footer {
 <div id="hp-login-banner-wrap">
   <div class="hp-section" style="padding-top:52px;padding-bottom:0;">
     <div class="hp-login-banner">
-      <div>
-        <div class="hp-login-title">您好，請先登入<br>若尚未成為會員，請先註冊</div>
-        <div class="hp-login-sub">加入後即可享有完整的空間預約、優惠券、點數回饋與消費紀錄等會員專屬功能。</div>
-        <div class="hp-login-btns">
-          <button class="hp-btn-primary" onclick="openAuthModal('login')">會員登入</button>
-          <button class="hp-btn-outline" onclick="openAuthModal('register')">註冊會員</button>
-        </div>
+      <div class="hp-login-banner-deco"></div>
+      <div class="hp-login-divider">
+        <span class="hp-login-title">您尚未登入喔！</span>
       </div>
-      <div class="hp-login-deco">
-        <div class="hp-login-deco-card"><div class="hp-deco-val" id="hp-deco-rooms">—</div><div class="hp-deco-lbl">可預約空間</div></div>
-        <div class="hp-login-deco-card"><div class="hp-deco-val">$0</div><div class="hp-deco-lbl">入會費用</div></div>
-        <div class="hp-login-deco-card"><div class="hp-deco-val" id="hp-deco-pts">10</div><div class="hp-deco-lbl">消費獲點率</div></div>
-        <div class="hp-login-deco-card"><div class="hp-deco-val">24h</div><div class="hp-deco-lbl">線上預約</div></div>
+      <div class="hp-login-sub">登入或申辦會員，即可享有完整的空間預約、優惠券、點數回饋與消費紀錄等專屬功能。</div>
+      <div class="hp-login-btns">
+        <button class="hp-btn-white" onclick="openAuthModal('login')">立即登入／申辦會員</button>
       </div>
+      <span id="hp-deco-rooms" style="display:none">—</span>
+      <span id="hp-deco-pts" style="display:none">10</span>
     </div>
   </div>
 </div>
@@ -1926,13 +1950,13 @@ footer {
       <div class="booking-section-head-title" id="txt-step1-title-hp">空間預約</div>
       <div class="booking-section-head-sub">選擇合適的空間開始預約，需先登入會員</div>
     </div>
-    <div id="hp-login-gate-hint" style="display:none;">
-      <button class="hp-btn-primary" onclick="openAuthModal('login')" style="font-size:13px;padding:10px 22px;">登入後預約</button>
+    <div id="hp-login-gate-hint">
+      <button class="hp-btn-primary" onclick="requireLogin(() => scrollToBooking())" style="font-size:13px;padding:10px 22px;">開始預約</button>
     </div>
   </div>
 </div>
 
-<div class="page-wrapper">
+<div class="page-wrapper" id="booking-form-wrapper" style="display:none;">
   <div>
 
     <!-- STEP 1: Select Room -->
@@ -4216,6 +4240,8 @@ function requireLogin(fn) {
 
 function scrollToBooking(e) {
   if (e) e.preventDefault();
+  const wrapper = document.getElementById('booking-form-wrapper');
+  if (wrapper) wrapper.style.display = '';
   const el = document.getElementById('booking-section-anchor');
   if (el) el.scrollIntoView({ behavior: 'smooth', block: 'start' });
 }
@@ -4228,13 +4254,14 @@ function scrollToFooter(e) {
 
 function _updateHomepageAuthState() {
   const banner = document.getElementById('hp-login-banner-wrap');
-  const gateHint = document.getElementById('hp-login-gate-hint');
   if (_currentMember) {
     if (banner) banner.style.display = 'none';
-    if (gateHint) gateHint.style.display = 'none';
+    const ptsEl = document.getElementById('hvc-stat-pts');
+    if (ptsEl) ptsEl.textContent = (_currentMember.points !== undefined ? _currentMember.points : '—');
   } else {
     if (banner) banner.style.display = '';
-    if (gateHint) gateHint.style.display = '';
+    const ptsEl = document.getElementById('hvc-stat-pts');
+    if (ptsEl) ptsEl.textContent = '—';
   }
 }
 

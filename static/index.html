@@ -1807,10 +1807,11 @@ footer {
 /* ── SECONDARY NAV ── */
 .sub-nav {
   background: #222; border-bottom: 1px solid rgba(255,255,255,0.07);
-  position: sticky; top: 64px; z-index: 90;
+  position: sticky; top: 0; z-index: 90;
 }
 .sub-nav-inner {
-  max-width: 1300px; margin: 0 auto; padding: 0 40px; display: flex;
+  max-width: 1300px; margin: 0 auto; padding: 0 40px;
+  display: flex; align-items: center;
 }
 .snav-item {
   color: rgba(255,255,255,0.5); font-size: 13px; font-weight: 500;
@@ -1820,6 +1821,14 @@ footer {
 }
 .snav-item:hover { color: rgba(255,255,255,0.9); }
 .snav-item.active { color: var(--gold); border-bottom-color: var(--gold); }
+.snav-auth { display:flex; align-items:center; }
+.snav-login-btn {
+  font-size: 12px; font-weight: 600; color: rgba(255,255,255,0.85);
+  border: 1px solid rgba(255,255,255,0.3); border-radius: 20px;
+  padding: 5px 14px; cursor: pointer; white-space: nowrap;
+  transition: all .2s; text-decoration: none;
+}
+.snav-login-btn:hover { background: rgba(255,255,255,0.1); color: #fff; }
 
 /* ── HERO OVERRIDE ── */
 .hero { padding: 80px 0 90px; }
@@ -2126,13 +2135,24 @@ footer {
       <div class="brand-icon" id="header-logo-wrap">MR</div>
       <div class="brand-name" id="hdr-title">會議室預約系統</div>
     </div>
-    <div class="header-actions" style="position:relative;">
-      <span id="hdr-phone" style="display:none;"></span>
-      <div id="liff-user-bar" style="display:none;"></div>
+    <span id="hdr-phone" style="display:none;"></span>
+  </div>
+</header>
+
+<!-- SECONDARY NAV -->
+<nav class="sub-nav">
+  <div class="sub-nav-inner">
+    <a class="snav-item active" onclick="scrollToBooking(event)">空間預約</a>
+    <a class="snav-item" onclick="requireLogin(() => openMemberCenter())">會員中心</a>
+    <a class="snav-item" onclick="requireLogin(() => { openMemberCenter(); openMcPanel('coupons'); })">優惠券</a>
+    <a class="snav-item" onclick="requireLogin(() => { openMemberCenter(); openMcPanel('points'); })">點數專區</a>
+    <a class="snav-item" onclick="scrollToFooter(event)">聯絡我們</a>
+    <!-- 登入 / 會員區 -->
+    <div class="snav-auth" style="margin-left:auto;position:relative;">
       <!-- 未登入 -->
-      <a class="header-link" id="member-login-btn" onclick="openAuthModal()" style="border:1px solid rgba(255,255,255,0.3);padding:5px 14px;border-radius:20px;font-size:12px;font-weight:600;">登入 / 註冊</a>
+      <a class="snav-login-btn" id="member-login-btn" onclick="openAuthModal()">登入 / 註冊</a>
       <!-- 已登入 -->
-      <div id="member-logged-in" style="display:none;align-items:center;gap:8px;">
+      <div id="member-logged-in" style="display:none;align-items:center;gap:6px;">
         <div class="member-avatar" id="member-avatar-btn" onclick="toggleMemberDropdown()">我</div>
         <div class="member-dropdown" id="member-dropdown">
           <div class="member-dropdown-head">
@@ -2145,17 +2165,6 @@ footer {
         </div>
       </div>
     </div>
-  </div>
-</header>
-
-<!-- SECONDARY NAV -->
-<nav class="sub-nav">
-  <div class="sub-nav-inner">
-    <a class="snav-item active" onclick="scrollToBooking(event)">空間預約</a>
-    <a class="snav-item" onclick="requireLogin(() => openMemberCenter())">會員中心</a>
-    <a class="snav-item" onclick="requireLogin(() => { openMemberCenter(); openMcPanel('coupons'); })">優惠券</a>
-    <a class="snav-item" onclick="requireLogin(() => { openMemberCenter(); openMcPanel('points'); })">點數專區</a>
-    <a class="snav-item" onclick="scrollToFooter(event)">聯絡我們</a>
   </div>
 </nav>
 

@@ -1136,7 +1136,7 @@ footer {
 }
 .mc-overlay.open { display: flex; }
 .mc-sheet {
-  background: #f5f5f5; width: 100%; max-width: 460px;
+  background: #f5f5f5; width: 100%; max-width: 480px;
   border-radius: 18px;
   padding: 0 0 env(safe-area-inset-bottom,0);
   max-height: 88vh; overflow-y: auto;
@@ -1253,58 +1253,106 @@ footer {
 .mc-member-card-box.tier-black .mc-upgrade-bar-fill { background: linear-gradient(90deg,var(--gold-light),var(--gold)); }
 .mc-member-card-box.tier-black .mc-card-deco { opacity: 0.1; filter: invert(1); }
 .mc-member-card-box.tier-black button[onclick*="openMcPanel"] { border-color:rgba(255,255,255,0.2)!important; color:rgba(255,255,255,0.6)!important; }
-/* Stats row */
-.mc-stats-row {
-  display: grid; grid-template-columns: repeat(4, 1fr); gap: 0;
-  background: #fff; border-radius: 14px; margin: 0 16px 12px;
-  box-shadow: 0 2px 8px rgba(0,0,0,0.06);
+/* ── 重新設計：Eslite-style 會員中心 ── */
+/* Greeting row */
+.mc-hi-row {
+  padding: 4px 20px 14px; display: flex; align-items: center; gap: 10px;
 }
-.mc-stat-item {
-  padding: 14px 8px; text-align: center; cursor: pointer;
-  border-right: 1px solid var(--border); transition: background .15s;
+.mc-hi-text {
+  font-size: 26px; font-weight: 800; color: var(--ink);
+  font-family: 'DM Serif Display', serif; letter-spacing: -0.01em;
 }
-.mc-stat-item:last-child { border-right: none; }
-.mc-stat-item:hover { background: var(--paper); }
-.mc-stat-item:active { background: var(--gold-light); }
-.mc-stat-val { font-size: 20px; font-weight: 700; color: var(--ink); line-height: 1; margin-bottom: 5px; }
-.mc-stat-val.gold { color: var(--gold); }
-.mc-stat-lbl { font-size: 11px; color: var(--ink-60); }
-/* Feature icon grid (5 cols) */
-.mc-feat-grid {
-  display: grid; grid-template-columns: repeat(5, 1fr); gap: 0;
-  background: #fff; border-radius: 14px; margin: 0 16px 12px;
-  box-shadow: 0 2px 8px rgba(0,0,0,0.06); padding: 8px 0;
+.mc-tier-badges { display: flex; gap: 6px; align-items: center; }
+.mc-tier-dot {
+  width: 28px; height: 28px; border-radius: 50%;
+  display: flex; align-items: center; justify-content: center;
+  font-size: 13px; font-weight: 700;
 }
-.mc-feat-btn {
-  display: flex; flex-direction: column; align-items: center; gap: 6px;
-  padding: 14px 6px 12px; cursor: pointer; transition: background .15s;
-  border: none; background: none; position: relative;
+.mc-tier-dot.white { background: #e8e8e8; color: #888; border: 1.5px solid #ccc; }
+.mc-tier-dot.green { background: linear-gradient(135deg,#1a3a2a,#3a7a52); color: #fff; }
+.mc-tier-dot.black { background: linear-gradient(135deg,#111,#333); color: var(--gold); }
+/* Card section: physical card left + info right */
+.mc-card-section {
+  margin: 0 16px 14px; background: #fff; border-radius: 16px;
+  box-shadow: 0 2px 12px rgba(0,0,0,0.08); overflow: hidden;
+  display: flex; gap: 0;
 }
-.mc-feat-btn:hover { background: var(--paper); }
-.mc-feat-btn:active { background: var(--gold-light); }
-.mc-feat-icon { width:40px;height:40px;border-radius:11px;background:var(--teal-light);display:flex;align-items:center;justify-content:center; }
-.mc-feat-label { font-size: 11px; color: var(--ink); font-weight: 500; }
-.mc-feat-badge {
-  position: absolute; top: 10px; right: calc(50% - 22px);
-  background: var(--red); color: #fff; border-radius: 10px;
-  font-size: 10px; font-weight: 700; padding: 1px 5px; min-width: 16px;
-  text-align: center; line-height: 16px; height: 16px;
+.mc-phys-card {
+  flex-shrink: 0; width: 130px; min-height: 140px; position: relative;
+  display: flex; flex-direction: column; justify-content: space-between;
+  padding: 12px 12px 10px; border-radius: 0;
 }
-/* List items */
-.mc-list { background: #fff; border-radius: 14px; margin: 0 16px 16px; box-shadow: 0 2px 8px rgba(0,0,0,0.06); overflow: hidden; }
-.mc-list-item {
-  display: flex; align-items: center; justify-content: space-between;
-  padding: 16px 20px; border-bottom: 1px solid var(--border);
-  cursor: pointer; transition: background .15s;
+.mc-phys-card::before {
+  content: ''; position: absolute; inset: 0;
+  background-image: radial-gradient(circle, rgba(255,255,255,0.06) 1px, transparent 1px);
+  background-size: 8px 8px; pointer-events: none;
 }
-.mc-list-item:last-child { border-bottom: none; }
-.mc-list-item:hover { background: var(--paper); }
-.mc-list-item:active { background: var(--gold-light); }
-.mc-list-item-left { flex: 1; }
-.mc-list-item-title { font-size: 14px; font-weight: 600; color: var(--ink); }
-.mc-list-item-sub { font-size: 12px; color: var(--ink-60); margin-top: 2px; }
-.mc-list-item-gold .mc-list-item-title { color: var(--gold); }
-.mc-list-arrow { color: var(--ink-60); font-size: 16px; }
+.mc-phys-card.white { background: linear-gradient(135deg,#e8e8e8,#f5f5f5); }
+.mc-phys-card.green { background: linear-gradient(135deg,#1a3a2a 0%,#2d5e3e 60%,#3a7a52 100%); }
+.mc-phys-card.black { background: linear-gradient(135deg,#111 0%,#252525 60%,#1e1e1e 100%); }
+.mc-phys-exclusive { font-size: 9px; letter-spacing: .12em; opacity: .55; font-style: italic; text-align: right; }
+.mc-phys-card.white .mc-phys-exclusive { color: #666; }
+.mc-phys-card.green .mc-phys-exclusive,
+.mc-phys-card.black .mc-phys-exclusive { color: rgba(255,255,255,.7); }
+.mc-phys-logo-row { display: flex; align-items: center; gap: 6px; }
+.mc-phys-logo-icon {
+  width: 22px; height: 22px; border-radius: 4px; background: var(--gold);
+  display: flex; align-items: center; justify-content: center;
+  font-size: 10px; font-weight: 800; color: #fff;
+}
+.mc-phys-logo-name { font-size: 11px; font-weight: 700; letter-spacing: .01em; }
+.mc-phys-card.white .mc-phys-logo-name { color: #333; }
+.mc-phys-card.green .mc-phys-logo-name,
+.mc-phys-card.black .mc-phys-logo-name { color: rgba(255,255,255,.9); }
+.mc-phys-member-name { font-size: 10px; font-weight: 600; opacity: .7; }
+.mc-phys-card.white .mc-phys-member-name { color: #555; }
+.mc-phys-card.green .mc-phys-member-name,
+.mc-phys-card.black .mc-phys-member-name { color: rgba(255,255,255,.75); }
+/* Info right side */
+.mc-card-info {
+  flex: 1; padding: 14px 16px 14px 12px; display: flex; flex-direction: column; justify-content: space-between;
+}
+.mc-info-tier { font-size: 15px; font-weight: 800; }
+.mc-info-tier.white { color: var(--ink); }
+.mc-info-tier.green { color: #2d5e3e; }
+.mc-info-tier.black { color: var(--gold); }
+.mc-info-date { font-size: 11px; color: var(--ink-60); margin-top: 2px; margin-bottom: 8px; }
+.mc-info-cumul { font-size: 12px; color: var(--ink-60); line-height: 1.6; margin-bottom: 6px; }
+.mc-info-cumul strong { color: var(--ink); font-size: 14px; font-weight: 700; }
+.mc-info-hint { font-size: 11px; color: var(--ink-60); margin-bottom: 10px; line-height: 1.5; }
+.mc-info-btn {
+  display: inline-flex; align-items: center; gap: 4px; font-size: 12px; font-weight: 700;
+  color: #fff; padding: 7px 14px; border-radius: 99px; border: none; cursor: pointer;
+  transition: opacity .2s; width: fit-content;
+}
+.mc-info-btn.white { background: var(--ink); }
+.mc-info-btn.green { background: linear-gradient(135deg,#1a3a2a,#3a7a52); }
+.mc-info-btn.black { background: linear-gradient(135deg,#b8860b,#ffd700); color: #111; }
+.mc-info-btn:hover { opacity: .85; }
+.mc-info-vip { margin-top:6px;font-size:11px;font-weight:700;color:#b8860b; }
+/* Menu list (eslite style) */
+.mc-menu-list { background: #fff; border-radius: 16px; margin: 0 16px 12px; box-shadow: 0 2px 8px rgba(0,0,0,0.06); overflow: hidden; }
+.mc-menu-item {
+  display: flex; align-items: center; gap: 12px;
+  padding: 14px 16px; border-bottom: 1px solid #f0f0f0;
+  cursor: pointer; transition: background .12s; text-decoration: none;
+}
+.mc-menu-item:last-child { border-bottom: none; }
+.mc-menu-item:hover { background: #fafafa; }
+.mc-menu-item:active { background: var(--gold-light); }
+.mc-menu-icon-wrap {
+  width: 36px; height: 36px; border-radius: 50%; flex-shrink: 0;
+  display: flex; align-items: center; justify-content: center;
+}
+.mc-menu-label { flex: 1; font-size: 14px; font-weight: 500; color: var(--ink); }
+.mc-menu-count { font-size: 14px; font-weight: 700; color: var(--gold); margin-right: 4px; }
+.mc-menu-arrow { color: #bbb; font-size: 18px; font-weight: 300; line-height: 1; }
+/* keep old classes for sub-panels that still reference them */
+.mc-stats-row { display:none; }
+.mc-feat-grid { display:none; }
+.mc-list { display:none; }
+.mc-stat-val { display:none; }
+.mc-stat-lbl { display:none; }
 /* legacy aliases kept for sub-panels */
 .mc-icon-grid { display: none; }
 .mc-icon-btn { display:flex;flex-direction:column;align-items:center;gap:6px;padding:18px 8px 14px;cursor:pointer;transition:background .15s;border:none;background:none;position:relative; }
@@ -2801,120 +2849,132 @@ footer {
         </div>
       </div>
 
-      <!-- Name row -->
-      <div class="mc-name-row">
-        <div class="mc-user-name" id="mc-user-name">載入中...</div>
-        <div class="mc-avatar" id="mc-avatar-letter">我</div>
+      <!-- Greeting row -->
+      <div class="mc-hi-row">
+        <div class="mc-hi-text">Hi，<span id="mc-user-name">載入中</span></div>
+        <div class="mc-tier-badges">
+          <div class="mc-tier-dot white" id="mc-badge-white" title="白卡">白</div>
+          <div class="mc-tier-dot green" id="mc-badge-green" style="display:none;" title="綠卡">綠</div>
+          <div class="mc-tier-dot black" id="mc-badge-black" style="display:none;" title="黑卡">黑</div>
+        </div>
+        <!-- legacy compat IDs hidden -->
+        <div id="mc-avatar-letter" style="display:none;"></div>
+        <div id="mc-stat-coupons" style="display:none;">0</div>
+        <div id="mc-points-val" style="display:none;">0</div>
+        <div id="mc-stat-consumption" style="display:none;">—</div>
+        <div id="mc-stat-bookings" style="display:none;">—</div>
+        <span id="mc-badge-coupons" style="display:none;"></span>
+        <div id="mc-card-tier-label" style="display:none;">白卡會員</div>
+        <div id="mc-upgrade-bar" style="display:none;"></div>
+        <div id="mc-upgrade-hint-text" style="display:none;"></div>
       </div>
 
-      <!-- Member card box -->
-      <div class="mc-member-card-box tier-white" id="mc-card-box">
-        <div class="mc-card-deco">
-          <svg width="120" height="120" viewBox="0 0 24 24" fill="none" stroke="#000" stroke-width="0.6"><polygon points="12 2 22 8.5 22 15.5 12 22 2 15.5 2 8.5"/><line x1="2" y1="8.5" x2="22" y2="8.5"/><line x1="12" y1="2" x2="12" y2="22"/></svg>
-        </div>
-        <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:4px;">
-          <div class="mc-card-type-badge">
-            <span id="mc-card-tier-label">白卡會員</span>
-            <span class="badge-arrow">›</span>
+      <!-- Physical card + info -->
+      <div class="mc-card-section" id="mc-card-box">
+        <!-- Left: physical card -->
+        <div class="mc-phys-card white" id="mc-phys-card">
+          <div class="mc-phys-exclusive">exclusive ✦</div>
+          <div>
+            <div class="mc-phys-logo-row">
+              <div class="mc-phys-logo-icon" id="mc-phys-logo-icon">MR</div>
+              <div class="mc-phys-logo-name" id="mc-phys-logo-name">空間預約系統</div>
+            </div>
           </div>
-          <button onclick="openMcPanel('card')" style="background:none;border:1px solid var(--border);border-radius:6px;padding:3px 10px;font-size:11px;cursor:pointer;color:var(--ink-60);display:flex;align-items:center;gap:4px;">
-            <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><rect x="3" y="9" width="3" height="6"/><rect x="7" y="5" width="1.5" height="14"/><rect x="10" y="9" width="2" height="6"/><rect x="13.5" y="5" width="1.5" height="14"/><rect x="16.5" y="9" width="3" height="6"/></svg>
-            會員卡
-          </button>
+          <div class="mc-phys-member-name" id="mc-phys-name">會員</div>
         </div>
-        <div class="mc-card-validity" id="mc-card-validity-main">有效期：終身有效</div>
-        <div class="mc-card-cumul-row">
-          <span class="mc-card-cumul-label">累計</span>
-          <span class="mc-card-cumul-val" id="mc-cumul-spend">$0</span>
-          <span class="mc-card-cumul-sep">/</span>
-          <span class="mc-card-visits" id="mc-cumul-visits">0</span>
-          <span class="mc-card-visits-u">次</span>
-        </div>
-        <div class="mc-upgrade-bar-wrap">
-          <div class="mc-upgrade-bar-track">
-            <div class="mc-upgrade-bar-fill" id="mc-upgrade-bar" style="width:0%"></div>
+        <!-- Right: info -->
+        <div class="mc-card-info">
+          <div>
+            <div class="mc-info-tier white" id="mc-info-tier">白卡會員</div>
+            <div class="mc-info-date" id="mc-card-validity-main">有效期：終身有效</div>
+            <div class="mc-info-cumul">
+              累計消費 <strong id="mc-cumul-spend">$0</strong><br>
+              累計到訪 <strong id="mc-cumul-visits">0</strong> 次
+            </div>
+            <div class="mc-info-hint" id="mc-upgrade-hint-text2">累積消費提升會員等級</div>
+            <div id="mc-vip-badge" class="mc-info-vip" style="display:none;">🃏 VIP 鼎極卡 · <span id="mc-vip-pct"></span>折優惠</div>
           </div>
-          <div class="mc-upgrade-hint" id="mc-upgrade-hint-text">累積消費提升會員等級</div>
-        </div>
-        <div id="mc-vip-badge" style="display:none;margin-top:10px;background:linear-gradient(135deg,#b8860b,#ffd700);color:#fff;border-radius:20px;padding:4px 14px;font-size:12px;font-weight:700;letter-spacing:.04em;text-align:center;">
-          🃏 VIP 鼎極卡 · <span id="mc-vip-pct"></span>折優惠
-        </div>
-      </div>
-
-      <!-- Stats row (4 cols) -->
-      <div class="mc-stats-row">
-        <div class="mc-stat-item" onclick="openMcPanel('coupons')">
-          <div class="mc-stat-val" id="mc-stat-coupons">0</div>
-          <div class="mc-stat-lbl">優惠券</div>
-        </div>
-        <div class="mc-stat-item" onclick="openMcPanel('points')">
-          <div class="mc-stat-val gold" id="mc-points-val">0</div>
-          <div class="mc-stat-lbl">點數</div>
-        </div>
-        <div class="mc-stat-item" onclick="openMcPanel('consumption')">
-          <div class="mc-stat-val" id="mc-stat-consumption">—</div>
-          <div class="mc-stat-lbl">消費紀錄</div>
-        </div>
-        <div class="mc-stat-item" onclick="openMcSubPanel('mybookings')">
-          <div class="mc-stat-val" id="mc-stat-bookings">—</div>
-          <div class="mc-stat-lbl">我的預約</div>
+          <button class="mc-info-btn white" id="mc-info-terms-btn" onclick="openMemberTerms()">會員權益說明 ›</button>
         </div>
       </div>
 
-      <!-- Feature icon grid (5 cols) -->
-      <div class="mc-feat-grid">
-        <button class="mc-feat-btn" onclick="goToBooking()">
-          <div class="mc-feat-icon"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="var(--teal)" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="4" width="18" height="18" rx="2"/><line x1="3" y1="9" x2="21" y2="9"/><line x1="8" y1="2" x2="8" y2="6"/><line x1="16" y1="2" x2="16" y2="6"/></svg></div>
-          <div class="mc-feat-label">空間預約</div>
-        </button>
-        <button class="mc-feat-btn" onclick="openMcPanel('coupons')">
-          <div class="mc-feat-icon"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="var(--teal)" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><path d="M2 9a1 1 0 011-1h18a1 1 0 011 1v1.5a2.5 2.5 0 000 5V17a1 1 0 01-1 1H3a1 1 0 01-1-1v-1.5a2.5 2.5 0 000-5V9z"/><line x1="9" y1="8" x2="9" y2="16" stroke-dasharray="2 2"/></svg></div>
-          <div class="mc-feat-label">優惠券</div>
-          <span class="mc-feat-badge" id="mc-badge-coupons" style="display:none;"></span>
-        </button>
-        <button class="mc-feat-btn" onclick="openMcPanel('points')">
-          <div class="mc-feat-icon"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="var(--teal)" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><polygon points="12 2 22 8.5 22 15.5 12 22 2 15.5 2 8.5"/><line x1="2" y1="8.5" x2="22" y2="8.5"/><line x1="12" y1="2" x2="12" y2="22"/></svg></div>
-          <div class="mc-feat-label">點數專區</div>
-        </button>
-        <button class="mc-feat-btn" onclick="openMcPanel('consumption')">
-          <div class="mc-feat-icon"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="var(--teal)" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><path d="M4 2v20l2-1 2 1 2-1 2 1 2-1 2 1 2-1V2l-2 1-2-1-2 1-2-1-2 1-2-1z"/><line x1="8" y1="9" x2="16" y2="9"/><line x1="8" y1="13" x2="16" y2="13"/></svg></div>
-          <div class="mc-feat-label">消費紀錄</div>
-        </button>
-        <button class="mc-feat-btn" onclick="openMcPanel('card')">
-          <div class="mc-feat-icon" style="background:#f0ede8;"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="var(--gold)" stroke-width="1.8" stroke-linecap="round"><rect x="3" y="9" width="3" height="6"/><rect x="7" y="5" width="1.5" height="14"/><rect x="10" y="9" width="2" height="6"/><rect x="13.5" y="5" width="1.5" height="14"/><rect x="16.5" y="9" width="3" height="6"/></svg></div>
-          <div class="mc-feat-label">會員卡</div>
-        </button>
-      </div>
-
-      <!-- List items -->
-      <div class="mc-list">
-        <div class="mc-list-item" onclick="openMemberProfile(); closeMemberCenter();">
-          <div class="mc-list-item-left">
-            <div class="mc-list-item-title">帳號設定</div>
-            <div class="mc-list-item-sub">個人基本資料變更、密碼修改</div>
+      <!-- Menu list -->
+      <div class="mc-menu-list">
+        <div class="mc-menu-item" onclick="openMcPanel('points')">
+          <div class="mc-menu-icon-wrap" style="background:#fff8e1;">
+            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#b8860b" stroke-width="1.8" stroke-linecap="round"><polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2"/></svg>
           </div>
-          <div class="mc-list-arrow">›</div>
+          <span class="mc-menu-label">點數</span>
+          <span class="mc-menu-count" id="mc-menu-pts">0</span>
+          <span style="font-size:12px;color:var(--ink-60);margin-right:4px;">點</span>
+          <span class="mc-menu-arrow">›</span>
         </div>
-        <div class="mc-list-item" onclick="openCarrierModal()">
-          <div class="mc-list-item-left">
-            <div class="mc-list-item-title">手機條碼載具</div>
-            <div class="mc-list-item-sub" id="mc-carrier-hint-text">設定電子發票手機載具</div>
+        <div class="mc-menu-item" onclick="openMcPanel('coupons')">
+          <div class="mc-menu-icon-wrap" style="background:#e8f5e9;">
+            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#2d7a4f" stroke-width="1.8" stroke-linecap="round"><path d="M2 9a1 1 0 011-1h18a1 1 0 011 1v1.5a2.5 2.5 0 000 5V17a1 1 0 01-1 1H3a1 1 0 01-1-1v-1.5a2.5 2.5 0 000-5V9z"/><line x1="9" y1="8" x2="9" y2="16" stroke-dasharray="2 2"/></svg>
           </div>
-          <div class="mc-list-arrow">›</div>
+          <span class="mc-menu-label">優惠券</span>
+          <span class="mc-menu-count" id="mc-menu-coupons">0</span>
+          <span style="font-size:12px;color:var(--ink-60);margin-right:4px;">張</span>
+          <span class="mc-menu-arrow">›</span>
         </div>
-        <div class="mc-list-item" onclick="toggleAiChat(); closeMemberCenter();">
-          <div class="mc-list-item-left">
-            <div class="mc-list-item-title">客服專區</div>
-            <div class="mc-list-item-sub">線上客服、常見問題</div>
+        <div class="mc-menu-item" onclick="openMcPanel('redemption')">
+          <div class="mc-menu-icon-wrap" style="background:#fce4ec;">
+            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#c2185b" stroke-width="1.8" stroke-linecap="round"><path d="M20 12V22H4V12"/><path d="M22 7H2v5h20V7z"/><path d="M12 22V7"/><path d="M12 7H7.5a2.5 2.5 0 010-5C11 2 12 7 12 7z"/><path d="M12 7h4.5a2.5 2.5 0 000-5C13 2 12 7 12 7z"/></svg>
           </div>
-          <div class="mc-list-arrow">›</div>
+          <span class="mc-menu-label">點數兌換</span>
+          <span class="mc-menu-arrow" style="margin-left:auto;">›</span>
         </div>
-        <div class="mc-list-item" onclick="openMemberTerms()">
-          <div class="mc-list-item-left">
-            <div class="mc-list-item-title">會員權益與服務條款</div>
-            <div class="mc-list-item-sub">白卡・綠卡・黑卡 等級說明與條款</div>
+        <div class="mc-menu-item" onclick="openMcSubPanel('mybookings')">
+          <div class="mc-menu-icon-wrap" style="background:#e3f2fd;">
+            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#1565c0" stroke-width="1.8" stroke-linecap="round"><rect x="3" y="4" width="18" height="18" rx="2"/><line x1="3" y1="9" x2="21" y2="9"/><line x1="8" y1="2" x2="8" y2="6"/><line x1="16" y1="2" x2="16" y2="6"/></svg>
           </div>
-          <div class="mc-list-arrow">›</div>
+          <span class="mc-menu-label">我的預約</span>
+          <span class="mc-menu-count" id="mc-menu-bookings"></span>
+          <span class="mc-menu-arrow">›</span>
+        </div>
+        <div class="mc-menu-item" onclick="openMcPanel('consumption')">
+          <div class="mc-menu-icon-wrap" style="background:#f3e5f5;">
+            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#7b1fa2" stroke-width="1.8" stroke-linecap="round"><path d="M4 2v20l2-1 2 1 2-1 2 1 2-1 2 1 2-1V2l-2 1-2-1-2 1-2-1-2 1-2-1z"/><line x1="8" y1="9" x2="16" y2="9"/><line x1="8" y1="13" x2="16" y2="13"/></svg>
+          </div>
+          <span class="mc-menu-label">消費紀錄</span>
+          <span class="mc-menu-arrow" style="margin-left:auto;">›</span>
+        </div>
+        <div class="mc-menu-item" onclick="openMcPanel('card')">
+          <div class="mc-menu-icon-wrap" style="background:#f0ede8;">
+            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#b8860b" stroke-width="1.8" stroke-linecap="round"><rect x="3" y="9" width="3" height="6"/><rect x="7" y="5" width="1.5" height="14"/><rect x="10" y="9" width="2" height="6"/><rect x="13.5" y="5" width="1.5" height="14"/><rect x="16.5" y="9" width="3" height="6"/></svg>
+          </div>
+          <span class="mc-menu-label">會員卡 / 條碼累點</span>
+          <span class="mc-menu-arrow" style="margin-left:auto;">›</span>
+        </div>
+        <div class="mc-menu-item" onclick="openCarrierModal()">
+          <div class="mc-menu-icon-wrap" style="background:#e0f7fa;">
+            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#00838f" stroke-width="1.8" stroke-linecap="round"><rect x="5" y="2" width="14" height="20" rx="2"/><line x1="12" y1="18" x2="12.01" y2="18" stroke-width="2.5"/></svg>
+          </div>
+          <span class="mc-menu-label">手機條碼載具</span>
+          <span style="font-size:11px;color:var(--ink-60);margin-right:4px;" id="mc-carrier-hint-text"></span>
+          <span class="mc-menu-arrow">›</span>
+        </div>
+        <div class="mc-menu-item" onclick="openMemberProfile(); closeMemberCenter();">
+          <div class="mc-menu-icon-wrap" style="background:#eceff1;">
+            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#546e7a" stroke-width="1.8" stroke-linecap="round"><path d="M20 21v-2a4 4 0 00-4-4H8a4 4 0 00-4 4v2"/><circle cx="12" cy="7" r="4"/></svg>
+          </div>
+          <span class="mc-menu-label">帳號設定</span>
+          <span class="mc-menu-arrow" style="margin-left:auto;">›</span>
+        </div>
+        <div class="mc-menu-item" onclick="toggleAiChat(); closeMemberCenter();">
+          <div class="mc-menu-icon-wrap" style="background:#e8eaf6;">
+            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#3949ab" stroke-width="1.8" stroke-linecap="round"><path d="M21 15a2 2 0 01-2 2H7l-4 4V5a2 2 0 012-2h14a2 2 0 012 2z"/></svg>
+          </div>
+          <span class="mc-menu-label">客服專區</span>
+          <span class="mc-menu-arrow" style="margin-left:auto;">›</span>
+        </div>
+        <div class="mc-menu-item" onclick="memberLogout()">
+          <div class="mc-menu-icon-wrap" style="background:#ffebee;">
+            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#c62828" stroke-width="1.8" stroke-linecap="round"><path d="M9 21H5a2 2 0 01-2-2V5a2 2 0 012-2h4"/><polyline points="16 17 21 12 16 7"/><line x1="21" y1="12" x2="9" y2="12"/></svg>
+          </div>
+          <span class="mc-menu-label" style="color:#c62828;">登出</span>
+          <span class="mc-menu-arrow" style="margin-left:auto;color:#ffcdd2;">›</span>
         </div>
       </div>
 
@@ -5317,22 +5377,39 @@ function openMemberCenter() {
   const m = _currentMember;
   if (!m) { openAuthModal(); return; }
   const initial = (m.name || '我')[0].toUpperCase();
+  // legacy compat
   document.getElementById('mc-avatar-letter').textContent = initial;
   document.getElementById('mc-user-name').textContent = m.name || '會員';
   document.getElementById('mc-points-val').textContent = (m.points ?? 0);
-  // Update bottom nav avatar
+  // New greeting
   const mbnAv = document.getElementById('mbn-avatar-letter');
   if (mbnAv) mbnAv.textContent = initial;
-  closeMcPanel();
-  document.getElementById('mcOverlay').classList.add('open');
-  _loadMcCouponBadge();
-  _loadMcStats();
-  // VIP 鼎極卡 badge
+  // Physical card brand name
+  const siteTitle = document.getElementById('hdr-title')?.textContent || '空間預約系統';
+  const logoText  = (document.getElementById('header-logo-wrap')?.textContent || 'MR').trim().slice(0,2).toUpperCase();
+  const physLogo  = document.getElementById('mc-phys-logo-icon');
+  const physName  = document.getElementById('mc-phys-logo-name');
+  const physMember = document.getElementById('mc-phys-name');
+  if (physLogo) physLogo.textContent = logoText;
+  if (physName) physName.textContent = siteTitle;
+  if (physMember) physMember.textContent = m.name || '—';
+  // Validity date (current year)
+  const yr = new Date().getFullYear();
+  const dateEl = document.getElementById('mc-card-validity-main');
+  if (dateEl) dateEl.textContent = `${yr}.01.01 – ${yr}.12.31`;
+  // Points in menu
+  const menuPts = document.getElementById('mc-menu-pts');
+  if (menuPts) menuPts.textContent = (m.points ?? 0).toLocaleString();
+  // VIP badge
   const vipBadge = document.getElementById('mc-vip-badge');
   const vipPct   = document.getElementById('mc-vip-pct');
   const vip = (m && m.vip_discount) || 0;
   if (vipBadge) vipBadge.style.display = vip > 0 ? '' : 'none';
   if (vipPct) vipPct.textContent = vip;
+  closeMcPanel();
+  document.getElementById('mcOverlay').classList.add('open');
+  _loadMcCouponBadge();
+  _loadMcStats();
 }
 
 function closeMemberCenter() {
@@ -5556,27 +5633,25 @@ async function _loadMcStats() {
     if (cr.ok) {
       const coupons = await cr.json();
       const active = coupons.filter(c => !c.used).length;
-      const el = document.getElementById('mc-stat-coupons');
-      if (el) el.textContent = active;
+      document.getElementById('mc-stat-coupons').textContent = active;
+      const menuC = document.getElementById('mc-menu-coupons');
+      if (menuC) menuC.textContent = active;
     }
   } catch(e) {}
   try {
-    // Load bookings count
+    // Load bookings count + cumulative spend
     const br = await fetch('/api/bookings/by-member', { credentials: 'include' });
     if (br.ok) {
       const bks = await br.json();
-      const el = document.getElementById('mc-stat-bookings');
-      if (el) el.textContent = bks.length;
-      // Update cumulative spending + visits
+      document.getElementById('mc-stat-bookings').textContent = bks.length;
+      const menuBk = document.getElementById('mc-menu-bookings');
+      if (menuBk) menuBk.textContent = bks.length || '';
       const confirmed = bks.filter(b => b.status === 'confirmed' || b.status === 'completed');
       const total = confirmed.reduce((s, b) => s + (b.total_price || 0), 0);
-      const spendEl = document.getElementById('mc-cumul-spend');
-      if (spendEl) spendEl.textContent = '$' + total.toLocaleString();
-      const visitsEl = document.getElementById('mc-cumul-visits');
-      if (visitsEl) visitsEl.textContent = confirmed.length;
-      const consEl = document.getElementById('mc-stat-consumption');
-      if (consEl) consEl.textContent = confirmed.length;
-      // Fetch tier thresholds and apply card theme
+      document.getElementById('mc-cumul-spend').textContent = '$' + total.toLocaleString();
+      document.getElementById('mc-cumul-visits').textContent = confirmed.length;
+      document.getElementById('mc-stat-consumption').textContent = confirmed.length;
+      // Tier thresholds
       let gt = 6000, bt = 20000;
       try {
         const ts = _tierData || await fetch('/api/tier-settings').then(r=>r.json());
@@ -5584,33 +5659,43 @@ async function _loadMcStats() {
         gt = Number(ts.green_threshold) || 6000;
         bt = Number(ts.black_threshold) || 20000;
       } catch {}
-      const cardBox = document.getElementById('mc-card-box');
-      const tierLabel = document.getElementById('mc-card-tier-label');
-      const hintEl = document.getElementById('mc-upgrade-hint-text');
-      const bar = document.getElementById('mc-upgrade-bar');
-      let tierName, tierClass, pct;
+      // Determine tier
+      let tierName, tierKey, hint2;
       if (total >= bt) {
-        tierName = '黑卡會員'; tierClass = 'tier-black';
-        pct = 100;
-        if (hintEl) hintEl.textContent = '頂級黑卡會員';
+        tierName = '黑卡會員'; tierKey = 'black';
+        hint2 = '您已達頂級黑卡會員，感謝支持！';
       } else if (total >= gt) {
-        tierName = '綠卡會員'; tierClass = 'tier-green';
-        pct = Math.min(99, Math.round((total - gt) / (bt - gt) * 100));
-        if (hintEl) hintEl.textContent = `再累計 $${(bt - total).toLocaleString()} 升等黑卡`;
+        tierName = '綠卡會員'; tierKey = 'green';
+        hint2 = `再累計 $${(bt - total).toLocaleString()} 可升等黑卡`;
       } else {
-        tierName = '白卡會員'; tierClass = 'tier-white';
-        pct = Math.min(99, Math.round(total / gt * 100));
-        if (hintEl) hintEl.textContent = `再累計 $${(gt - total).toLocaleString()} 升等綠卡`;
+        tierName = '白卡會員'; tierKey = 'white';
+        hint2 = `再累計 $${(gt - total).toLocaleString()} 可升等綠卡`;
       }
-      if (cardBox) { cardBox.className = 'mc-member-card-box ' + tierClass; }
-      if (tierLabel) tierLabel.textContent = tierName;
-      if (bar) bar.style.width = pct + '%';
+      // Update legacy IDs
+      document.getElementById('mc-card-tier-label').textContent = tierName;
+      // Update new design elements
+      const infoTier = document.getElementById('mc-info-tier');
+      if (infoTier) { infoTier.textContent = tierName; infoTier.className = 'mc-info-tier ' + tierKey; }
+      const hint2El = document.getElementById('mc-upgrade-hint-text2');
+      if (hint2El) hint2El.textContent = hint2;
+      // Update physical card color
+      const physCard = document.getElementById('mc-phys-card');
+      if (physCard) physCard.className = 'mc-phys-card ' + tierKey;
+      // Update "會員權益說明" button color
+      const infoBtn = document.getElementById('mc-info-terms-btn');
+      if (infoBtn) infoBtn.className = 'mc-info-btn ' + tierKey;
+      // Update tier badges
+      document.getElementById('mc-badge-white').style.display = '';
+      const gBadge = document.getElementById('mc-badge-green');
+      const bBadge = document.getElementById('mc-badge-black');
+      if (gBadge) gBadge.style.display = (tierKey === 'green' || tierKey === 'black') ? '' : 'none';
+      if (bBadge) bBadge.style.display = (tierKey === 'black') ? '' : 'none';
     }
   } catch(e) {}
   // Carrier hint
   const carrier = _currentMember?.carrier_code;
   const hint = document.getElementById('mc-carrier-hint-text');
-  if (hint) hint.textContent = carrier ? `已設定：${carrier}` : '設定電子發票手機載具';
+  if (hint) hint.textContent = carrier ? carrier : '';
 }
 
 // ── Mobile bottom nav ──

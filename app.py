@@ -4074,9 +4074,10 @@ def admin_confirm_booking(bid):
         return jsonify({'error': '只有待審核的預約可以確認'}), 400
     b.status = 'confirmed'
     db.session.commit()
-    # 點數累積：每 NT$10 得 1 點
+    # 點數累積：依後台「每幾元得 1 點」設定計算
     try:
-        earned = max(0, (b.total_price or 0) // 10)
+        _per = float(SiteContent.get('points_per_amount') or '10') or 10
+        earned = max(0, int((b.total_price or 0) // _per))
         if earned > 0:
             member = Member.query.filter_by(phone=b.customer_phone).first()
             if not member and b.customer_email:

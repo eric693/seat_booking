@@ -1171,7 +1171,7 @@ input[list]::-webkit-calendar-picker-indicator { display: none !important; }
                   <button class="btn btn-primary" onclick="doScanLookup()" style="white-space:nowrap;">查詢</button>
                   <button class="btn btn-outline" onclick="clearScan()" title="清除">✕</button>
                 </div>
-                <div style="font-size:11px;color:var(--ink-60);margin-top:6px;">💡 使用條碼掃描器對準條碼後自動辨識，或手動輸入 10 位會員號碼按 Enter</div>
+                <div style="font-size:11px;color:var(--ink-60);margin-top:6px;">使用條碼掃描器對準條碼後自動辨識，或手動輸入 10 位會員號碼按 Enter</div>
               </div>
 
               <!-- 會員資訊卡 -->
@@ -1235,7 +1235,7 @@ input[list]::-webkit-calendar-picker-indicator { display: none !important; }
           </div>
         </div>
 
-        <!-- 右欄：近期紀錄 -->
+        <!-- 右欄：累點設定 -->
         <div>
           <!-- 累點設定 -->
           <div class="card" style="margin-bottom:20px;">
@@ -1268,22 +1268,31 @@ input[list]::-webkit-calendar-picker-indicator { display: none !important; }
             </div>
           </div>
 
-          <div class="card">
-            <div class="card-head">
-              <h2 class="card-title">近期掃碼紀錄</h2>
-              <button class="btn btn-outline btn-sm" onclick="loadScanHistory()">重新整理</button>
-            </div>
-            <div class="table-wrap">
-              <table class="data-table">
-                <thead><tr><th>時間</th><th>會員</th><th>說明</th><th style="text-align:right;">獲得點數</th></tr></thead>
-                <tbody id="scan-history-tbody">
-                  <tr><td colspan="4" style="text-align:center;color:var(--ink-60);padding:30px;">載入中...</td></tr>
-                </tbody>
-              </table>
-            </div>
-          </div>
         </div>
 
+      </div>
+
+      <!-- 近期掃碼紀錄（全寬） -->
+      <div class="card" style="margin-top:20px;">
+        <div class="card-head" style="flex-wrap:wrap;gap:8px;">
+          <h2 class="card-title">掃碼紀錄</h2>
+          <div style="display:flex;gap:8px;align-items:center;flex-wrap:wrap;margin-left:auto;">
+            <input class="finput" id="sh-q" placeholder="搜尋會員姓名 / 手機 / 說明…" style="font-size:13px;padding:6px 10px;width:210px;" oninput="renderScanHistory()">
+            <input class="finput" type="date" id="sh-date-from" style="font-size:13px;padding:6px 10px;width:140px;" onchange="renderScanHistory()">
+            <span style="font-size:13px;color:var(--ink-60);">～</span>
+            <input class="finput" type="date" id="sh-date-to" style="font-size:13px;padding:6px 10px;width:140px;" onchange="renderScanHistory()">
+            <button class="btn btn-outline btn-sm" onclick="document.getElementById('sh-q').value='';document.getElementById('sh-date-from').value='';document.getElementById('sh-date-to').value='';renderScanHistory();">清除</button>
+            <button class="btn btn-outline btn-sm" onclick="loadScanHistory()">重新整理</button>
+          </div>
+        </div>
+        <div class="table-wrap">
+          <table class="data-table">
+            <thead><tr><th>時間</th><th>會員</th><th>說明</th><th style="text-align:right;">獲得點數</th></tr></thead>
+            <tbody id="scan-history-tbody">
+              <tr><td colspan="4" style="text-align:center;color:var(--ink-60);padding:30px;">載入中...</td></tr>
+            </tbody>
+          </table>
+        </div>
       </div>
     </div>
 
@@ -2051,14 +2060,14 @@ input[list]::-webkit-calendar-picker-indicator { display: none !important; }
     <!-- ── LINE Q&A ── -->
     <div class="page" id="page-lineqa">
       <div style="background:var(--teal-light);border:1px solid rgba(42,107,107,0.2);border-radius:8px;padding:12px 16px;margin-bottom:16px;font-size:13px;color:var(--teal);line-height:1.7;">
-        <strong>📌 同步說明：</strong>此頁面的 Q&A 設定同時作用於 <strong>LINE 機器人</strong> 與 <strong>網站聊天助理</strong>。
+        <strong>同步說明：</strong>此頁面的 Q&A 設定同時作用於 <strong>LINE 機器人</strong> 與 <strong>網站聊天助理</strong>。
         當訊息包含關鍵字時，系統會優先回覆設定內容，不呼叫 AI，兩個管道完全共用同一份設定。
       </div>
 
       <!-- 範例 Q&A -->
       <div class="card" style="margin-bottom:20px;">
         <div class="card-head" style="cursor:pointer;" onclick="toggleQaExamples()">
-          <div class="card-title">💡 範例 Q&A（點選套用）</div>
+          <div class="card-title">範例 Q&A（點選套用）</div>
           <span id="qa-examples-toggle" style="font-size:12px;color:var(--ink-60);">展開 ▾</span>
         </div>
         <div id="qa-examples-body" style="display:none;">
@@ -5690,6 +5699,8 @@ async function doScanEarnPoints() {
   }
 }
 
+let _scanHistoryData = [];
+
 async function loadScanHistory() {
   const tbody = document.getElementById('scan-history-tbody');
   if (!tbody) return;
@@ -5697,23 +5708,45 @@ async function loadScanHistory() {
   try {
     const res = await fetch('/admin/api/scan/history', { headers: H });
     const rows = await res.json();
-    if (!Array.isArray(rows) || !rows.length) {
-      tbody.innerHTML = '<tr><td colspan="4" style="text-align:center;color:var(--ink-60);padding:30px;">尚無掃碼記錄</td></tr>';
-      return;
-    }
-    tbody.innerHTML = rows.map(r => `
-      <tr>
-        <td style="font-size:12px;color:var(--ink-60);white-space:nowrap;">${r.created_at}</td>
-        <td>
-          <div style="font-weight:600;">${r.member_name}</div>
-          <div style="font-size:11px;color:var(--ink-60);">${r.member_phone}</div>
-        </td>
-        <td style="font-size:12px;">${r.description}</td>
-        <td style="text-align:right;font-weight:700;color:var(--green);">+${r.points} 點</td>
-      </tr>`).join('');
+    _scanHistoryData = Array.isArray(rows) ? rows : [];
+    renderScanHistory();
   } catch(e) {
     tbody.innerHTML = '<tr><td colspan="4" style="text-align:center;color:var(--red);padding:20px;">載入失敗</td></tr>';
   }
+}
+
+function renderScanHistory() {
+  const tbody = document.getElementById('scan-history-tbody');
+  if (!tbody) return;
+  const q        = (document.getElementById('sh-q')?.value || '').toLowerCase();
+  const dateFrom = document.getElementById('sh-date-from')?.value || '';
+  const dateTo   = document.getElementById('sh-date-to')?.value || '';
+  const filtered = _scanHistoryData.filter(r => {
+    if (q) {
+      const hay = `${r.member_name} ${r.member_phone} ${r.description}`.toLowerCase();
+      if (!hay.includes(q)) return false;
+    }
+    if (dateFrom || dateTo) {
+      const d = (r.created_at || '').slice(0, 10);
+      if (dateFrom && d < dateFrom) return false;
+      if (dateTo   && d > dateTo)   return false;
+    }
+    return true;
+  });
+  if (!filtered.length) {
+    tbody.innerHTML = '<tr><td colspan="4" style="text-align:center;color:var(--ink-60);padding:30px;">尚無符合的掃碼記錄</td></tr>';
+    return;
+  }
+  tbody.innerHTML = filtered.map(r => `
+    <tr>
+      <td style="font-size:12px;color:var(--ink-60);white-space:nowrap;">${r.created_at}</td>
+      <td>
+        <div style="font-weight:600;">${r.member_name}</div>
+        <div style="font-size:11px;color:var(--ink-60);">${r.member_phone}</div>
+      </td>
+      <td style="font-size:12px;">${r.description}</td>
+      <td style="text-align:right;font-weight:700;color:var(--green);">+${r.points} 點</td>
+    </tr>`).join('');
 }
 
 // ── 點數兌換管理 ──

@@ -3320,7 +3320,7 @@ footer {
   position:fixed;bottom:28px;right:28px;z-index:999;
   width:56px;height:56px;border-radius:50%;
   background:var(--teal);color:#fff;
-  display:flex;align-items:center;justify-content:center;
+  display:none;align-items:center;justify-content:center;
   box-shadow:0 4px 16px rgba(0,0,0,0.2);cursor:pointer;
   transition:transform .2s,box-shadow .2s;
   border:none;font-size:24px;
@@ -3545,11 +3545,11 @@ async function loadContent() {
       nl.innerHTML = '';
       notices.forEach(n => { const li = document.createElement('li'); li.textContent = n; nl.appendChild(li); });
     }
-    // 聊天視窗顯示控制
-    const showChat = c.show_chat_widget !== '0';
+    // 聊天視窗顯示控制（預設隱藏，需後台啟用或點選「線上客服」才顯示）
+    _chatWidgetEnabled = c.show_chat_widget === '1';
     const chatBtn   = document.getElementById('ai-chat-btn');
     const chatPanel = document.getElementById('ai-chat-panel');
-    if (chatBtn)   chatBtn.style.display   = showChat ? 'flex' : 'none';
+    if (chatBtn)   chatBtn.style.display   = _chatWidgetEnabled ? 'flex' : 'none';
     if (chatPanel) chatPanel.style.display = 'none';
 
     // 聊天快捷回覆按鈕
@@ -4623,19 +4623,25 @@ document.getElementById('successModal').addEventListener('click', function(e) {
 let _aiChatOpen = false;
 let _aiChatHistory = [];
 let _aiRoomsCache = [];
+let _chatWidgetEnabled = false;   // controlled by admin show_chat_widget setting
 
 function toggleAiChat() {
   _aiChatOpen = !_aiChatOpen;
   const panel = document.getElementById('ai-chat-panel');
+  const btn   = document.getElementById('ai-chat-btn');
   const badge = document.getElementById('ai-chat-badge');
   panel.style.display = _aiChatOpen ? 'flex' : 'none';
+  // Show the button whenever the panel is open (so user can close it);
+  // hide it again on close if admin hasn't enabled the persistent widget
   if (_aiChatOpen) {
+    if (btn) btn.style.display = 'flex';
     badge.style.display = 'none';
     document.getElementById('ai-chat-input').focus();
     if (!_chatSessionKey) initChatSession();
     startChatPolling();
   } else {
     stopChatPolling();
+    if (btn && !_chatWidgetEnabled) btn.style.display = 'none';
   }
 }
 

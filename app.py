@@ -2032,6 +2032,9 @@ def get_site_content():
             'points_per_amount', 'barcode_instructions']
 
     data = {k: SiteContent.get(k) for k in keys}
+    # 預設隱藏聊天視窗（後台可開啟）
+    if data.get('show_chat_widget') is None:
+        data['show_chat_widget'] = '0'
     # chat_quick_replies：若未設定則回傳預設值
     data['chat_quick_replies'] = SiteContent.get('chat_quick_replies') or \
         '[{"label":"查看空間","text":"有哪些空間可以預約？"},{"label":"LINE 預約","text":"如何用LINE預約？"},{"label":"網頁預約","text":"如何用網頁預約？"},{"label":"費用說明","text":"費用怎麼計算？"}]'

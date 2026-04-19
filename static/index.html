@@ -1459,6 +1459,81 @@ footer {
 .carrier-edit-link {
   font-size:11px;color:var(--teal);cursor:pointer;text-decoration:underline;
 }
+/* ── 會員資料面板 ── */
+.profile-overlay {
+  display: none; position: fixed; inset: 0; z-index: 650;
+  background: rgba(0,0,0,0.5); align-items: flex-end; justify-content: center;
+}
+.profile-overlay.open { display: flex; }
+.profile-sheet {
+  background: var(--paper); width: 100%; max-width: 520px;
+  border-radius: 20px 20px 0 0; max-height: 95vh; overflow-y: auto;
+  animation: slideUp .3s ease;
+}
+@keyframes slideUp { from { transform: translateY(40px); opacity:0; } to { transform:translateY(0);opacity:1; } }
+.profile-header {
+  display: flex; align-items: center; gap: 12px;
+  padding: 18px 20px 0; position: sticky; top: 0;
+  background: var(--paper); z-index: 2;
+}
+.profile-back-btn {
+  background: none; border: none; font-size: 22px; cursor: pointer;
+  color: var(--ink-60); width: 36px; height: 36px; border-radius: 50%;
+  display: flex; align-items: center; justify-content: center;
+  transition: background .15s;
+}
+.profile-back-btn:hover { background: var(--border); }
+.profile-header-title { font-family: 'DM Serif Display', serif; font-size: 18px; flex: 1; text-align: center; }
+.profile-tabs {
+  display: flex; border-bottom: 1.5px solid var(--border);
+  margin: 12px 0 0; padding: 0 20px;
+}
+.profile-tab {
+  flex: 1; text-align: center; padding: 10px 0; font-size: 13px;
+  font-weight: 600; color: var(--ink-60); border-bottom: 2.5px solid transparent;
+  cursor: pointer; margin-bottom: -1.5px; transition: color .15s;
+}
+.profile-tab.active { color: var(--ink); border-bottom-color: var(--ink); }
+.profile-body { padding: 20px 20px 32px; }
+.pf-field {
+  background: #fff; border-radius: 12px; padding: 14px 16px;
+  margin-bottom: 10px; display: flex; flex-direction: column; gap: 6px;
+  box-shadow: 0 1px 4px rgba(0,0,0,0.05);
+}
+.pf-label { font-size: 12px; font-weight: 600; color: var(--ink-60); }
+.pf-input {
+  border: none; outline: none; font-size: 15px; color: var(--ink);
+  background: transparent; font-family: inherit; width: 100%;
+}
+.pf-input:disabled { color: var(--ink-60); }
+.pf-row { display: flex; gap: 8px; }
+.pf-radio-group { display: flex; gap: 20px; flex-wrap: wrap; padding: 4px 0; }
+.pf-radio { display: flex; align-items: center; gap: 6px; cursor: pointer; font-size: 14px; }
+.pf-radio input[type=radio] { accent-color: var(--ink); width: 16px; height: 16px; }
+.pf-section-title {
+  font-size: 11px; font-weight: 700; letter-spacing: .1em; text-transform: uppercase;
+  color: var(--ink-60); margin: 18px 0 8px;
+}
+.pf-save-btn {
+  width: 100%; padding: 15px; background: var(--ink); color: #fff;
+  border: none; border-radius: 12px; font-size: 15px; font-weight: 700;
+  cursor: pointer; margin-top: 12px; transition: background .15s; font-family: inherit;
+}
+.pf-save-btn:hover { background: #2a2a2a; }
+.pf-cancel-btn {
+  width: 100%; padding: 13px; background: #eee; color: var(--ink);
+  border: none; border-radius: 12px; font-size: 14px; font-weight: 600;
+  cursor: pointer; margin-top: 8px; font-family: inherit;
+}
+.pf-delete-btn {
+  width: 100%; padding: 13px; background: none; color: var(--red);
+  border: 1.5px solid var(--red); border-radius: 12px; font-size: 14px; font-weight: 600;
+  cursor: pointer; margin-top: 24px; font-family: inherit;
+}
+.pf-delete-warn { font-size: 12px; color: var(--red); text-align: center; margin-top: 6px; display: flex; align-items: center; justify-content: center; gap: 4px; }
+.pf-msg { font-size: 13px; padding: 10px 14px; border-radius: 8px; margin-top: 10px; display: none; }
+.pf-msg.ok { background: #f0fff4; color: var(--green); }
+.pf-msg.err { background: #fff3f3; color: var(--red); }
 /* ── 會員卡面板 ── */
 .mc-card-btn {
   display:flex;align-items:center;justify-content:center;gap:6px;
@@ -1961,10 +2036,7 @@ footer {
     </div>
     <div class="header-actions" style="position:relative;">
       <span id="hdr-phone" style="display:none;"></span>
-      <div id="liff-user-bar" style="display:none;align-items:center;gap:8px;">
-        <img id="liff-avatar" src="" style="width:28px;height:28px;border-radius:50%;object-fit:cover;border:2px solid var(--teal);" alt="">
-        <span id="liff-name" style="font-size:13px;font-weight:600;color:var(--teal);max-width:80px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;"></span>
-      </div>
+      <div id="liff-user-bar" style="display:none;"></div>
       <!-- 未登入 -->
       <a class="header-link" id="member-login-btn" onclick="openAuthModal()" style="border:1px solid rgba(255,255,255,0.3);padding:5px 14px;border-radius:20px;font-size:12px;font-weight:600;">登入 / 註冊</a>
       <!-- 已登入 -->
@@ -2385,62 +2457,125 @@ footer {
 </div>
 
 <!-- ── Member Profile Modal ── -->
-<div class="modal" id="memberProfileModal">
-  <div class="modal-box" style="max-width:460px;padding:36px 40px;">
-    <h2 style="font-family:'DM Serif Display',serif;font-size:24px;margin-bottom:24px;">帳號設定</h2>
-    <div id="profile-content">
-      <div class="sum-row">
-        <div class="sum-lbl">姓名</div>
-        <div class="sum-val" id="profile-name">—</div>
+<!-- ── 會員資料面板 ── -->
+<div class="profile-overlay" id="profileOverlay" onclick="handleProfileOverlayClick(event)">
+  <div class="profile-sheet">
+    <div class="profile-header">
+      <button class="profile-back-btn" onclick="closeProfilePanel()">‹</button>
+      <div class="profile-header-title">會員資料</div>
+      <div style="width:36px;"></div>
+    </div>
+    <div class="profile-tabs">
+      <div class="profile-tab active" id="ptab-info" onclick="switchProfileTab('info')">會員資料修改</div>
+      <div class="profile-tab" id="ptab-pw" onclick="switchProfileTab('pw')">密碼修改</div>
+    </div>
+
+    <!-- 資料修改 Tab -->
+    <div class="profile-body" id="ptab-pane-info">
+      <!-- 基本資料 -->
+      <div class="pf-section-title">基本資料</div>
+      <div class="pf-field" id="pff-name">
+        <div class="pf-label" id="pfl-name">姓名</div>
+        <input class="pf-input" type="text" id="pf-name" placeholder="請輸入姓名">
       </div>
-      <div class="sum-row">
-        <div class="sum-lbl">Email</div>
-        <div class="sum-val" id="profile-email-row" style="display:flex;align-items:center;gap:8px;justify-content:flex-end;flex-wrap:wrap;">
-          <span id="profile-email">—</span>
+      <div class="pf-field">
+        <div class="pf-label">會員卡號</div>
+        <input class="pf-input" type="text" id="pf-member-number" disabled>
+      </div>
+      <div class="pf-field" id="pff-birthday">
+        <div class="pf-label" id="pfl-birthday">生日</div>
+        <input class="pf-input" type="date" id="pf-birthday">
+      </div>
+      <div class="pf-field" id="pff-id_number">
+        <div class="pf-label" id="pfl-id_number">證件號碼</div>
+        <input class="pf-input" type="text" id="pf-id_number" placeholder="身分證字號">
+      </div>
+      <div class="pf-field" id="pff-gender">
+        <div class="pf-label" id="pfl-gender">性別</div>
+        <div class="pf-radio-group">
+          <label class="pf-radio"><input type="radio" name="pf-gender" value="male"> 先生</label>
+          <label class="pf-radio"><input type="radio" name="pf-gender" value="female"> 女士</label>
+          <label class="pf-radio"><input type="radio" name="pf-gender" value="other"> 不提供</label>
         </div>
       </div>
-      <div class="sum-row">
-        <div class="sum-lbl">手機</div>
-        <div class="sum-val" id="profile-phone-row" style="display:flex;align-items:center;gap:8px;justify-content:flex-end;flex-wrap:wrap;">
-          <span id="profile-phone">—</span>
+
+      <!-- 聯絡資訊 -->
+      <div class="pf-section-title">聯絡資訊</div>
+      <div class="pf-field" id="pff-email">
+        <div class="pf-label" id="pfl-email">Email</div>
+        <input class="pf-input" type="email" id="pf-email" disabled>
+      </div>
+      <div class="pf-field" id="pff-phone">
+        <div class="pf-label" id="pfl-phone">行動電話</div>
+        <div class="pf-row">
+          <input class="pf-input" type="text" id="pf-phone" disabled style="flex:1;">
         </div>
       </div>
-      <div class="sum-row" style="border:none;">
-        <div class="sum-lbl">註冊時間</div>
-        <div class="sum-val" id="profile-created">—</div>
-      </div>
-    </div>
-    <!-- 修改密碼區塊 -->
-    <div style="margin-top:20px;border-top:1px solid var(--border);padding-top:16px;">
-      <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:12px;">
-        <div style="font-size:14px;font-weight:600;">修改密碼</div>
-        <button id="toggle-change-pw-btn" onclick="toggleChangePwForm()" style="background:none;border:1px solid var(--border);border-radius:6px;padding:4px 12px;font-size:12px;cursor:pointer;color:var(--teal);">展開</button>
-      </div>
-      <div id="change-pw-form" style="display:none;">
-        <div style="display:flex;flex-direction:column;gap:10px;">
-          <div>
-            <label style="font-size:12px;color:var(--ink-60);display:block;margin-bottom:4px;">舊密碼</label>
-            <input class="finput" type="password" id="cp-old" placeholder="輸入目前密碼" style="width:100%;">
-          </div>
-          <div>
-            <label style="font-size:12px;color:var(--ink-60);display:block;margin-bottom:4px;">新密碼</label>
-            <input class="finput" type="password" id="cp-new" placeholder="至少 6 碼" style="width:100%;">
-          </div>
-          <div>
-            <label style="font-size:12px;color:var(--ink-60);display:block;margin-bottom:4px;">確認新密碼</label>
-            <input class="finput" type="password" id="cp-new2" placeholder="再次輸入新密碼" style="width:100%;" onkeydown="if(event.key==='Enter')doChangePassword()">
-          </div>
-          <div id="cp-msg" style="display:none;font-size:13px;padding:8px 12px;border-radius:6px;"></div>
-          <button class="book-btn" style="margin:0;" onclick="doChangePassword()">確認修改</button>
+      <div class="pf-field" id="pff-home_phone">
+        <div class="pf-label" id="pfl-home_phone">室內電話</div>
+        <div class="pf-row">
+          <input class="pf-input" type="text" id="pf-home-area" placeholder="區碼" style="width:80px;">
+          <input class="pf-input" type="text" id="pf-home-number" placeholder="電話號碼" style="flex:1;">
+          <input class="pf-input" type="text" id="pf-home-ext" placeholder="分機" style="width:70px;">
         </div>
       </div>
+
+      <!-- 居住資訊 -->
+      <div class="pf-section-title">居住資訊</div>
+      <div class="pf-field" id="pff-residence">
+        <div class="pf-label" id="pfl-residence">居住地</div>
+        <div class="pf-radio-group">
+          <label class="pf-radio"><input type="radio" name="pf-residence" value="taiwan"> 台灣</label>
+          <label class="pf-radio"><input type="radio" name="pf-residence" value="mainland"> 大陸</label>
+          <label class="pf-radio"><input type="radio" name="pf-residence" value="hk"> 香港</label>
+          <label class="pf-radio"><input type="radio" name="pf-residence" value="other"> 其他</label>
+        </div>
+      </div>
+      <div class="pf-field" id="pff-address">
+        <div class="pf-label" id="pfl-address">聯絡地址</div>
+        <input class="pf-input" type="text" id="pf-address" placeholder="請輸入詳細地址">
+      </div>
+
+      <!-- 邀請碼 -->
+      <div class="pf-section-title" id="pff-invite_code">邀請碼</div>
+      <div class="pf-field">
+        <div class="pf-label">邀請碼</div>
+        <input class="pf-input" type="text" id="pf-invite-code" placeholder="請輸入邀請碼">
+      </div>
+
+      <div class="pf-msg" id="pf-save-msg"></div>
+      <button class="pf-save-btn" onclick="saveProfileData()">儲存</button>
+      <button class="pf-cancel-btn" onclick="closeProfilePanel()">取消</button>
+
+      <hr style="border:none;border-top:1px solid var(--border);margin:24px 0 16px;">
+      <button class="pf-delete-btn" onclick="confirmDeleteAccount()">刪除會員帳號</button>
+      <div class="pf-delete-warn">⚠ 帳號刪除後將無法復原，請謹慎操作</div>
     </div>
-    <div style="margin-top:16px;">
-      <button class="book-btn" style="margin:0;background:var(--ink-60);" onclick="document.getElementById('memberProfileModal').classList.remove('active')">關閉</button>
+
+    <!-- 密碼修改 Tab -->
+    <div class="profile-body" id="ptab-pane-pw" style="display:none;">
+      <div class="pf-section-title">修改密碼</div>
+      <div class="pf-field">
+        <div class="pf-label">舊密碼</div>
+        <input class="pf-input" type="password" id="cp-old" placeholder="輸入目前密碼">
+      </div>
+      <div class="pf-field">
+        <div class="pf-label">新密碼</div>
+        <input class="pf-input" type="password" id="cp-new" placeholder="至少 6 碼">
+      </div>
+      <div class="pf-field">
+        <div class="pf-label">確認新密碼</div>
+        <input class="pf-input" type="password" id="cp-new2" placeholder="再次輸入新密碼">
+      </div>
+      <div class="pf-msg" id="cp-msg"></div>
+      <button class="pf-save-btn" onclick="doChangePassword()">確認修改</button>
+      <button class="pf-cancel-btn" onclick="closeProfilePanel()">取消</button>
     </div>
-    <button onclick="document.getElementById('memberProfileModal').classList.remove('active')" style="position:absolute;top:16px;right:20px;background:none;border:none;font-size:22px;color:var(--ink-60);cursor:pointer;">×</button>
   </div>
 </div>
+
+<!-- legacy compat: keep hidden modal for any code still targeting it -->
+<div id="memberProfileModal" style="display:none;"></div>
 
 <!-- ── My Bookings Modal ── -->
 <div class="modal" id="myBookingsModal">
@@ -4706,53 +4841,144 @@ async function memberLogout() {
 }
 
 // ── Profile ──
-function openMemberProfile() {
+let _profileFieldCfgFrontend = null;
+
+async function openMemberProfile() {
   document.getElementById('member-dropdown')?.classList.remove('open');
   if (!_currentMember) return;
-  document.getElementById('profile-name').textContent    = _currentMember.name;
-  document.getElementById('profile-created').textContent = _currentMember.created_at || '—';
-
-  // Email row
-  const emailRow = document.getElementById('profile-email-row');
-  emailRow.innerHTML = '';
-  const emailSpan = document.createElement('span');
-  emailSpan.textContent = _currentMember.email || '—';
-  emailRow.appendChild(emailSpan);
-  if (_currentMember.email) {
-    const emailBadge = document.createElement('span');
-    emailBadge.className = _currentMember.is_verified_email ? 'verify-badge ok' : 'verify-badge pending';
-    emailBadge.textContent = _currentMember.is_verified_email ? '✓ 已驗證' : '待驗證';
-    emailRow.appendChild(emailBadge);
+  // Load field config if not yet loaded
+  if (!_profileFieldCfgFrontend) {
+    try {
+      const res = await fetch('/admin/api/site-content');
+      if (res.ok) {
+        const data = await res.json();
+        _profileFieldCfgFrontend = data;
+      }
+    } catch {}
   }
-
-  // Phone row
-  const phoneRow = document.getElementById('profile-phone-row');
-  phoneRow.innerHTML = '';
-  const phoneSpan = document.createElement('span');
-  phoneSpan.textContent = _currentMember.phone || '—';
-  phoneRow.appendChild(phoneSpan);
-  if (_currentMember.phone) {
-    const phoneBadge = document.createElement('span');
-    phoneBadge.className = _currentMember.is_verified_phone ? 'verify-badge ok' : 'verify-badge pending';
-    phoneBadge.textContent = _currentMember.is_verified_phone ? '✓ 已驗證' : '待驗證';
-    phoneRow.appendChild(phoneBadge);
-  }
-
-  document.getElementById('memberProfileModal').classList.add('active');
+  _applyProfileFieldConfig(_profileFieldCfgFrontend || {});
+  _fillProfileForm(_currentMember);
+  switchProfileTab('info');
+  document.getElementById('profileOverlay').classList.add('open');
+  document.body.style.overflow = 'hidden';
 }
 
-function toggleChangePwForm() {
-  const form = document.getElementById('change-pw-form');
-  const btn  = document.getElementById('toggle-change-pw-btn');
-  const open = form.style.display === 'none';
-  form.style.display = open ? 'block' : 'none';
-  btn.textContent    = open ? '收起' : '展開';
-  if (!open) {
-    document.getElementById('cp-old').value  = '';
-    document.getElementById('cp-new').value  = '';
-    document.getElementById('cp-new2').value = '';
-    document.getElementById('cp-msg').style.display = 'none';
-  }
+function _applyProfileFieldConfig(cfg) {
+  const fields = ['birthday','id_number','gender','home_phone','residence','address','invite_code'];
+  fields.forEach(key => {
+    const wrapper = document.getElementById('pff-' + key);
+    if (wrapper) wrapper.style.display = cfg[`pff_show_${key}`] === '0' ? 'none' : '';
+    const labelEl = document.getElementById('pfl-' + key);
+    if (labelEl && cfg[`pff_label_${key}`]) labelEl.textContent = cfg[`pff_label_${key}`];
+  });
+  // Also update name and email labels
+  ['name','email','phone'].forEach(key => {
+    const labelEl = document.getElementById('pfl-' + key);
+    if (labelEl && cfg[`pff_label_${key}`]) labelEl.textContent = cfg[`pff_label_${key}`];
+  });
+}
+
+function closeProfilePanel() {
+  document.getElementById('profileOverlay').classList.remove('open');
+  document.body.style.overflow = '';
+}
+
+function handleProfileOverlayClick(e) {
+  if (e.target === document.getElementById('profileOverlay')) closeProfilePanel();
+}
+
+function switchProfileTab(tab) {
+  ['info','pw'].forEach(t => {
+    document.getElementById('ptab-' + t)?.classList.toggle('active', t === tab);
+    const pane = document.getElementById('ptab-pane-' + t);
+    if (pane) pane.style.display = t === tab ? '' : 'none';
+  });
+}
+
+function _fillProfileForm(m) {
+  const set = (id, val) => { const el = document.getElementById(id); if (el) el.value = val || ''; };
+  set('pf-name', m.name);
+  set('pf-member-number', m.member_number || String(m.id).padStart(10,'0'));
+  set('pf-birthday', m.birthday || '');
+  set('pf-id_number', m.id_number || '');
+  set('pf-email', m.email || '');
+  set('pf-phone', m.phone || '');
+  set('pf-address', m.address || '');
+  set('pf-invite-code', m.invite_code || '');
+  // Gender radio
+  document.querySelectorAll('input[name="pf-gender"]').forEach(r => { r.checked = (r.value === (m.gender || 'other')); });
+  // Residence radio
+  document.querySelectorAll('input[name="pf-residence"]').forEach(r => { r.checked = (r.value === (m.residence || 'taiwan')); });
+  // Home phone (stored as "area|number|ext")
+  const hp = (m.home_phone || '').split('|');
+  set('pf-home-area', hp[0] || '');
+  set('pf-home-number', hp[1] || '');
+  set('pf-home-ext', hp[2] || '');
+  // Hide msg
+  const msg = document.getElementById('pf-save-msg');
+  if (msg) msg.style.display = 'none';
+}
+
+async function saveProfileData() {
+  const msgEl = document.getElementById('pf-save-msg');
+  const showMsg = (text, ok) => {
+    msgEl.className = 'pf-msg ' + (ok ? 'ok' : 'err');
+    msgEl.textContent = text; msgEl.style.display = 'block';
+  };
+  const gender = document.querySelector('input[name="pf-gender"]:checked')?.value || '';
+  const residence = document.querySelector('input[name="pf-residence"]:checked')?.value || '';
+  const homePhone = [
+    document.getElementById('pf-home-area').value.trim(),
+    document.getElementById('pf-home-number').value.trim(),
+    document.getElementById('pf-home-ext').value.trim(),
+  ].join('|');
+  const payload = {
+    name:        document.getElementById('pf-name').value.trim(),
+    birthday:    document.getElementById('pf-birthday').value,
+    id_number:   document.getElementById('pf-id_number').value.trim(),
+    gender, residence,
+    home_phone:  homePhone,
+    address:     document.getElementById('pf-address').value.trim(),
+    invite_code: document.getElementById('pf-invite-code').value.trim(),
+  };
+  if (!payload.name) return showMsg('姓名不可為空', false);
+  try {
+    const res = await fetch(`${API}/api/members/profile`, {
+      method: 'PATCH', credentials: 'include',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(payload)
+    });
+    const data = await res.json();
+    if (res.ok) {
+      _currentMember = { ..._currentMember, ...data.member };
+      updateMemberUI();
+      showMsg('資料已儲存', true);
+    } else {
+      showMsg(data.error || '儲存失敗', false);
+    }
+  } catch { showMsg('連線失敗，請稍後再試', false); }
+}
+
+async function confirmDeleteAccount() {
+  if (!confirm('確定要刪除帳號嗎？此操作無法復原，所有資料（點數、優惠券、預約記錄）將一併刪除。')) return;
+  const pw = prompt('請輸入您的密碼以確認刪除：');
+  if (pw === null) return;
+  try {
+    const res = await fetch(`${API}/api/members/me`, {
+      method: 'DELETE', credentials: 'include',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ password: pw })
+    });
+    const data = await res.json();
+    if (res.ok) {
+      alert('帳號已刪除。');
+      _currentMember = null;
+      updateMemberUI();
+      closeProfilePanel();
+    } else {
+      alert(data.error || '刪除失敗');
+    }
+  } catch { alert('連線失敗，請稍後再試'); }
 }
 
 async function doChangePassword() {
@@ -4760,38 +4986,32 @@ async function doChangePassword() {
   const new_pw = document.getElementById('cp-new').value;
   const new_pw2= document.getElementById('cp-new2').value;
   const msgEl  = document.getElementById('cp-msg');
-
   const showMsg = (text, ok) => {
-    msgEl.textContent   = text;
-    msgEl.style.background = ok ? '#e8f5e9' : '#fff3f3';
-    msgEl.style.color      = ok ? '#2e7d32' : 'var(--red)';
-    msgEl.style.display    = 'block';
+    msgEl.className = 'pf-msg ' + (ok ? 'ok' : 'err');
+    msgEl.textContent = text; msgEl.style.display = 'block';
   };
-
   if (!old_pw || !new_pw || !new_pw2) return showMsg('請填寫所有欄位', false);
   if (new_pw !== new_pw2)             return showMsg('兩次新密碼不一致', false);
   if (new_pw.length < 6)             return showMsg('新密碼至少 6 碼', false);
-
   try {
     const res = await fetch(`${API}/api/members/change-password`, {
-      method: 'POST',
+      method: 'POST', credentials: 'include',
       headers: { 'Content-Type': 'application/json' },
-      credentials: 'include',
       body: JSON.stringify({ old_password: old_pw, new_password: new_pw })
     });
     const data = await res.json();
     if (res.ok) {
       showMsg('密碼已成功修改！', true);
-      document.getElementById('cp-old').value  = '';
-      document.getElementById('cp-new').value  = '';
+      document.getElementById('cp-old').value = '';
+      document.getElementById('cp-new').value = '';
       document.getElementById('cp-new2').value = '';
     } else {
       showMsg(data.error || '修改失敗', false);
     }
-  } catch(e) {
-    showMsg('連線失敗，請稍後再試', false);
-  }
+  } catch { showMsg('連線失敗，請稍後再試', false); }
 }
+
+function toggleChangePwForm() {} // legacy compat stub
 
 // ── My Bookings ──
 async function openMyBookings() {

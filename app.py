@@ -1605,6 +1605,14 @@ class Member(db.Model):
     carrier_code          = db.Column(db.String(20), default='')
     created_at            = db.Column(db.DateTime, default=tw_now)
     last_login            = db.Column(db.DateTime)
+    # 擴充會員資料欄位
+    birthday              = db.Column(db.String(20), default='')
+    gender                = db.Column(db.String(10), default='')   # male/female/other
+    id_number             = db.Column(db.String(30), default='')
+    home_phone            = db.Column(db.String(30), default='')   # JSON: {area,number,ext}
+    residence             = db.Column(db.String(20), default='')   # taiwan/mainland/hk/other
+    address               = db.Column(db.String(200), default='')
+    invite_code           = db.Column(db.String(30), default='')
 
     def set_password(self, pw):
         self.password_hash = generate_password_hash(pw)
@@ -1625,6 +1633,13 @@ class Member(db.Model):
             'points': self.points or 0,
             'created_at': self.created_at.strftime('%Y-%m-%d %H:%M') if self.created_at else '',
             'last_login': self.last_login.strftime('%Y-%m-%d %H:%M') if self.last_login else '',
+            'birthday': self.birthday or '',
+            'gender': self.gender or '',
+            'id_number': self.id_number or '',
+            'home_phone': self.home_phone or '',
+            'residence': self.residence or '',
+            'address': self.address or '',
+            'invite_code': self.invite_code or '',
         }
 
 
@@ -4274,6 +4289,13 @@ with app.app_context():
                 'block_reason':           "ALTER TABLE members ADD COLUMN block_reason VARCHAR(200) DEFAULT ''",
                 'points':                 'ALTER TABLE members ADD COLUMN points INTEGER DEFAULT 0',
                 'carrier_code':           "ALTER TABLE members ADD COLUMN carrier_code VARCHAR(20) DEFAULT ''",
+                'birthday':               "ALTER TABLE members ADD COLUMN birthday VARCHAR(20) DEFAULT ''",
+                'gender':                 "ALTER TABLE members ADD COLUMN gender VARCHAR(10) DEFAULT ''",
+                'id_number':              "ALTER TABLE members ADD COLUMN id_number VARCHAR(30) DEFAULT ''",
+                'home_phone':             "ALTER TABLE members ADD COLUMN home_phone VARCHAR(30) DEFAULT ''",
+                'residence':              "ALTER TABLE members ADD COLUMN residence VARCHAR(20) DEFAULT ''",
+                'address':                "ALTER TABLE members ADD COLUMN address VARCHAR(200) DEFAULT ''",
+                'invite_code':            "ALTER TABLE members ADD COLUMN invite_code VARCHAR(30) DEFAULT ''",
             }
             for col, sql in _member_cols.items():
                 if col not in _mb_cols:
@@ -4885,6 +4907,38 @@ def member_me():
     if not m:
         return jsonify({'error': '未登入'}), 401
     return jsonify(m.to_dict())
+
+
+@app.route('/api/members/profile', methods=['PATCH'])
+def member_update_profile():
+    m = _member_session_check()
+    if not m:
+        return jsonify({'error': '請先登入'}), 401
+    d = request.get_json() or {}
+    allowed = ['name', 'birthday', 'gender', 'id_number', 'home_phone', 'residence', 'address', 'invite_code']
+    for field in allowed:
+        if field in d:
+            val = str(d[field]).strip() if d[field] is not None else ''
+            if field == 'name' and not val:
+                return jsonify({'error': '姓名不可為空'}), 400
+            setattr(m, field, val)
+    db.session.commit()
+    return jsonify({'success': True, 'member': m.to_dict()})
+
+
+@app.route('/api/members/me', methods=['DELETE'])
+def member_delete_account():
+    m = _member_session_check()
+    if not m:
+        return jsonify({'error': '請先登入'}), 401
+    d = request.get_json() or {}
+    pw = d.get('password', '')
+    if m.password_hash and not m.check_password(pw):
+        return jsonify({'error': '密碼錯誤，無法刪除帳號'}), 400
+    session.pop('member_id', None)
+    db.session.delete(m)
+    db.session.commit()
+    return jsonify({'success': True})
 
 
 @app.route('/api/members/forgot-password', methods=['POST'])

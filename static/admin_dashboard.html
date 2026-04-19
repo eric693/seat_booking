@@ -1656,6 +1656,45 @@ input[list]::-webkit-calendar-picker-indicator { display: none !important; }
     </div>
 
     <div class="page" id="page-members">
+      <!-- 會員資料欄位顯示設定 -->
+      <div class="card" style="margin-bottom:20px;">
+        <div class="card-head">
+          <div class="card-title">會員資料欄位顯示設定</div>
+          <button class="btn btn-primary btn-sm" onclick="saveMemberProfileFields()">儲存設定</button>
+        </div>
+        <div class="card-body">
+          <p style="font-size:13px;color:var(--ink-60);margin-bottom:16px;">控制前台「會員資料」頁面各欄位的顯示／隱藏，以及自訂欄位標籤名稱。</p>
+          <div style="display:grid;grid-template-columns:repeat(auto-fill,minmax(260px,1fr));gap:12px;" id="member-profile-fields-grid">
+            <!-- rendered by JS -->
+          </div>
+        </div>
+      </div>
+
+      <!-- 會員統計儀表板 -->
+      <div class="card" style="margin-bottom:20px;">
+        <div class="card-head"><div class="card-title">會員統計</div></div>
+        <div class="card-body">
+          <div style="display:grid;grid-template-columns:repeat(4,1fr);gap:12px;" id="member-stats-cards">
+            <div style="background:var(--paper);border-radius:10px;padding:16px;text-align:center;">
+              <div style="font-size:28px;font-weight:700;color:var(--ink);" id="mstat-total">—</div>
+              <div style="font-size:12px;color:var(--ink-60);margin-top:4px;">總會員數</div>
+            </div>
+            <div style="background:#f0f8ff;border-radius:10px;padding:16px;text-align:center;">
+              <div style="font-size:28px;font-weight:700;color:#555;" id="mstat-white">—</div>
+              <div style="font-size:12px;color:var(--ink-60);margin-top:4px;">白卡</div>
+            </div>
+            <div style="background:#f0fff6;border-radius:10px;padding:16px;text-align:center;">
+              <div style="font-size:28px;font-weight:700;color:#2d5e3e;" id="mstat-green">—</div>
+              <div style="font-size:12px;color:var(--ink-60);margin-top:4px;">綠卡</div>
+            </div>
+            <div style="background:#1a1a1a;border-radius:10px;padding:16px;text-align:center;">
+              <div style="font-size:28px;font-weight:700;color:var(--gold);" id="mstat-black">—</div>
+              <div style="font-size:12px;color:rgba(255,255,255,0.6);margin-top:4px;">黑卡</div>
+            </div>
+          </div>
+        </div>
+      </div>
+
       <div class="card" style="margin-bottom:20px;">
         <div class="card-head">
           <div class="card-title">會員管理</div>
@@ -2273,7 +2312,7 @@ function showPage(id, navEl) {
     case 'blocked':     loadBlockedSlots(); loadTimeConfigRoomBtns(); break;
     case 'accounts':    loadAccounts(); break;
     case 'lineusers':   loadLineUsers(); break;
-    case 'members':     loadMembers(); break;
+    case 'members':     loadMembers(); loadMemberStats(); loadMemberProfileFields(); break;
     case 'tier':        loadTierSettings(); break;
     case 'coupons':     loadCoupons(); break;
     case 'points':      loadPointsPage(); break;
@@ -4583,6 +4622,105 @@ async function issueCouponAll() {
 function clearMemberFilters() {
   ['member-search','member-fil-status'].forEach(id => { const el = document.getElementById(id); if (el) el.value = ''; });
   loadMembers();
+}
+
+// ── 會員資料欄位設定 ──
+const _PROFILE_FIELDS = [
+  { key: 'name',        label: '姓名',     required: true },
+  { key: 'birthday',   label: '生日' },
+  { key: 'id_number',  label: '證件號碼' },
+  { key: 'gender',     label: '性別' },
+  { key: 'email',      label: 'Email',    fixed: true },
+  { key: 'phone',      label: '行動電話',  fixed: true },
+  { key: 'home_phone', label: '室內電話' },
+  { key: 'residence',  label: '居住地' },
+  { key: 'address',    label: '聯絡地址' },
+  { key: 'invite_code',label: '邀請碼' },
+];
+let _profileFieldCfg = {};
+
+async function loadMemberProfileFields() {
+  try {
+    const res = await fetch('/admin/api/site-content', { headers: H });
+    if (!res.ok) return;
+    const data = await res.json();
+    _PROFILE_FIELDS.forEach(f => {
+      _profileFieldCfg[f.key] = {
+        show: data[`pff_show_${f.key}`] !== '0',
+        label: data[`pff_label_${f.key}`] || f.label,
+      };
+    });
+    _renderProfileFieldsGrid();
+  } catch {}
+}
+
+function _renderProfileFieldsGrid() {
+  const grid = document.getElementById('member-profile-fields-grid');
+  if (!grid) return;
+  grid.innerHTML = _PROFILE_FIELDS.map(f => {
+    const cfg = _profileFieldCfg[f.key] || { show: true, label: f.label };
+    const isFixed = f.required || f.fixed;
+    return `
+    <div style="background:var(--paper);border-radius:10px;padding:14px 16px;border:1px solid var(--border);">
+      <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:10px;">
+        <span style="font-size:13px;font-weight:600;">${f.label}</span>
+        ${isFixed ? '<span style="font-size:11px;color:var(--ink-60);">必要欄位</span>' : `
+        <div onclick="togglePffSwitch('${f.key}')" style="cursor:pointer;">
+          <div id="sw-pff-${f.key}" style="width:40px;height:22px;border-radius:11px;background:${cfg.show?'var(--teal)':'#ccc'};position:relative;transition:.3s;">
+            <div style="position:absolute;width:16px;height:16px;border-radius:50%;background:#fff;top:3px;${cfg.show?'right:3px':'left:3px'};transition:.3s;" id="knob-pff-${f.key}"></div>
+          </div>
+        </div>`}
+      </div>
+      <input type="hidden" id="pff-show-${f.key}" value="${isFixed ? '1' : (cfg.show ? '1' : '0')}">
+      <div>
+        <label style="font-size:11px;color:var(--ink-60);">欄位標籤</label>
+        <input class="finput" type="text" id="pff-label-${f.key}" value="${cfg.label}" placeholder="${f.label}" style="margin-top:4px;font-size:13px;padding:6px 10px;">
+      </div>
+    </div>`;
+  }).join('');
+}
+
+function togglePffSwitch(key) {
+  const hidden = document.getElementById(`pff-show-${key}`);
+  const sw = document.getElementById(`sw-pff-${key}`);
+  const knob = document.getElementById(`knob-pff-${key}`);
+  if (!hidden || !sw || !knob) return;
+  const isOn = hidden.value === '1';
+  hidden.value = isOn ? '0' : '1';
+  sw.style.background = isOn ? '#ccc' : 'var(--teal)';
+  knob.style.left = isOn ? '3px' : '';
+  knob.style.right = isOn ? '' : '3px';
+}
+
+async function saveMemberProfileFields() {
+  const payload = {};
+  _PROFILE_FIELDS.forEach(f => {
+    const showEl  = document.getElementById(`pff-show-${f.key}`);
+    const labelEl = document.getElementById(`pff-label-${f.key}`);
+    if (showEl)  payload[`pff_show_${f.key}`]  = showEl.value;
+    if (labelEl) payload[`pff_label_${f.key}`] = labelEl.value.trim() || f.label;
+  });
+  try {
+    const res = await fetch('/admin/api/site-content', {
+      method: 'POST', headers: { ...H, 'Content-Type': 'application/json' },
+      body: JSON.stringify(payload)
+    });
+    if (res.ok) toast('欄位設定已儲存');
+    else toast('儲存失敗', 'error');
+  } catch { toast('儲存失敗', 'error'); }
+}
+
+async function loadMemberStats() {
+  try {
+    const res = await fetch('/admin/api/membership/stats', { headers: H });
+    if (!res.ok) return;
+    const d = await res.json();
+    const set = (id, val) => { const el = document.getElementById(id); if (el) el.textContent = val; };
+    set('mstat-total', d.total ?? '—');
+    set('mstat-white', d.white ?? '—');
+    set('mstat-green', d.green ?? '—');
+    set('mstat-black', d.black ?? '—');
+  } catch {}
 }
 
 async function loadMembers() {

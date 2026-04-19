@@ -1789,8 +1789,8 @@ input[list]::-webkit-calendar-picker-indicator { display: none !important; }
             <div class="content-section" style="grid-column:1/-1;">
               <div class="cs-head">升等提示文字（可用 {gf} 代入綠卡門檻、{bf} 代入黑卡門檻）</div>
               <div class="cs-body" style="display:flex;flex-direction:column;gap:14px;">
-                <div class="cs-field"><label class="cs-label">白卡升等提示</label><input class="finput" type="text" id="t-hint_white" placeholder="升等提示：累計消費達 ${gf} 自動升等為綠卡會員，享有更多回饋與優惠。"></div>
-                <div class="cs-field"><label class="cs-label">綠卡升等提示</label><input class="finput" type="text" id="t-hint_green" placeholder="升等提示：累計消費達 ${bf} 自動升等為黑卡會員，享頂級尊榮服務。"></div>
+                <div class="cs-field"><label class="cs-label">白卡升等提示</label><input class="finput" type="text" id="t-hint_white" placeholder="升等提示：累計消費達 {gf} 自動升等為綠卡會員，享有更多回饋與優惠。"></div>
+                <div class="cs-field"><label class="cs-label">綠卡升等提示</label><input class="finput" type="text" id="t-hint_green" placeholder="升等提示：累計消費達 {bf} 自動升等為黑卡會員，享頂級尊榮服務。"></div>
                 <div class="cs-field"><label class="cs-label">黑卡提示文字</label><input class="finput" type="text" id="t-hint_black" placeholder="您已是頂級黑卡會員，感謝您的長期支持與信任。"></div>
               </div>
             </div>
@@ -5699,54 +5699,48 @@ async function doScanEarnPoints() {
   }
 }
 
-let _scanHistoryData = [];
+let _scanHistoryTimer = null;
+
+async function renderScanHistory() {
+  clearTimeout(_scanHistoryTimer);
+  _scanHistoryTimer = setTimeout(_doLoadScanHistory, 300);
+}
 
 async function loadScanHistory() {
+  await _doLoadScanHistory();
+}
+
+async function _doLoadScanHistory() {
   const tbody = document.getElementById('scan-history-tbody');
   if (!tbody) return;
   tbody.innerHTML = '<tr><td colspan="4" style="text-align:center;color:var(--ink-60);padding:20px;">載入中...</td></tr>';
+  const q        = (document.getElementById('sh-q')?.value || '').trim();
+  const dateFrom = document.getElementById('sh-date-from')?.value || '';
+  const dateTo   = document.getElementById('sh-date-to')?.value || '';
+  const params = new URLSearchParams();
+  if (q)        params.set('q', q);
+  if (dateFrom) params.set('date_from', dateFrom);
+  if (dateTo)   params.set('date_to', dateTo);
   try {
-    const res = await fetch('/admin/api/scan/history', { headers: H });
+    const res = await fetch(`/admin/api/scan/history?${params}`, { headers: H });
     const rows = await res.json();
-    _scanHistoryData = Array.isArray(rows) ? rows : [];
-    renderScanHistory();
+    if (!Array.isArray(rows) || !rows.length) {
+      tbody.innerHTML = '<tr><td colspan="4" style="text-align:center;color:var(--ink-60);padding:30px;">尚無符合的掃碼記錄</td></tr>';
+      return;
+    }
+    tbody.innerHTML = rows.map(r => `
+      <tr>
+        <td style="font-size:12px;color:var(--ink-60);white-space:nowrap;">${r.created_at}</td>
+        <td>
+          <div style="font-weight:600;">${r.member_name}</div>
+          <div style="font-size:11px;color:var(--ink-60);">${r.member_phone}</div>
+        </td>
+        <td style="font-size:12px;">${r.description}</td>
+        <td style="text-align:right;font-weight:700;color:var(--green);">+${r.points} 點</td>
+      </tr>`).join('');
   } catch(e) {
     tbody.innerHTML = '<tr><td colspan="4" style="text-align:center;color:var(--red);padding:20px;">載入失敗</td></tr>';
   }
-}
-
-function renderScanHistory() {
-  const tbody = document.getElementById('scan-history-tbody');
-  if (!tbody) return;
-  const q        = (document.getElementById('sh-q')?.value || '').toLowerCase();
-  const dateFrom = document.getElementById('sh-date-from')?.value || '';
-  const dateTo   = document.getElementById('sh-date-to')?.value || '';
-  const filtered = _scanHistoryData.filter(r => {
-    if (q) {
-      const hay = `${r.member_name} ${r.member_phone} ${r.description}`.toLowerCase();
-      if (!hay.includes(q)) return false;
-    }
-    if (dateFrom || dateTo) {
-      const d = (r.created_at || '').slice(0, 10);
-      if (dateFrom && d < dateFrom) return false;
-      if (dateTo   && d > dateTo)   return false;
-    }
-    return true;
-  });
-  if (!filtered.length) {
-    tbody.innerHTML = '<tr><td colspan="4" style="text-align:center;color:var(--ink-60);padding:30px;">尚無符合的掃碼記錄</td></tr>';
-    return;
-  }
-  tbody.innerHTML = filtered.map(r => `
-    <tr>
-      <td style="font-size:12px;color:var(--ink-60);white-space:nowrap;">${r.created_at}</td>
-      <td>
-        <div style="font-weight:600;">${r.member_name}</div>
-        <div style="font-size:11px;color:var(--ink-60);">${r.member_phone}</div>
-      </td>
-      <td style="font-size:12px;">${r.description}</td>
-      <td style="text-align:right;font-weight:700;color:var(--green);">+${r.points} 點</td>
-    </tr>`).join('');
 }
 
 // ── 點數兌換管理 ──

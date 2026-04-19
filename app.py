@@ -5930,13 +5930,42 @@ def scan_earn_points():
 def scan_history():
     err = check_admin()
     if err: return err
-    txs = (PointTransaction.query
-           .filter(PointTransaction.description.like('掃碼累點%'))
-           .order_by(PointTransaction.created_at.desc())
-           .limit(50).all())
+    q         = request.args.get('q', '').strip()
+    date_from = request.args.get('date_from', '').strip()
+    date_to   = request.args.get('date_to', '').strip()
+    query = PointTransaction.query.filter(PointTransaction.description.like('掃碼累點%'))
+    if date_from:
+        try:
+            query = query.filter(PointTransaction.created_at >= __import__('datetime').datetime.strptime(date_from, '%Y-%m-%d'))
+        except ValueError:
+            pass
+    if date_to:
+        try:
+            import datetime as _dt
+            query = query.filter(PointTransaction.created_at < _dt.datetime.strptime(date_to, '%Y-%m-%d') + _dt.timedelta(days=1))
+        except ValueError:
+            pass
+    has_filter = bool(q or date_from or date_to)
+    query = query.order_by(PointTransaction.created_at.desc())
+    if not has_filter:
+        query = query.limit(50)
+    txs = query.all()
+    if q:
+        ql = q.lower()
+        member_cache = {}
+        def _get_member(mid):
+            if mid not in member_cache:
+                member_cache[mid] = Member.query.get(mid)
+            return member_cache[mid]
+        txs = [t for t in txs if ql in (_get_member(t.member_id).name or '').lower()
+               or ql in (_get_member(t.member_id).phone or '').lower()
+               or ql in (t.description or '').lower()]
     result = []
+    mid_cache = {}
     for t in txs:
-        m = Member.query.get(t.member_id)
+        if t.member_id not in mid_cache:
+            mid_cache[t.member_id] = Member.query.get(t.member_id)
+        m = mid_cache[t.member_id]
         result.append({
             'id': t.id,
             'member_id': t.member_id,

@@ -4308,17 +4308,31 @@ def seed():
         for sc in _sample_coupons:
             db.session.add(Coupon(**sc))
     # ── 兌換商品範例資料 ──
+    _rdm_images = {
+        '空間折扣券 NT$100':   'https://images.unsplash.com/photo-1497366216548-37526070297c?w=600&q=80',
+        '空間折扣券 NT$200':   'https://images.unsplash.com/photo-1497366811353-6870744d04b2?w=600&q=80',
+        '飲料兌換券':          'https://images.unsplash.com/photo-1544145945-f90425340c7e?w=600&q=80',
+        '咖啡組合禮盒':        'https://images.unsplash.com/photo-1447933601403-0c6688de566e?w=600&q=80',
+        '停車優惠券（3小時）': 'https://images.unsplash.com/photo-1573348722427-f1d6819fdf98?w=600&q=80',
+        '會員等級升等禮券':    'https://images.unsplash.com/photo-1601597111158-2fceff292cdc?w=600&q=80',
+    }
     if RedemptionItem.query.count() == 0:
         _sample_items = [
-            {'name': '空間折扣券 NT$100', 'category': '空間優惠', 'description': '預約空間時可折抵 NT$100，每次預約限用一張。', 'points_cost': 500, 'stock': -1, 'sort_order': 1, 'image_url': ''},
-            {'name': '空間折扣券 NT$200', 'category': '空間優惠', 'description': '預約空間時可折抵 NT$200，每次預約限用一張。', 'points_cost': 900, 'stock': -1, 'sort_order': 2, 'image_url': ''},
-            {'name': '飲料兌換券', 'category': '餐飲好禮', 'description': '可至合作餐廳兌換精選飲料一杯（熱/冷自選）。', 'points_cost': 300, 'stock': 50, 'sort_order': 3, 'image_url': ''},
-            {'name': '咖啡組合禮盒', 'category': '餐飲好禮', 'description': '精選單品咖啡豆 100g + 手沖濾杯組，適合居家或辦公使用。', 'points_cost': 1200, 'stock': 20, 'sort_order': 4, 'image_url': ''},
-            {'name': '停車優惠券（3小時）', 'category': '交通優惠', 'description': '本大樓停車場使用，可折抵 3 小時停車費。', 'points_cost': 200, 'stock': 100, 'sort_order': 5, 'image_url': ''},
-            {'name': '會員等級升等禮券', 'category': '會員專屬', 'description': '憑此券可申請一次會員等級快速升等評估，由客服人員協助辦理。', 'points_cost': 2000, 'stock': 10, 'sort_order': 6, 'image_url': ''},
+            {'name': '空間折扣券 NT$100', 'category': '空間優惠', 'description': '預約空間時可折抵 NT$100，每次預約限用一張。', 'points_cost': 500, 'stock': -1, 'sort_order': 1, 'image_url': _rdm_images['空間折扣券 NT$100']},
+            {'name': '空間折扣券 NT$200', 'category': '空間優惠', 'description': '預約空間時可折抵 NT$200，每次預約限用一張。', 'points_cost': 900, 'stock': -1, 'sort_order': 2, 'image_url': _rdm_images['空間折扣券 NT$200']},
+            {'name': '飲料兌換券', 'category': '餐飲好禮', 'description': '可至合作餐廳兌換精選飲料一杯（熱/冷自選）。', 'points_cost': 300, 'stock': 50, 'sort_order': 3, 'image_url': _rdm_images['飲料兌換券']},
+            {'name': '咖啡組合禮盒', 'category': '餐飲好禮', 'description': '精選單品咖啡豆 100g + 手沖濾杯組，適合居家或辦公使用。', 'points_cost': 1200, 'stock': 20, 'sort_order': 4, 'image_url': _rdm_images['咖啡組合禮盒']},
+            {'name': '停車優惠券（3小時）', 'category': '交通優惠', 'description': '本大樓停車場使用，可折抵 3 小時停車費。', 'points_cost': 200, 'stock': 100, 'sort_order': 5, 'image_url': _rdm_images['停車優惠券（3小時）']},
+            {'name': '會員等級升等禮券', 'category': '會員專屬', 'description': '憑此券可申請一次會員等級快速升等評估，由客服人員協助辦理。', 'points_cost': 2000, 'stock': 10, 'sort_order': 6, 'image_url': _rdm_images['會員等級升等禮券']},
         ]
         for item in _sample_items:
             db.session.add(RedemptionItem(**item))
+    else:
+        # 補上現有資料庫中 image_url 為空的商品圖片
+        for _ri in RedemptionItem.query.filter(
+                (RedemptionItem.image_url == None) | (RedemptionItem.image_url == '')).all():
+            if _ri.name in _rdm_images:
+                _ri.image_url = _rdm_images[_ri.name]
     db.session.commit()
     print('資料庫初始化完成')
 

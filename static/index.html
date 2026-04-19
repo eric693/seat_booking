@@ -2842,8 +2842,23 @@ footer {
       <div class="mc-top-bar">
         <div class="mc-top-title">會員中心</div>
         <div class="mc-top-actions">
-          <button class="mc-top-icon-btn" onclick="openMcPanel('card')" title="會員卡條碼">
-            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><rect x="3" y="9" width="3" height="6"/><rect x="7" y="5" width="1.5" height="14"/><rect x="10" y="9" width="2" height="6"/><rect x="13.5" y="5" width="1.5" height="14"/><rect x="16.5" y="9" width="3" height="6"/></svg>
+          <!-- 會員卡快捷按鈕（eslite 風格方形圖示） -->
+          <button onclick="openMcPanel('card')" title="會員卡 / 條碼" style="
+            width:40px;height:40px;border-radius:10px;border:1.5px solid #ddd;
+            background:#fff;cursor:pointer;display:flex;align-items:center;justify-content:center;
+            box-shadow:0 1px 4px rgba(0,0,0,0.08);transition:all .15s;flex-shrink:0;
+          " onmouseover="this.style.borderColor='#888'" onmouseout="this.style.borderColor='#ddd'">
+            <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="#333" stroke-width="1.8" stroke-linecap="square">
+              <!-- barcode lines inside rounded square frame -->
+              <rect x="2" y="2" width="20" height="20" rx="3" stroke="#333" stroke-width="1.5" fill="none"/>
+              <line x1="6"  y1="7" x2="6"  y2="17"/>
+              <line x1="8"  y1="7" x2="8"  y2="17" stroke-width="2.5"/>
+              <line x1="10.5" y1="7" x2="10.5" y2="17"/>
+              <line x1="12.5" y1="7" x2="12.5" y2="17" stroke-width="2.5"/>
+              <line x1="14.5" y1="7" x2="14.5" y2="17"/>
+              <line x1="16.5" y1="7" x2="16.5" y2="17" stroke-width="2"/>
+              <line x1="18"  y1="7" x2="18"  y2="17"/>
+            </svg>
           </button>
           <button class="mc-close-btn" onclick="closeMemberCenter()">×</button>
         </div>

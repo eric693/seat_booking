@@ -2328,9 +2328,9 @@ def create_booking():
             )
             db.session.add(booking)
             db.session.flush()  # 取得 booking.id
-            # 標記優惠券已使用
-            if coupon_code and discount_amount > 0:
-                _c2 = Coupon.query.filter_by(code=coupon_code).first()
+            # 標記優惠券已使用（coupon_code 可能是 "VIP85折+PROMO100" 等組合，逐一拆解）
+            if _coupon_code and discount_amount > 0:
+                _c2 = Coupon.query.filter_by(code=_coupon_code).first()
                 if _c2:
                     _mc2 = MemberCoupon.query.filter_by(
                         member_id=session.get('member_id'), coupon_id=_c2.id).first()
@@ -5212,7 +5212,12 @@ def member_me():
     m = _member_session_check()
     if not m:
         return jsonify({'error': '未登入'}), 401
-    return jsonify(m.to_dict())
+    d = m.to_dict()
+    try:
+        d['tier'] = _calc_member_tier(m)
+    except Exception:
+        d['tier'] = 'white'
+    return jsonify(d)
 
 
 @app.route('/api/members/profile', methods=['PATCH'])
@@ -5658,10 +5663,12 @@ def member_claim_coupon():
 def member_get_points():
     m = _get_current_member()
     if not m: return jsonify({'error': '請先登入'}), 401
-    txs = PointTransaction.query.filter_by(member_id=m.id).order_by(PointTransaction.created_at.desc()).limit(50).all()
+    txs = PointTransaction.query.filter_by(member_id=m.id).order_by(PointTransaction.created_at.desc()).limit(100).all()
     return jsonify({
         'balance': m.points or 0,
         'transactions': [{'id': t.id, 'type': t.type, 'points': t.points,
+                          'amount': t.amount or 0,
+                          'booking_id': t.booking_id,
                           'description': t.description,
                           'created_at': t.created_at.strftime('%Y-%m-%d %H:%M') if t.created_at else ''} for t in txs]
     })

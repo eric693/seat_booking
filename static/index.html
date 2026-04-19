@@ -5722,10 +5722,21 @@ async function _loadMcStats() {
       const menuBk = document.getElementById('mc-menu-bookings');
       if (menuBk) menuBk.textContent = bks.length || '';
       const confirmed = bks.filter(b => b.status === 'confirmed' || b.status === 'completed');
-      const total = confirmed.reduce((s, b) => s + (b.total_price || 0), 0);
-      document.getElementById('mc-cumul-spend').textContent = '$' + total.toLocaleString();
+      const bookingTotal = confirmed.reduce((s, b) => s + (b.total_price || 0), 0);
+      document.getElementById('mc-cumul-spend').textContent = '$' + bookingTotal.toLocaleString();
       document.getElementById('mc-cumul-visits').textContent = confirmed.length;
       document.getElementById('mc-stat-consumption').textContent = confirmed.length;
+      // 加上掃碼消費金額（與後台 _calc_member_tier 一致）
+      let scanTotal = 0;
+      try {
+        const pr = await fetch('/api/member/points', { credentials: 'include' });
+        if (pr.ok) {
+          const pts = await pr.json();
+          scanTotal = (pts.transactions || []).filter(p => p.type === 'earn' && !p.booking_id && (p.amount || 0) > 0)
+                                             .reduce((s, p) => s + (p.amount || 0), 0);
+        }
+      } catch {}
+      const total = bookingTotal + scanTotal;
       // Tier thresholds
       let gt = 6000, bt = 20000;
       try {

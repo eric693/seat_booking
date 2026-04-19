@@ -6154,7 +6154,7 @@ async function claimCoupon() {
     const data = await res.json();
     if (data.success) {
       document.getElementById('mc-coupon-code').value = '';
-      alert(`✅ 已成功領取「${data.coupon.name}」！`);
+      alert(`已成功領取「${data.coupon.name}」！`);
       loadMcCoupons();
       _loadMcCouponBadge();
     } else {

@@ -740,6 +740,9 @@ input[list]::-webkit-calendar-picker-indicator { display: none !important; }
     <div class="nav-item" onclick="showPage('tier',this)">
       <span class="nav-icon"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><rect x="2" y="14" width="6" height="8"/><rect x="9" y="9" width="6" height="13"/><rect x="16" y="4" width="6" height="18"/></svg></span> 會員等級設定
     </div>
+    <div class="nav-item" onclick="showPage('redemption',this)">
+      <span class="nav-icon"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 12 20 22 4 22 4 12"/><rect x="2" y="7" width="20" height="5"/><path d="M12 22V7"/><path d="M12 7H7.5a2.5 2.5 0 010-5C11 2 12 7 12 7z"/><path d="M12 7h4.5a2.5 2.5 0 000-5C13 2 12 7 12 7z"/></svg></span> 點數兌換管理
+    </div>
     <div class="nav-item" onclick="showPage('coupons',this)">
       <span class="nav-icon"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><path d="M2 9a1 1 0 011-1h18a1 1 0 011 1v1.5a2.5 2.5 0 000 5V17a1 1 0 01-1 1H3a1 1 0 01-1-1v-1.5a2.5 2.5 0 000-5V9z"/><line x1="9" y1="8" x2="9" y2="16" stroke-dasharray="2 2"/></svg></span> 優惠券管理
     </div>
@@ -1291,6 +1294,94 @@ input[list]::-webkit-calendar-picker-indicator { display: none !important; }
           </div>
         </div>
 
+      </div>
+    </div>
+
+    <!-- ── 點數兌換管理 ── -->
+    <div class="page" id="page-redemption">
+      <!-- 商品管理 -->
+      <div class="card" style="margin-bottom:20px;">
+        <div class="card-head">
+          <h2 class="card-title">兌換商品管理</h2>
+          <button class="btn btn-primary" onclick="openRedemptionItemModal()">＋ 新增商品</button>
+        </div>
+        <div class="table-wrap">
+          <table>
+            <thead><tr><th>圖片</th><th>商品名稱</th><th>分類</th><th>所需點數</th><th>庫存</th><th>排序</th><th>狀態</th><th>操作</th></tr></thead>
+            <tbody id="admin-rdm-items-body"><tr><td colspan="8" style="text-align:center;padding:20px;color:var(--ink-60);">載入中...</td></tr></tbody>
+          </table>
+        </div>
+      </div>
+      <!-- 兌換紀錄 -->
+      <div class="card">
+        <div class="card-head">
+          <h2 class="card-title">兌換紀錄</h2>
+        </div>
+        <div class="table-wrap">
+          <table>
+            <thead><tr><th>時間</th><th>會員</th><th>商品</th><th>點數</th><th>狀態</th><th>操作</th></tr></thead>
+            <tbody id="admin-rdm-records-body"><tr><td colspan="6" style="text-align:center;padding:20px;color:var(--ink-60);">載入中...</td></tr></tbody>
+          </table>
+        </div>
+      </div>
+    </div>
+
+    <!-- 商品編輯 Modal -->
+    <div class="modal-overlay" id="rdmItemModalOverlay" style="display:none;">
+      <div class="modal" style="max-width:520px;">
+        <div class="modal-head">
+          <h3 class="modal-title" id="rdmItemModalTitle">新增兌換商品</h3>
+          <button class="modal-close" onclick="closeRedemptionItemModal()">✕</button>
+        </div>
+        <div class="modal-body" style="display:flex;flex-direction:column;gap:14px;">
+          <input type="hidden" id="rdm-item-id">
+          <div>
+            <label class="form-label">商品名稱 *</label>
+            <input class="form-input" id="rdm-item-name" placeholder="例：空間折扣券 NT$100">
+          </div>
+          <div style="display:grid;grid-template-columns:1fr 1fr;gap:12px;">
+            <div>
+              <label class="form-label">分類</label>
+              <input class="form-input" id="rdm-item-category" placeholder="例：空間優惠">
+            </div>
+            <div>
+              <label class="form-label">所需點數 *</label>
+              <input class="form-input" type="number" id="rdm-item-points" min="1" placeholder="500">
+            </div>
+          </div>
+          <div style="display:grid;grid-template-columns:1fr 1fr;gap:12px;">
+            <div>
+              <label class="form-label">庫存（-1=無限）</label>
+              <input class="form-input" type="number" id="rdm-item-stock" value="-1">
+            </div>
+            <div>
+              <label class="form-label">排序（數字小優先）</label>
+              <input class="form-input" type="number" id="rdm-item-sort" value="0">
+            </div>
+          </div>
+          <div>
+            <label class="form-label">商品說明</label>
+            <textarea class="form-input" id="rdm-item-desc" rows="3" placeholder="選填：商品說明或兌換說明"></textarea>
+          </div>
+          <div>
+            <label class="form-label">商品圖片</label>
+            <div style="display:flex;gap:8px;align-items:center;">
+              <input class="form-input" id="rdm-item-image" placeholder="圖片 URL 或上傳">
+              <label class="btn btn-secondary" style="cursor:pointer;white-space:nowrap;flex-shrink:0;">
+                上傳<input type="file" accept="image/*" style="display:none;" onchange="uploadRedemptionImage(this)">
+              </label>
+            </div>
+            <img id="rdm-item-preview" src="" style="max-height:80px;margin-top:8px;border-radius:8px;display:none;">
+          </div>
+          <div style="display:flex;align-items:center;gap:8px;">
+            <input type="checkbox" id="rdm-item-active" checked>
+            <label for="rdm-item-active" style="font-size:13px;">上架中（取消勾選則下架）</label>
+          </div>
+        </div>
+        <div class="modal-foot">
+          <button class="btn btn-secondary" onclick="closeRedemptionItemModal()">取消</button>
+          <button class="btn btn-primary" onclick="saveRedemptionItem()">儲存</button>
+        </div>
       </div>
     </div>
 
@@ -2300,7 +2391,7 @@ function showPage(id, navEl) {
   document.getElementById(`page-${id}`).classList.add('active');
   document.querySelectorAll('.nav-item').forEach(n => n.classList.remove('active'));
   if (navEl) navEl.classList.add('active');
-  const titles = { dashboard:'儀表板', bookings:'預約管理', rooms:'會議室管理', content:'文字內容編輯', photos:'照片管理', formfields:'表單欄位管理', blocked:'封鎖時段管理', lineusers:'LINE 用戶管理', members:'會員管理', tier:'會員等級設定', coupons:'優惠券管理', points:'點數專區', consumption:'消費紀錄', scan:'掃碼累點', chat:'聊天記錄', lineqa:'QA 問答設定', payment:'付款設定', accounts:'帳號管理', logs:'登入紀錄' };
+  const titles = { dashboard:'儀表板', bookings:'預約管理', rooms:'會議室管理', content:'文字內容編輯', photos:'照片管理', formfields:'表單欄位管理', blocked:'封鎖時段管理', lineusers:'LINE 用戶管理', members:'會員管理', tier:'會員等級設定', redemption:'點數兌換管理', coupons:'優惠券管理', points:'點數專區', consumption:'消費紀錄', scan:'掃碼累點', chat:'聊天記錄', lineqa:'QA 問答設定', payment:'付款設定', accounts:'帳號管理', logs:'登入紀錄' };
   document.getElementById('topbarTitle').textContent = titles[id] || '';
   switch(id) {
     case 'dashboard':   initFloorDate(); loadDashboard(); loadFloorStatus(); break;
@@ -2314,6 +2405,7 @@ function showPage(id, navEl) {
     case 'lineusers':   loadLineUsers(); break;
     case 'members':     loadMembers(); loadMemberStats(); loadMemberProfileFields(); break;
     case 'tier':        loadTierSettings(); break;
+    case 'redemption':  loadAdminRedemptionItems(); loadAdminRedemptionRecords(); break;
     case 'coupons':     loadCoupons(); break;
     case 'points':      loadPointsPage(); break;
     case 'consumption': loadConsumptionPage(); break;
@@ -5414,6 +5506,155 @@ async function loadScanHistory() {
   } catch(e) {
     tbody.innerHTML = '<tr><td colspan="4" style="text-align:center;color:var(--red);padding:20px;">載入失敗</td></tr>';
   }
+}
+
+// ── 點數兌換管理 ──
+let _rdmItemsAdmin = [];
+
+async function loadAdminRedemptionItems() {
+  const tbody = document.getElementById('admin-rdm-items-body');
+  tbody.innerHTML = '<tr><td colspan="8" style="text-align:center;padding:20px;color:var(--ink-60);">載入中...</td></tr>';
+  try {
+    const res = await fetch('/admin/api/redemption/items', { credentials: 'include' });
+    _rdmItemsAdmin = await res.json();
+    if (!_rdmItemsAdmin.length) {
+      tbody.innerHTML = '<tr><td colspan="8" style="text-align:center;padding:20px;color:var(--ink-60);">尚無商品</td></tr>';
+      return;
+    }
+    tbody.innerHTML = _rdmItemsAdmin.map(item => `
+      <tr>
+        <td>${item.image_url ? `<img src="${item.image_url}" style="width:40px;height:40px;object-fit:cover;border-radius:6px;">` : '—'}</td>
+        <td style="font-weight:600;">${item.name}</td>
+        <td>${item.category || '—'}</td>
+        <td style="color:var(--teal);font-weight:700;">${item.points_cost.toLocaleString()}</td>
+        <td>${item.stock === -1 ? '無限' : item.stock}</td>
+        <td>${item.sort_order || 0}</td>
+        <td><span class="status-badge ${item.is_active ? 'confirmed' : 'cancelled'}">${item.is_active ? '上架' : '下架'}</span></td>
+        <td>
+          <button class="btn btn-secondary btn-sm" onclick="openRedemptionItemModal(${item.id})">編輯</button>
+          <button class="btn btn-sm" style="background:var(--red-light);color:var(--red);" onclick="deleteRedemptionItem(${item.id}, '${item.name.replace(/'/g,"\\'")}')">刪除</button>
+        </td>
+      </tr>`).join('');
+  } catch(e) {
+    tbody.innerHTML = '<tr><td colspan="8" style="text-align:center;color:var(--red);">載入失敗</td></tr>';
+  }
+}
+
+async function loadAdminRedemptionRecords() {
+  const tbody = document.getElementById('admin-rdm-records-body');
+  tbody.innerHTML = '<tr><td colspan="6" style="text-align:center;padding:20px;color:var(--ink-60);">載入中...</td></tr>';
+  try {
+    const res = await fetch('/admin/api/redemption/records', { credentials: 'include' });
+    const records = await res.json();
+    if (!records.length) {
+      tbody.innerHTML = '<tr><td colspan="6" style="text-align:center;padding:20px;color:var(--ink-60);">尚無兌換紀錄</td></tr>';
+      return;
+    }
+    const statusMap = { pending:'處理中', completed:'已完成', cancelled:'已取消' };
+    const statusCls = { pending:'pending', completed:'confirmed', cancelled:'cancelled' };
+    tbody.innerHTML = records.map(r => `
+      <tr>
+        <td style="color:var(--ink-60);font-size:12px;">${r.created_at||''}</td>
+        <td>${r.member_name||''}<br><span style="color:var(--ink-60);font-size:11px;">${r.member_phone||''}</span></td>
+        <td>${r.item_name||''}</td>
+        <td style="color:var(--red);font-weight:600;">-${(r.points_cost||0).toLocaleString()}</td>
+        <td><span class="status-badge ${statusCls[r.status]||'pending'}">${statusMap[r.status]||r.status}</span></td>
+        <td>
+          <select onchange="updateRedemptionRecord(${r.id}, this.value)" style="border:1px solid var(--border);border-radius:6px;padding:4px 8px;font-size:12px;">
+            <option value="pending" ${r.status==='pending'?'selected':''}>處理中</option>
+            <option value="completed" ${r.status==='completed'?'selected':''}>已完成</option>
+            <option value="cancelled" ${r.status==='cancelled'?'selected':''}>已取消</option>
+          </select>
+        </td>
+      </tr>`).join('');
+  } catch(e) {
+    tbody.innerHTML = '<tr><td colspan="6" style="text-align:center;color:var(--red);">載入失敗</td></tr>';
+  }
+}
+
+async function updateRedemptionRecord(id, status) {
+  try {
+    await fetch(`/admin/api/redemption/records/${id}`, {
+      method: 'PATCH', credentials: 'include',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ status })
+    });
+    loadAdminRedemptionRecords();
+  } catch(e) { alert('更新失敗'); }
+}
+
+function openRedemptionItemModal(itemId) {
+  document.getElementById('rdmItemModalOverlay').style.display = 'flex';
+  const item = itemId ? _rdmItemsAdmin.find(i => i.id === itemId) : null;
+  document.getElementById('rdmItemModalTitle').textContent = item ? '編輯兌換商品' : '新增兌換商品';
+  document.getElementById('rdm-item-id').value = item ? item.id : '';
+  document.getElementById('rdm-item-name').value = item ? item.name : '';
+  document.getElementById('rdm-item-category').value = item ? item.category : '';
+  document.getElementById('rdm-item-points').value = item ? item.points_cost : '';
+  document.getElementById('rdm-item-stock').value = item ? item.stock : -1;
+  document.getElementById('rdm-item-sort').value = item ? item.sort_order : 0;
+  document.getElementById('rdm-item-desc').value = item ? item.description : '';
+  document.getElementById('rdm-item-image').value = item ? item.image_url : '';
+  document.getElementById('rdm-item-active').checked = item ? item.is_active : true;
+  const prev = document.getElementById('rdm-item-preview');
+  if (item && item.image_url) { prev.src = item.image_url; prev.style.display = ''; }
+  else prev.style.display = 'none';
+}
+
+function closeRedemptionItemModal() {
+  document.getElementById('rdmItemModalOverlay').style.display = 'none';
+}
+
+async function uploadRedemptionImage(input) {
+  const file = input.files[0];
+  if (!file) return;
+  const fd = new FormData(); fd.append('image', file);
+  try {
+    const res = await fetch('/admin/api/redemption/upload-image', { method: 'POST', credentials: 'include', body: fd });
+    const data = await res.json();
+    if (data.url) {
+      document.getElementById('rdm-item-image').value = data.url;
+      const prev = document.getElementById('rdm-item-preview');
+      prev.src = data.url; prev.style.display = '';
+    }
+  } catch(e) { alert('圖片上傳失敗'); }
+}
+
+async function saveRedemptionItem() {
+  const id = document.getElementById('rdm-item-id').value;
+  const name = document.getElementById('rdm-item-name').value.trim();
+  const pts  = parseInt(document.getElementById('rdm-item-points').value, 10);
+  if (!name) { alert('請填寫商品名稱'); return; }
+  if (!pts || pts <= 0) { alert('請填寫正確的點數'); return; }
+  const payload = {
+    name, points_cost: pts,
+    category: document.getElementById('rdm-item-category').value.trim() || '其他',
+    stock: parseInt(document.getElementById('rdm-item-stock').value, 10),
+    sort_order: parseInt(document.getElementById('rdm-item-sort').value, 10) || 0,
+    description: document.getElementById('rdm-item-desc').value.trim(),
+    image_url: document.getElementById('rdm-item-image').value.trim(),
+    is_active: document.getElementById('rdm-item-active').checked,
+  };
+  try {
+    const url = id ? `/admin/api/redemption/items/${id}` : '/admin/api/redemption/items';
+    const method = id ? 'PUT' : 'POST';
+    const res = await fetch(url, {
+      method, credentials: 'include',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(payload)
+    });
+    if (!res.ok) { const d = await res.json(); alert(d.error || '儲存失敗'); return; }
+    closeRedemptionItemModal();
+    loadAdminRedemptionItems();
+  } catch(e) { alert('儲存失敗'); }
+}
+
+async function deleteRedemptionItem(id, name) {
+  if (!confirm(`確定刪除「${name}」？此操作無法還原。`)) return;
+  try {
+    await fetch(`/admin/api/redemption/items/${id}`, { method: 'DELETE', credentials: 'include' });
+    loadAdminRedemptionItems();
+  } catch(e) { alert('刪除失敗'); }
 }
 
 // ── 會員等級設定 ──

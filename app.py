@@ -1741,6 +1741,59 @@ class ChatMessage(db.Model):
         }
 
 
+class RedemptionItem(db.Model):
+    __tablename__ = 'redemption_items'
+    id          = db.Column(db.Integer, primary_key=True)
+    name        = db.Column(db.String(100), nullable=False)
+    category    = db.Column(db.String(50), default='其他')
+    description = db.Column(db.Text, default='')
+    points_cost = db.Column(db.Integer, nullable=False, default=100)
+    stock       = db.Column(db.Integer, default=-1)   # -1 = 無限
+    image_url   = db.Column(db.String(300), default='')
+    sort_order  = db.Column(db.Integer, default=0)
+    is_active   = db.Column(db.Boolean, default=True)
+    created_at  = db.Column(db.DateTime, default=tw_now)
+
+    def to_dict(self):
+        return {
+            'id': self.id, 'name': self.name, 'category': self.category,
+            'description': self.description or '',
+            'points_cost': self.points_cost,
+            'stock': self.stock,
+            'image_url': self.image_url or '',
+            'sort_order': self.sort_order or 0,
+            'is_active': self.is_active,
+            'created_at': self.created_at.strftime('%Y-%m-%d') if self.created_at else '',
+        }
+
+
+class RedemptionRecord(db.Model):
+    __tablename__ = 'redemption_records'
+    id          = db.Column(db.Integer, primary_key=True)
+    member_id   = db.Column(db.Integer, db.ForeignKey('members.id'), nullable=False)
+    item_id     = db.Column(db.Integer, db.ForeignKey('redemption_items.id'), nullable=False)
+    item_name   = db.Column(db.String(100), default='')
+    points_cost = db.Column(db.Integer, default=0)
+    status      = db.Column(db.String(20), default='pending')  # pending | completed | cancelled
+    note        = db.Column(db.String(200), default='')
+    created_at  = db.Column(db.DateTime, default=tw_now)
+
+    item   = db.relationship('RedemptionItem', backref='records', lazy=True)
+    member = db.relationship('Member', backref='redemption_records', lazy=True)
+
+    def to_dict(self):
+        return {
+            'id': self.id, 'member_id': self.member_id,
+            'item_id': self.item_id,
+            'item_name': self.item_name or '',
+            'points_cost': self.points_cost,
+            'status': self.status,
+            'note': self.note or '',
+            'created_at': self.created_at.strftime('%Y-%m-%d %H:%M') if self.created_at else '',
+            'image_url': self.item.image_url if self.item else '',
+        }
+
+
 # ─────────────────────────────────────────────
 # Helpers
 # ─────────────────────────────────────────────
@@ -4171,6 +4224,18 @@ def seed():
     Room.query.filter(
         ~Room.floor.in_(['2F', '3F'])
     ).update({'floor': '3F'}, synchronize_session=False)
+    # ── 兌換商品範例資料 ──
+    if RedemptionItem.query.count() == 0:
+        _sample_items = [
+            {'name': '空間折扣券 NT$100', 'category': '空間優惠', 'description': '預約空間時可折抵 NT$100，每次預約限用一張。', 'points_cost': 500, 'stock': -1, 'sort_order': 1, 'image_url': ''},
+            {'name': '空間折扣券 NT$200', 'category': '空間優惠', 'description': '預約空間時可折抵 NT$200，每次預約限用一張。', 'points_cost': 900, 'stock': -1, 'sort_order': 2, 'image_url': ''},
+            {'name': '飲料兌換券', 'category': '餐飲好禮', 'description': '可至合作餐廳兌換精選飲料一杯（熱/冷自選）。', 'points_cost': 300, 'stock': 50, 'sort_order': 3, 'image_url': ''},
+            {'name': '咖啡組合禮盒', 'category': '餐飲好禮', 'description': '精選單品咖啡豆 100g + 手沖濾杯組，適合居家或辦公使用。', 'points_cost': 1200, 'stock': 20, 'sort_order': 4, 'image_url': ''},
+            {'name': '停車優惠券（3小時）', 'category': '交通優惠', 'description': '本大樓停車場使用，可折抵 3 小時停車費。', 'points_cost': 200, 'stock': 100, 'sort_order': 5, 'image_url': ''},
+            {'name': '會員等級升等禮券', 'category': '會員專屬', 'description': '憑此券可申請一次會員等級快速升等評估，由客服人員協助辦理。', 'points_cost': 2000, 'stock': 10, 'sort_order': 6, 'image_url': ''},
+        ]
+        for item in _sample_items:
+            db.session.add(RedemptionItem(**item))
     db.session.commit()
     print('資料庫初始化完成')
 
@@ -5679,6 +5744,200 @@ def scan_history():
             'created_at': t.created_at.strftime('%Y-%m-%d %H:%M') if t.created_at else '',
         })
     return jsonify(result)
+
+
+# ─────────────────────────────────────────────
+# 點數兌換 API（前台）
+# ─────────────────────────────────────────────
+
+@app.route('/api/redemption/items', methods=['GET'])
+def get_redemption_items():
+    category = request.args.get('category', '')
+    q = RedemptionItem.query.filter_by(is_active=True)
+    if category:
+        q = q.filter_by(category=category)
+    items = q.order_by(RedemptionItem.sort_order, RedemptionItem.id).all()
+    categories = db.session.query(RedemptionItem.category).filter_by(is_active=True).distinct().all()
+    return jsonify({
+        'items': [i.to_dict() for i in items],
+        'categories': ['全部'] + [c[0] for c in categories if c[0]],
+    })
+
+
+@app.route('/api/redemption/redeem', methods=['POST'])
+def redeem_item():
+    mid = session.get('member_id')
+    if not mid:
+        return jsonify({'error': '請先登入'}), 401
+    d = request.get_json() or {}
+    item_id = d.get('item_id')
+    if not item_id:
+        return jsonify({'error': '缺少商品 ID'}), 400
+    item = RedemptionItem.query.get(item_id)
+    if not item or not item.is_active:
+        return jsonify({'error': '商品不存在或已下架'}), 404
+    if item.stock == 0:
+        return jsonify({'error': '商品已售完'}), 400
+    m = Member.query.get(mid)
+    if not m:
+        return jsonify({'error': '會員不存在'}), 404
+    if (m.points or 0) < item.points_cost:
+        return jsonify({'error': f'點數不足，需要 {item.points_cost} 點，目前餘額 {m.points or 0} 點'}), 400
+    # 扣點
+    m.points = (m.points or 0) - item.points_cost
+    if item.stock > 0:
+        item.stock -= 1
+    record = RedemptionRecord(
+        member_id=m.id, item_id=item.id,
+        item_name=item.name, points_cost=item.points_cost,
+        status='pending'
+    )
+    db.session.add(record)
+    db.session.add(PointTransaction(
+        member_id=m.id, type='spend', points=-item.points_cost,
+        description=f'兌換：{item.name}'
+    ))
+    db.session.commit()
+    return jsonify({'success': True, 'new_balance': m.points, 'record_id': record.id})
+
+
+@app.route('/api/redemption/history', methods=['GET'])
+def get_redemption_history():
+    mid = session.get('member_id')
+    if not mid:
+        return jsonify({'error': '請先登入'}), 401
+    records = (RedemptionRecord.query
+               .filter_by(member_id=mid)
+               .order_by(RedemptionRecord.created_at.desc())
+               .limit(50).all())
+    return jsonify([r.to_dict() for r in records])
+
+
+# ─────────────────────────────────────────────
+# 點數兌換 API（後台管理）
+# ─────────────────────────────────────────────
+
+@app.route('/admin/api/redemption/items', methods=['GET'])
+def admin_get_redemption_items():
+    err = check_admin()
+    if err: return err
+    items = RedemptionItem.query.order_by(RedemptionItem.sort_order, RedemptionItem.id).all()
+    return jsonify([i.to_dict() for i in items])
+
+
+@app.route('/admin/api/redemption/items', methods=['POST'])
+def admin_create_redemption_item():
+    err = check_admin()
+    if err: return err
+    d = request.get_json() or {}
+    if not d.get('name', '').strip():
+        return jsonify({'error': '請填寫商品名稱'}), 400
+    if not d.get('points_cost') or int(d['points_cost']) <= 0:
+        return jsonify({'error': '請填寫正確的點數'}), 400
+    item = RedemptionItem(
+        name=d['name'].strip(),
+        category=d.get('category', '其他').strip(),
+        description=d.get('description', '').strip(),
+        points_cost=int(d['points_cost']),
+        stock=int(d.get('stock', -1)),
+        image_url=d.get('image_url', '').strip(),
+        sort_order=int(d.get('sort_order', 0)),
+        is_active=d.get('is_active', True),
+    )
+    db.session.add(item)
+    db.session.commit()
+    return jsonify(item.to_dict()), 201
+
+
+@app.route('/admin/api/redemption/items/<int:item_id>', methods=['PUT'])
+def admin_update_redemption_item(item_id):
+    err = check_admin()
+    if err: return err
+    item = RedemptionItem.query.get(item_id)
+    if not item:
+        return jsonify({'error': '商品不存在'}), 404
+    d = request.get_json() or {}
+    for field in ('name', 'category', 'description', 'image_url'):
+        if field in d:
+            setattr(item, field, str(d[field]).strip())
+    for field in ('points_cost', 'stock', 'sort_order'):
+        if field in d:
+            setattr(item, field, int(d[field]))
+    if 'is_active' in d:
+        item.is_active = bool(d['is_active'])
+    db.session.commit()
+    return jsonify(item.to_dict())
+
+
+@app.route('/admin/api/redemption/items/<int:item_id>', methods=['DELETE'])
+def admin_delete_redemption_item(item_id):
+    err = check_admin()
+    if err: return err
+    item = RedemptionItem.query.get(item_id)
+    if not item:
+        return jsonify({'error': '商品不存在'}), 404
+    db.session.delete(item)
+    db.session.commit()
+    return jsonify({'success': True})
+
+
+@app.route('/admin/api/redemption/records', methods=['GET'])
+def admin_get_redemption_records():
+    err = check_admin()
+    if err: return err
+    records = (RedemptionRecord.query
+               .order_by(RedemptionRecord.created_at.desc())
+               .limit(200).all())
+    result = []
+    for r in records:
+        d = r.to_dict()
+        if r.member:
+            d['member_name'] = r.member.name
+            d['member_phone'] = r.member.phone or ''
+        result.append(d)
+    return jsonify(result)
+
+
+@app.route('/admin/api/redemption/records/<int:record_id>', methods=['PATCH'])
+def admin_update_redemption_record(record_id):
+    err = check_admin()
+    if err: return err
+    rec = RedemptionRecord.query.get(record_id)
+    if not rec:
+        return jsonify({'error': '紀錄不存在'}), 404
+    d = request.get_json() or {}
+    if 'status' in d:
+        rec.status = d['status']
+    if 'note' in d:
+        rec.note = str(d['note']).strip()
+    db.session.commit()
+    return jsonify(rec.to_dict())
+
+
+# ─────────────────────────────────────────────
+# 兌換商品圖片上傳
+# ─────────────────────────────────────────────
+
+@app.route('/admin/api/redemption/upload-image', methods=['POST'])
+def admin_upload_redemption_image():
+    err = check_admin()
+    if err: return err
+    f = request.files.get('image')
+    if not f or not allowed_file(f.filename):
+        return jsonify({'error': '請上傳圖片（png/jpg/gif/webp）'}), 400
+    ext = f.filename.rsplit('.', 1)[1].lower()
+    filename = f'redemption_{uuid.uuid4().hex}.{ext}'
+    if USE_CLOUDINARY:
+        try:
+            import cloudinary.uploader
+            res = cloudinary.uploader.upload(f, public_id=f'redemption/{filename}', resource_type='image')
+            url = res.get('secure_url', '')
+            return jsonify({'url': url})
+        except Exception as e:
+            print(f'[Cloudinary] {e}')
+    save_path = os.path.join(UPLOAD_FOLDER, filename)
+    f.save(save_path)
+    return jsonify({'url': f'/static/uploads/{filename}'})
 
 
 if __name__ == '__main__':

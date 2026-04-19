@@ -1650,6 +1650,81 @@ footer {
   cursor:pointer;color:var(--ink);
 }
 .pts-hint { font-size:11px;color:var(--ink-60);margin-bottom:10px;line-height:1.6; }
+/* 點數兌換面板 */
+.mc-panel-action-link {
+  margin-left:auto; font-size:13px; color:var(--teal); background:none;
+  border:none; cursor:pointer; font-weight:600; padding:0;
+}
+.rdm-pts-bar {
+  display:flex;align-items:center;gap:6px;
+  background:var(--paper);border-radius:8px;
+  padding:10px 14px;margin-bottom:12px;font-size:13px;color:var(--ink-60);
+}
+.rdm-pts-bar strong { color:var(--teal); }
+.rdm-cats {
+  display:flex;gap:8px;overflow-x:auto;padding-bottom:4px;margin-bottom:14px;
+  scrollbar-width:none;
+}
+.rdm-cats::-webkit-scrollbar { display:none; }
+.rdm-cat-btn {
+  flex-shrink:0;padding:6px 14px;border-radius:20px;
+  font-size:12px;font-weight:600;cursor:pointer;
+  border:1.5px solid var(--border);background:#fff;color:var(--ink-60);
+  transition:all .15s;
+}
+.rdm-cat-btn.active { border-color:var(--teal);background:var(--teal);color:#fff; }
+.rdm-grid {
+  display:flex;flex-direction:column;gap:12px;
+}
+.rdm-item-card {
+  display:flex;align-items:center;gap:12px;
+  border:1px solid var(--border);border-radius:12px;
+  padding:12px;background:#fff;
+}
+.rdm-item-img {
+  width:64px;height:64px;border-radius:8px;object-fit:cover;
+  background:var(--paper);flex-shrink:0;display:flex;align-items:center;justify-content:center;
+  overflow:hidden;
+}
+.rdm-item-img img { width:100%;height:100%;object-fit:cover;border-radius:8px; }
+.rdm-item-img-placeholder { font-size:28px; }
+.rdm-item-body { flex:1;min-width:0; }
+.rdm-item-name { font-size:14px;font-weight:700;color:var(--ink);margin-bottom:4px; }
+.rdm-item-desc { font-size:11px;color:var(--ink-60);line-height:1.5;margin-bottom:6px; }
+.rdm-item-pts { font-size:13px;font-weight:700;color:var(--teal); }
+.rdm-item-stock { font-size:11px;color:var(--ink-60);margin-left:6px; }
+.rdm-item-btn {
+  flex-shrink:0;padding:8px 14px;border-radius:8px;
+  background:var(--teal);color:#fff;border:none;
+  font-size:12px;font-weight:700;cursor:pointer;
+}
+.rdm-item-btn:disabled { background:var(--border);color:var(--ink-60);cursor:not-allowed; }
+.rdm-empty {
+  text-align:center;padding:48px 20px;color:var(--ink-60);
+}
+.rdm-empty-icon { font-size:40px;margin-bottom:12px; }
+/* 兌換紀錄 */
+.rdm-hist-item {
+  display:flex;align-items:center;gap:12px;
+  border-bottom:1px solid var(--border);padding:14px 0;
+}
+.rdm-hist-item:last-child { border-bottom:none; }
+.rdm-hist-img {
+  width:48px;height:48px;border-radius:8px;background:var(--paper);
+  flex-shrink:0;display:flex;align-items:center;justify-content:center;
+  overflow:hidden;font-size:22px;
+}
+.rdm-hist-img img { width:100%;height:100%;object-fit:cover;border-radius:8px; }
+.rdm-hist-body { flex:1;min-width:0; }
+.rdm-hist-name { font-size:14px;font-weight:600;color:var(--ink); }
+.rdm-hist-date { font-size:11px;color:var(--ink-60);margin-top:2px; }
+.rdm-hist-pts { font-size:14px;font-weight:700;color:var(--red); }
+.rdm-hist-status {
+  font-size:11px;padding:2px 8px;border-radius:10px;margin-top:4px;display:inline-block;
+}
+.rdm-hist-status.pending { background:#fff3cd;color:#856404; }
+.rdm-hist-status.completed { background:#d1e7dd;color:#0f5132; }
+.rdm-hist-status.cancelled { background:#f8d7da;color:#842029; }
 .pts-table-head {
   display:grid;grid-template-columns:1.2fr 1fr 80px;
   background:#555;color:#fff;
@@ -2855,11 +2930,11 @@ footer {
       </div>
       <!-- 動作按鈕 -->
       <div class="pts-action-row">
-        <div class="pts-action-btn">
+        <div class="pts-action-btn" onclick="openMcPanel('redemption')" style="cursor:pointer;">
           <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 12 20 22 4 22 4 12"/><rect x="2" y="7" width="20" height="5"/><path d="M12 22V7"/><path d="M12 7H7.5a2.5 2.5 0 010-5C11 2 12 7 12 7z"/><path d="M12 7h4.5a2.5 2.5 0 000-5C13 2 12 7 12 7z"/></svg> 點數兌換
         </div>
-        <div class="pts-action-btn">
-          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M17 21v-2a4 4 0 00-4-4H5a4 4 0 00-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 00-3-3.87"/><path d="M16 3.13a4 4 0 010 7.75"/></svg> 點數轉移
+        <div class="pts-action-btn" onclick="openMcPanel('redemption-history')" style="cursor:pointer;">
+          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg> 兌換紀錄
         </div>
       </div>
       <!-- 日期篩選 -->
@@ -2873,6 +2948,37 @@ footer {
       <!-- 點數明細表 -->
       <div class="pts-table-head"><div>歸戶日期</div><div>類別</div><div style="text-align:right;">點數</div></div>
       <div id="mc-points-list"><div style="text-align:center;padding:20px;color:var(--ink-60);">載入中...</div></div>
+    </div>
+
+    <!-- 子面板：點數兌換 -->
+    <div class="mc-panel" id="mc-panel-redemption">
+      <div class="mc-panel-title">
+        <button class="mc-panel-back" onclick="closeMcPanel()">‹ 返回</button>
+        點數兌換
+        <button class="mc-panel-action-link" onclick="openMcPanel('redemption-history')">兌換紀錄</button>
+      </div>
+      <!-- 目前點數提示 -->
+      <div class="rdm-pts-bar">
+        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polygon points="12 2 22 8.5 22 15.5 12 22 2 15.5 2 8.5"/><line x1="2" y1="8.5" x2="22" y2="8.5"/><line x1="12" y1="2" x2="12" y2="22"/></svg>
+        目前點數：<strong id="rdm-current-pts">0</strong> 點
+      </div>
+      <!-- 分類 Tab -->
+      <div class="rdm-cats" id="rdm-cats"></div>
+      <!-- 商品列表 -->
+      <div class="rdm-grid" id="rdm-grid">
+        <div style="text-align:center;padding:32px;color:var(--ink-60);">載入中...</div>
+      </div>
+    </div>
+
+    <!-- 子面板：兌換紀錄 -->
+    <div class="mc-panel" id="mc-panel-redemption-history">
+      <div class="mc-panel-title">
+        <button class="mc-panel-back" onclick="openMcPanel('redemption')">‹ 返回</button>
+        點數兌換紀錄
+      </div>
+      <div id="rdm-history-list">
+        <div style="text-align:center;padding:32px;color:var(--ink-60);">載入中...</div>
+      </div>
     </div>
 
     <!-- 子面板：消費紀錄 -->
@@ -5110,10 +5216,12 @@ function openMcPanel(name) {
   document.querySelectorAll('.mc-panel').forEach(p => p.classList.remove('open'));
   const panel = document.getElementById(`mc-panel-${name}`);
   if (panel) panel.classList.add('open');
-  if (name === 'card')        renderMemberCard();
-  if (name === 'coupons')     loadMcCoupons();
-  if (name === 'points')      loadMcPoints();
-  if (name === 'consumption') loadMcConsumption();
+  if (name === 'card')               renderMemberCard();
+  if (name === 'coupons')            loadMcCoupons();
+  if (name === 'points')             loadMcPoints();
+  if (name === 'consumption')        loadMcConsumption();
+  if (name === 'redemption')         loadRedemptionItems();
+  if (name === 'redemption-history') loadRedemptionHistory();
 }
 
 function openMcSubPanel(name) {
@@ -5668,6 +5776,122 @@ async function loadMcPoints() {
     }).join('');
   } catch(e) {
     listEl.innerHTML = '<div style="color:var(--red);text-align:center;padding:20px;">載入失敗</div>';
+  }
+}
+
+// ── 點數兌換 ──
+let _rdmItems = [];
+let _rdmActiveCat = '全部';
+
+async function loadRedemptionItems(category) {
+  if (category !== undefined) _rdmActiveCat = category;
+  const gridEl = document.getElementById('rdm-grid');
+  const catsEl = document.getElementById('rdm-cats');
+  const ptsEl  = document.getElementById('rdm-current-pts');
+  if (!gridEl) return;
+  gridEl.innerHTML = '<div style="text-align:center;padding:32px;color:var(--ink-60);">載入中...</div>';
+  // 同步目前點數
+  if (_currentMember) ptsEl.textContent = (_currentMember.points || 0).toLocaleString();
+  try {
+    const url = _rdmActiveCat && _rdmActiveCat !== '全部'
+      ? `${API}/api/redemption/items?category=${encodeURIComponent(_rdmActiveCat)}`
+      : `${API}/api/redemption/items`;
+    const res = await fetch(url, { credentials: 'include' });
+    const data = await res.json();
+    _rdmItems = data.items || [];
+    // 渲染分類 Tabs
+    const cats = data.categories || ['全部'];
+    catsEl.innerHTML = cats.map(c =>
+      `<button class="rdm-cat-btn${c === _rdmActiveCat ? ' active' : ''}" onclick="loadRedemptionItems('${c}')">${c}</button>`
+    ).join('');
+    // 渲染商品
+    if (!_rdmItems.length) {
+      gridEl.innerHTML = '<div class="rdm-empty"><div class="rdm-empty-icon">🎁</div><div>暫無可兌換商品</div></div>';
+      return;
+    }
+    const pts = _currentMember ? (_currentMember.points || 0) : 0;
+    gridEl.innerHTML = _rdmItems.map(item => {
+      const canRedeem = pts >= item.points_cost && (item.stock === -1 || item.stock > 0);
+      const stockTxt = item.stock === -1 ? '' : item.stock <= 5 ? `(僅剩 ${item.stock})` : '';
+      const imgHtml = item.image_url
+        ? `<img src="${item.image_url}" alt="${item.name}" onerror="this.parentElement.innerHTML='<div class=rdm-item-img-placeholder>🎁</div>'">`
+        : '<div class="rdm-item-img-placeholder">🎁</div>';
+      return `<div class="rdm-item-card">
+        <div class="rdm-item-img">${imgHtml}</div>
+        <div class="rdm-item-body">
+          <div class="rdm-item-name">${item.name}</div>
+          ${item.description ? `<div class="rdm-item-desc">${item.description}</div>` : ''}
+          <div><span class="rdm-item-pts">${item.points_cost.toLocaleString()} 點</span><span class="rdm-item-stock">${stockTxt}</span></div>
+        </div>
+        <button class="rdm-item-btn" ${canRedeem ? '' : 'disabled'} onclick="confirmRedeem(${item.id}, '${item.name.replace(/'/g, "\\'")}', ${item.points_cost})">
+          ${item.stock === 0 ? '已售完' : !canRedeem ? '點數不足' : '兌換'}
+        </button>
+      </div>`;
+    }).join('');
+  } catch(e) {
+    gridEl.innerHTML = '<div style="color:var(--red);text-align:center;padding:32px;">載入失敗</div>';
+  }
+}
+
+function confirmRedeem(itemId, itemName, pointsCost) {
+  if (!confirm(`確定要兌換「${itemName}」？\n將扣除 ${pointsCost} 點`)) return;
+  doRedeem(itemId);
+}
+
+async function doRedeem(itemId) {
+  try {
+    const res = await fetch(`${API}/api/redemption/redeem`, {
+      method: 'POST', credentials: 'include',
+      headers: {'Content-Type': 'application/json'},
+      body: JSON.stringify({ item_id: itemId })
+    });
+    const data = await res.json();
+    if (!res.ok) { alert(data.error || '兌換失敗'); return; }
+    // 更新 _currentMember 點數
+    if (_currentMember) _currentMember.points = data.new_balance;
+    alert('兌換成功！工作人員將與您聯絡。');
+    loadRedemptionItems();
+    // 同步點數顯示
+    const balEl = document.getElementById('mc-pts-balance');
+    if (balEl) balEl.textContent = data.new_balance.toLocaleString();
+    const ptsEl = document.getElementById('mc-points-val');
+    if (ptsEl) ptsEl.textContent = data.new_balance;
+    const rdmEl = document.getElementById('rdm-current-pts');
+    if (rdmEl) rdmEl.textContent = data.new_balance.toLocaleString();
+  } catch(e) {
+    alert('兌換時發生錯誤，請稍後再試');
+  }
+}
+
+async function loadRedemptionHistory() {
+  const el = document.getElementById('rdm-history-list');
+  if (!el) return;
+  el.innerHTML = '<div style="text-align:center;padding:32px;color:var(--ink-60);">載入中...</div>';
+  try {
+    const res = await fetch(`${API}/api/redemption/history`, { credentials: 'include' });
+    const records = await res.json();
+    if (!records.length) {
+      el.innerHTML = `<div class="rdm-empty"><div class="rdm-empty-icon">📋</div><div>尚無點數兌換紀錄</div></div>`;
+      return;
+    }
+    const statusMap = { pending: '處理中', completed: '已完成', cancelled: '已取消' };
+    el.innerHTML = records.map(r => {
+      const imgHtml = r.image_url
+        ? `<img src="${r.image_url}" alt="">`
+        : '🎁';
+      const statusCls = r.status || 'pending';
+      return `<div class="rdm-hist-item">
+        <div class="rdm-hist-img">${imgHtml}</div>
+        <div class="rdm-hist-body">
+          <div class="rdm-hist-name">${r.item_name || '未知商品'}</div>
+          <div class="rdm-hist-date">${r.created_at || ''}</div>
+          <span class="rdm-hist-status ${statusCls}">${statusMap[statusCls] || statusCls}</span>
+        </div>
+        <div class="rdm-hist-pts">-${(r.points_cost||0).toLocaleString()}</div>
+      </div>`;
+    }).join('');
+  } catch(e) {
+    el.innerHTML = '<div style="color:var(--red);text-align:center;padding:32px;">載入失敗</div>';
   }
 }
 

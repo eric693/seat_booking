@@ -1553,13 +1553,14 @@ input[list]::-webkit-calendar-picker-indicator { display: none !important; }
       </div>
       <!-- Filter + Table -->
       <div class="card">
-        <div class="card-head">
+        <div class="card-head" style="flex-wrap:wrap;gap:10px;">
           <h2 class="card-title">消費紀錄</h2>
-          <div style="display:flex;gap:8px;align-items:center;flex-wrap:wrap;">
-            <input class="finput" type="date" id="cons-date-from" style="font-size:13px;padding:6px 10px;" onchange="loadConsumptionPage()">
-            <span style="font-size:13px;color:var(--ink-60);">—</span>
-            <input class="finput" type="date" id="cons-date-to" style="font-size:13px;padding:6px 10px;" onchange="loadConsumptionPage()">
-            <select class="filter-select" id="cons-status" onchange="loadConsumptionPage()" style="font-size:13px;padding:6px 10px;">
+          <div style="display:flex;gap:8px;align-items:center;flex-wrap:nowrap;margin-left:auto;">
+            <span class="filter-lbl">開始</span>
+            <input class="filter-input" type="date" id="cons-date-from" onchange="loadConsumptionPage()">
+            <span style="color:var(--ink-60);">—</span>
+            <input class="filter-input" type="date" id="cons-date-to" onchange="loadConsumptionPage()">
+            <select class="filter-select" id="cons-status" onchange="loadConsumptionPage()">
               <option value="">全部狀態</option>
               <option value="confirmed">已確認</option>
               <option value="completed">已完成</option>

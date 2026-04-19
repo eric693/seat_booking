@@ -1261,9 +1261,9 @@ input[list]::-webkit-calendar-picker-indicator { display: none !important; }
               <div>
                 <label class="cs-label">會員卡使用說明（前台條碼頁顯示）</label>
                 <textarea class="ftarea" id="c-barcode_instructions" rows="4"
-                  placeholder="例：&#10;1. 在收銀台出示此條碼給服務人員&#10;2. 服務人員掃描後輸入消費金額&#10;3. 每消費 NT$10 自動累積 1 點&#10;4. 點數可於結帳時折抵消費"
+                  placeholder="例：&#10;1. 在收銀台出示此條碼給服務人員&#10;2. 服務人員掃描後輸入消費金額&#10;3. 每消費 NT${rate} 自動累積 1 點&#10;4. 點數可於結帳時折抵消費"
                   style="margin-top:6px;"></textarea>
-                <p style="font-size:11px;color:var(--ink-60);margin-top:4px;">每行一條說明，前台自動逐條顯示。留空則使用系統預設文字。</p>
+                <p style="font-size:11px;color:var(--ink-60);margin-top:4px;">每行一條說明，前台自動逐條顯示。可用 <code>{rate}</code> 代入累點比率（自動同步）。留空則使用系統預設文字。</p>
               </div>
             </div>
           </div>

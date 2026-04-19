@@ -1704,6 +1704,7 @@ class PointTransaction(db.Model):
     member_id   = db.Column(db.Integer, db.ForeignKey('members.id'), nullable=False)
     type        = db.Column(db.String(20), default='earn')  # earn | spend | adjust
     points      = db.Column(db.Integer, default=0)
+    amount      = db.Column(db.Integer, default=0)  # 對應消費金額（NT$），用於升等累計
     description = db.Column(db.String(200), default='')
     booking_id  = db.Column(db.Integer)
     created_at  = db.Column(db.DateTime, default=tw_now)
@@ -4099,6 +4100,7 @@ def admin_confirm_booking(bid):
                 tier_label = {'white': '白卡', 'green': '綠卡', 'black': '黑卡'}.get(_tier, '')
                 db.session.add(PointTransaction(
                     member_id=member.id, type='earn', points=earned,
+                    amount=b.total_price or 0,
                     description=f'預約確認 #{b.booking_number}（{tier_label} x{_rate}）',
                     booking_id=b.id))
                 db.session.commit()
@@ -4548,6 +4550,20 @@ with app.app_context():
                         print(f'[migrate] bookings.{col} 略過：{_ce}')
     except Exception as e:
         print(f'[migrate] bookings 欄位略過：{e}')
+    # ── point_transactions.amount 欄位補齊 ──
+    try:
+        _is_pg = 'sqlite' not in str(db.engine.url)
+        _pt_q  = ("SELECT column_name FROM information_schema.columns WHERE table_name='point_transactions'"
+                  if _is_pg else "PRAGMA table_info(point_transactions)")
+        with db.engine.connect() as _conn:
+            _pt_cols = ([r[0] for r in _conn.execute(db.text(_pt_q)).fetchall()] if _is_pg
+                        else [r[1] for r in _conn.execute(db.text(_pt_q)).fetchall()])
+            if 'amount' not in _pt_cols:
+                _conn.execute(db.text('ALTER TABLE point_transactions ADD COLUMN amount INTEGER DEFAULT 0'))
+                _conn.commit()
+                print('[migrate] 新增 point_transactions.amount 欄位')
+    except Exception as e:
+        print(f'[migrate] point_transactions.amount 略過：{e}')
     # ── admin_users.password_hash 欄位加長（VARCHAR(128) → VARCHAR(256)）──
     try:
         _is_pg = 'sqlite' not in str(db.engine.url)
@@ -5785,19 +5801,33 @@ def _get_all_tier_settings():
     return {k.replace('tier_', ''): SiteContent.get(k) or v for k, v in _TIER_DEFAULTS.items()}
 
 def _calc_member_tier(member):
-    """依累計確認消費金額計算會員等級（white/green/black）。"""
+    """依累計消費金額計算會員等級（white/green/black）。
+    來源：①確認預約金額 ②掃碼累點的 amount 欄位。
+    """
     ts = _get_all_tier_settings()
     green_thresh = float(ts.get('green_threshold') or 6000)
     black_thresh = float(ts.get('black_threshold') or 20000)
+
+    # ① 確認預約消費
+    from sqlalchemy import or_
+    booking_total = 0
     cond = []
     if member.phone: cond.append(Booking.customer_phone == member.phone)
     if member.email: cond.append(Booking.customer_email == member.email)
-    if not cond:
-        return 'white'
-    from sqlalchemy import or_
-    total = db.session.query(func.sum(Booking.total_price)).filter(
-        or_(*cond), Booking.status == 'confirmed'
+    if cond:
+        booking_total = db.session.query(func.sum(Booking.total_price)).filter(
+            or_(*cond), Booking.status == 'confirmed'
+        ).scalar() or 0
+
+    # ② 掃碼累點消費（amount > 0 表示有記錄消費金額）
+    scan_total = db.session.query(func.sum(PointTransaction.amount)).filter(
+        PointTransaction.member_id == member.id,
+        PointTransaction.type == 'earn',
+        PointTransaction.amount > 0,
+        PointTransaction.booking_id == None  # noqa: E711 只取掃碼，排除預約
     ).scalar() or 0
+
+    total = booking_total + scan_total
     if total >= black_thresh:
         return 'black'
     if total >= green_thresh:
@@ -5949,7 +5979,8 @@ def scan_earn_points():
     desc = f'掃碼累點 NT${amount:.0f}（{tier_label} x{rate}，操作：{admin_name}）' + (f'【{note}】' if note else '')
     m.points = (m.points or 0) + pts
     db.session.add(PointTransaction(
-        member_id=m.id, type='earn', points=pts, description=desc
+        member_id=m.id, type='earn', points=pts,
+        amount=int(amount), description=desc
     ))
     db.session.commit()
     return jsonify({

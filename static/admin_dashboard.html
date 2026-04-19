@@ -1730,6 +1730,62 @@ input[list]::-webkit-calendar-picker-indicator { display: none !important; }
               </div>
             </div>
 
+            <!-- 比較表格 區塊標題 -->
+            <div class="content-section" style="grid-column:1/-1;">
+              <div class="cs-head">比較表格 — 區塊標題</div>
+              <div class="cs-body">
+                <div class="cs-field"><label class="cs-label">入會禮 標題</label><input class="finput" type="text" id="t-tbl_sec_join_gift" placeholder="入會禮"></div>
+                <div class="cs-field"><label class="cs-label">生日禮 標題</label><input class="finput" type="text" id="t-tbl_sec_bday_gift" placeholder="生日禮"></div>
+                <div class="cs-field"><label class="cs-label">通路優惠 標題</label><input class="finput" type="text" id="t-tbl_sec_channel" placeholder="通路優惠"></div>
+                <div class="cs-field"><label class="cs-label">點數回饋 標題</label><input class="finput" type="text" id="t-tbl_sec_pts" placeholder="點數回饋"></div>
+              </div>
+            </div>
+
+            <!-- 比較表格 欄位名稱 -->
+            <div class="content-section" style="grid-column:1/-1;">
+              <div class="cs-head">比較表格 — 欄位名稱</div>
+              <div class="cs-body">
+                <div class="cs-field"><label class="cs-label">升等門檻列名稱</label><input class="finput" type="text" id="t-tbl_row_upgrade" placeholder="升等門檻（累計消費）"></div>
+                <div class="cs-field"><label class="cs-label">生日當月升等抽獎 列名稱</label><input class="finput" type="text" id="t-tbl_row_bday_lottery" placeholder="生日當月升等抽獎"></div>
+                <div class="cs-field"><label class="cs-label">空間預約折扣 列名稱</label><input class="finput" type="text" id="t-tbl_row_space_disc" placeholder="空間預約專屬折扣"></div>
+                <div class="cs-field"><label class="cs-label">點數回饋率 列名稱</label><input class="finput" type="text" id="t-tbl_row_pts_rate" placeholder="消費點數回饋率"></div>
+                <div class="cs-field"><label class="cs-label">專屬客服 列名稱</label><input class="finput" type="text" id="t-tbl_row_vip_svc" placeholder="專屬客服"></div>
+              </div>
+            </div>
+
+            <!-- 卡別說明 區塊標題 -->
+            <div class="content-section" style="grid-column:1/-1;">
+              <div class="cs-head">卡別說明 — 區塊標題</div>
+              <div class="cs-body">
+                <div class="cs-field"><label class="cs-label">白卡：概述標題</label><input class="finput" type="text" id="t-sec_white_overview" placeholder="【免費申辦，立享優惠】"></div>
+                <div class="cs-field"><label class="cs-label">白卡：通路優惠標題</label><input class="finput" type="text" id="t-sec_white_channel" placeholder="【通路優惠，聰明消費】"></div>
+                <div class="cs-field"><label class="cs-label">綠/黑卡：升等資格標題</label><input class="finput" type="text" id="t-sec_upgrade_qual" placeholder="【升等資格】"></div>
+                <div class="cs-field"><label class="cs-label">綠/黑卡：通路優惠標題</label><input class="finput" type="text" id="t-sec_channel" placeholder="【通路優惠】"></div>
+                <div class="cs-field"><label class="cs-label">各卡：生日禮標題</label><input class="finput" type="text" id="t-sec_bday" placeholder="【生日禮】"></div>
+                <div class="cs-field"><label class="cs-label">各卡：點數回饋標題</label><input class="finput" type="text" id="t-sec_pts" placeholder="【點數回饋】"></div>
+              </div>
+            </div>
+
+            <!-- 固定說明文字 -->
+            <div class="content-section" style="grid-column:1/-1;">
+              <div class="cs-head">固定說明文字</div>
+              <div class="cs-body" style="display:flex;flex-direction:column;gap:14px;">
+                <div class="cs-field"><label class="cs-label">白卡：線上申辦說明</label><input class="finput" type="text" id="t-desc_white_register" placeholder="線上申辦：於本平台完成會員註冊，即成為白卡會員。"></div>
+                <div class="cs-field"><label class="cs-label">白卡：生日抽獎說明</label><input class="finput" type="text" id="t-desc_bday_lottery" placeholder="生日當月消費享「升等綠卡」抽獎資格。"></div>
+                <div class="cs-field"><label class="cs-label">黑卡：專屬客服說明</label><input class="finput" type="text" id="t-desc_vip_service" placeholder="專屬客服優先服務通道。"></div>
+              </div>
+            </div>
+
+            <!-- 升等提示文字 -->
+            <div class="content-section" style="grid-column:1/-1;">
+              <div class="cs-head">升等提示文字（可用 {gf} 代入綠卡門檻、{bf} 代入黑卡門檻）</div>
+              <div class="cs-body" style="display:flex;flex-direction:column;gap:14px;">
+                <div class="cs-field"><label class="cs-label">白卡升等提示</label><input class="finput" type="text" id="t-hint_white" placeholder="升等提示：累計消費達 ${gf} 自動升等為綠卡會員，享有更多回饋與優惠。"></div>
+                <div class="cs-field"><label class="cs-label">綠卡升等提示</label><input class="finput" type="text" id="t-hint_green" placeholder="升等提示：累計消費達 ${bf} 自動升等為黑卡會員，享頂級尊榮服務。"></div>
+                <div class="cs-field"><label class="cs-label">黑卡提示文字</label><input class="finput" type="text" id="t-hint_black" placeholder="您已是頂級黑卡會員，感謝您的長期支持與信任。"></div>
+              </div>
+            </div>
+
             <!-- 服務條款文字 -->
             <div class="content-section" style="grid-column:1/-1;">
               <div class="cs-head">服務條款各條文字</div>
@@ -5856,7 +5912,12 @@ const _TIER_KEYS = [
   'store_discount','weekly_discount_min',
   'movie_ticket_price','movie_ticket_limit',
   'join_desc',
-  'terms_management','terms_points','terms_coupons','terms_upgrade','terms_modification'
+  'terms_management','terms_points','terms_coupons','terms_upgrade','terms_modification',
+  'tbl_sec_join_gift','tbl_sec_bday_gift','tbl_sec_channel','tbl_sec_pts',
+  'tbl_row_upgrade','tbl_row_bday_lottery','tbl_row_space_disc','tbl_row_pts_rate','tbl_row_vip_svc',
+  'sec_white_overview','sec_white_channel','sec_upgrade_qual','sec_channel','sec_bday','sec_pts',
+  'desc_white_register','desc_bday_lottery','desc_vip_service',
+  'hint_white','hint_green','hint_black'
 ];
 
 async function loadTierSettings() {

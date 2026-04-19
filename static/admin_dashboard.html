@@ -3930,11 +3930,26 @@ async function savePaymentSettings() {
 
 // ── ACCOUNTS ──
 const ALL_PAGES = [
-  {id:'dashboard',label:'儀表板'},{id:'bookings',label:'預約管理'},
-  {id:'rooms',label:'會議室管理'},{id:'content',label:'文字內容'},
-  {id:'photos',label:'照片管理'},{id:'formfields',label:'表單欄位'},
-  {id:'blocked',label:'封鎖時段'},{id:'lineusers',label:'Line用戶'},{id:'lineqa',label:'LINE問答'},{id:'members',label:'會員管理'},{id:'chat',label:'聊天記錄'},{id:'payment',label:'付款設定'},
-  {id:'accounts',label:'帳號管理'},{id:'logs',label:'登入紀錄'}
+  {id:'dashboard',   label:'儀表板'},
+  {id:'bookings',    label:'預約管理'},
+  {id:'rooms',       label:'會議室管理'},
+  {id:'content',     label:'文字內容'},
+  {id:'photos',      label:'照片管理'},
+  {id:'formfields',  label:'表單欄位'},
+  {id:'blocked',     label:'封鎖時段'},
+  {id:'lineusers',   label:'LINE用戶'},
+  {id:'members',     label:'會員管理'},
+  {id:'tier',        label:'會員等級設定'},
+  {id:'redemption',  label:'點數兌換管理'},
+  {id:'coupons',     label:'優惠券管理'},
+  {id:'points',      label:'點數專區'},
+  {id:'consumption', label:'消費紀錄'},
+  {id:'scan',        label:'掃碼累點'},
+  {id:'chat',        label:'聊天記錄'},
+  {id:'lineqa',      label:'LINE問答'},
+  {id:'payment',     label:'付款設定'},
+  {id:'accounts',    label:'帳號管理'},
+  {id:'logs',        label:'登入紀錄'},
 ];
 
 function roleLabel(r) { return {superadmin:'超級管理員',admin:'管理員',manager:'店長/經理',staff:'門市人員'}[r] || r; }

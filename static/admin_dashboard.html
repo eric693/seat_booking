@@ -1331,46 +1331,46 @@ input[list]::-webkit-calendar-picker-indicator { display: none !important; }
 
     <!-- 商品編輯 Modal -->
     <div class="modal-overlay" id="rdmItemModalOverlay" style="display:none;">
-      <div class="modal" style="max-width:520px;">
-        <div class="modal-head">
-          <h3 class="modal-title" id="rdmItemModalTitle">新增兌換商品</h3>
+      <div class="modal-panel" style="max-width:520px;">
+        <div class="modal-header">
+          <h3 id="rdmItemModalTitle">新增兌換商品</h3>
           <button class="modal-close" onclick="closeRedemptionItemModal()">✕</button>
         </div>
         <div class="modal-body" style="display:flex;flex-direction:column;gap:14px;">
           <input type="hidden" id="rdm-item-id">
           <div>
-            <label class="form-label">商品名稱 *</label>
-            <input class="form-input" id="rdm-item-name" placeholder="例：空間折扣券 NT$100">
+            <label class="cs-label">商品名稱 *</label>
+            <input class="finput" id="rdm-item-name" placeholder="例：空間折扣券 NT$100">
           </div>
           <div style="display:grid;grid-template-columns:1fr 1fr;gap:12px;">
             <div>
-              <label class="form-label">分類</label>
-              <input class="form-input" id="rdm-item-category" placeholder="例：空間優惠">
+              <label class="cs-label">分類</label>
+              <input class="finput" id="rdm-item-category" placeholder="例：空間優惠">
             </div>
             <div>
-              <label class="form-label">所需點數 *</label>
-              <input class="form-input" type="number" id="rdm-item-points" min="1" placeholder="500">
+              <label class="cs-label">所需點數 *</label>
+              <input class="finput" type="number" id="rdm-item-points" min="1" placeholder="500">
             </div>
           </div>
           <div style="display:grid;grid-template-columns:1fr 1fr;gap:12px;">
             <div>
-              <label class="form-label">庫存（-1=無限）</label>
-              <input class="form-input" type="number" id="rdm-item-stock" value="-1">
+              <label class="cs-label">庫存（-1=無限）</label>
+              <input class="finput" type="number" id="rdm-item-stock" value="-1">
             </div>
             <div>
-              <label class="form-label">排序（數字小優先）</label>
-              <input class="form-input" type="number" id="rdm-item-sort" value="0">
+              <label class="cs-label">排序（數字小優先）</label>
+              <input class="finput" type="number" id="rdm-item-sort" value="0">
             </div>
           </div>
           <div>
-            <label class="form-label">商品說明</label>
-            <textarea class="form-input" id="rdm-item-desc" rows="3" placeholder="選填：商品說明或兌換說明"></textarea>
+            <label class="cs-label">商品說明</label>
+            <textarea class="finput" id="rdm-item-desc" rows="3" placeholder="選填：商品說明或兌換說明"></textarea>
           </div>
           <div>
-            <label class="form-label">商品圖片</label>
+            <label class="cs-label">商品圖片</label>
             <div style="display:flex;gap:8px;align-items:center;">
-              <input class="form-input" id="rdm-item-image" placeholder="圖片 URL 或上傳">
-              <label class="btn btn-secondary" style="cursor:pointer;white-space:nowrap;flex-shrink:0;">
+              <input class="finput" id="rdm-item-image" placeholder="圖片 URL 或上傳">
+              <label class="btn btn-outline" style="cursor:pointer;white-space:nowrap;flex-shrink:0;">
                 上傳<input type="file" accept="image/*" style="display:none;" onchange="uploadRedemptionImage(this)">
               </label>
             </div>
@@ -1381,8 +1381,8 @@ input[list]::-webkit-calendar-picker-indicator { display: none !important; }
             <label for="rdm-item-active" style="font-size:13px;">上架中（取消勾選則下架）</label>
           </div>
         </div>
-        <div class="modal-foot">
-          <button class="btn btn-secondary" onclick="closeRedemptionItemModal()">取消</button>
+        <div class="modal-footer">
+          <button class="btn btn-outline" onclick="closeRedemptionItemModal()">取消</button>
           <button class="btn btn-primary" onclick="saveRedemptionItem()">儲存</button>
         </div>
       </div>

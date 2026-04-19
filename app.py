@@ -5419,6 +5419,70 @@ def admin_consumption():
 
 
 # ─────────────────────────────────────────────
+# 會員制度 / 分級設定 API
+# ─────────────────────────────────────────────
+
+@app.route('/api/tier-settings', methods=['GET'])
+def public_tier_settings():
+    return jsonify({
+        'green_threshold': int(SiteContent.get('tier_green_threshold') or '6000'),
+        'black_threshold': int(SiteContent.get('tier_black_threshold') or '20000'),
+    })
+
+
+@app.route('/admin/api/tier-settings', methods=['GET', 'POST'])
+def admin_tier_settings():
+    err = check_admin()
+    if err: return err
+    if request.method == 'GET':
+        return jsonify({
+            'green_threshold': int(SiteContent.get('tier_green_threshold') or '6000'),
+            'black_threshold': int(SiteContent.get('tier_black_threshold') or '20000'),
+        })
+    d = request.get_json() or {}
+    for key in ('green_threshold', 'black_threshold'):
+        val = d.get(key)
+        if val is not None:
+            obj = SiteContent.query.filter_by(key=f'tier_{key}').first()
+            if obj:
+                obj.value = str(int(val))
+            else:
+                db.session.add(SiteContent(key=f'tier_{key}', value=str(int(val))))
+    db.session.commit()
+    return jsonify({'success': True})
+
+
+@app.route('/admin/api/membership/stats', methods=['GET'])
+def admin_membership_stats():
+    err = check_admin()
+    if err: return err
+    green_th = int(SiteContent.get('tier_green_threshold') or '6000')
+    black_th = int(SiteContent.get('tier_black_threshold') or '20000')
+
+    members = Member.query.filter_by(is_blocked=False).all()
+    white_count = green_count = black_count = 0
+    for m in members:
+        bookings = Booking.query.filter(
+            Booking.customer_email == m.email,
+            Booking.status.in_(['confirmed', 'completed'])
+        ).all()
+        total = sum(b.total_price or 0 for b in bookings)
+        if total >= black_th:
+            black_count += 1
+        elif total >= green_th:
+            green_count += 1
+        else:
+            white_count += 1
+
+    return jsonify({
+        'white': white_count,
+        'green': green_count,
+        'black': black_count,
+        'total': len(members),
+    })
+
+
+# ─────────────────────────────────────────────
 # 掃碼累點 API
 # ─────────────────────────────────────────────
 

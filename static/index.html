@@ -1794,6 +1794,119 @@ footer {
   .sub-nav-inner { overflow-x: auto; }
   .booking-section-head { padding: 28px 20px 0; }
 }
+
+/* ── 會員權益與服務條款 Modal ── */
+.terms-overlay {
+  display: none; position: fixed; inset: 0; z-index: 600;
+  background: rgba(0,0,0,0.55); align-items: center; justify-content: center;
+  padding: 16px;
+}
+.terms-overlay.open { display: flex; }
+.terms-sheet {
+  background: #fff; width: 100%; max-width: 740px;
+  border-radius: 18px; max-height: 90vh; overflow-y: auto;
+  animation: popIn .25s ease;
+  box-shadow: 0 20px 60px rgba(0,0,0,0.28);
+}
+.terms-header {
+  padding: 18px 24px 14px;
+  border-bottom: 1px solid var(--border);
+  display: flex; align-items: center; justify-content: space-between;
+  position: sticky; top: 0; background: #fff; z-index: 2;
+  border-radius: 18px 18px 0 0;
+}
+.terms-header-title { font-family: 'DM Serif Display', serif; font-size: 17px; color: var(--ink); }
+.terms-close { background: none; border: none; font-size: 22px; cursor: pointer; color: var(--ink-60); width: 32px; height: 32px; border-radius: 50%; display: flex; align-items: center; justify-content: center; transition: background .15s; }
+.terms-close:hover { background: var(--paper); }
+.terms-body { padding: 28px 28px 36px; }
+.terms-section-title {
+  font-family: 'DM Serif Display', serif; font-size: 19px; color: var(--gold);
+  border-left: 4px solid var(--gold); padding-left: 12px;
+  margin-bottom: 14px; margin-top: 36px;
+}
+.terms-section-title:first-child { margin-top: 0; }
+.terms-para { font-size: 14px; color: var(--ink); line-height: 1.85; margin-bottom: 10px; }
+.terms-para strong { color: var(--ink); }
+
+/* Tier comparison table */
+.tier-compare-wrap { overflow-x: auto; margin-bottom: 8px; }
+.tier-compare-table {
+  width: 100%; border-collapse: collapse; border-radius: 12px; overflow: hidden;
+  border: 1px solid var(--border); min-width: 480px;
+}
+.tier-compare-table th, .tier-compare-table td {
+  padding: 12px 14px; font-size: 13px; border-bottom: 1px solid var(--border); vertical-align: middle;
+}
+.tier-compare-table thead th { background: #fafafa; font-weight: 600; text-align: center; }
+.tier-compare-table thead th:first-child { text-align: left; }
+.tier-compare-table tbody td:first-child { font-size: 13px; font-weight: 500; color: var(--ink); background: #fdfdfd; }
+.tier-compare-table tbody td { text-align: center; color: var(--ink-60); }
+.tier-group-row td { background: #f0ede8 !important; font-weight: 700; font-size: 11px; text-transform: uppercase; letter-spacing: .09em; color: var(--ink-60); text-align: center !important; padding: 8px 14px; }
+.tier-check { color: #2d7a4a; font-weight: 700; font-size: 15px; }
+.tier-dash { color: #ccc; font-size: 16px; }
+.tier-val { font-weight: 600; color: var(--ink); }
+
+/* Tier header cards */
+.tier-hd-card {
+  display: inline-flex; flex-direction: column; align-items: center;
+  border-radius: 10px; padding: 10px 8px 8px; width: 88px; gap: 6px;
+}
+.tier-hd-white { background: #fff; border: 1.5px solid #ccc; }
+.tier-hd-green { background: linear-gradient(140deg,#1a3a2a,#2d5e3e); border: none; }
+.tier-hd-black { background: linear-gradient(140deg,#111,#2e2e2e); border: none; }
+.tier-hd-dot { width: 10px; height: 10px; border-radius: 50%; }
+.tier-hd-white .tier-hd-dot { background: #aaa; }
+.tier-hd-green .tier-hd-dot { background: #7ecf9e; }
+.tier-hd-black .tier-hd-dot { background: var(--gold); }
+.tier-hd-name { font-size: 11px; font-weight: 700; letter-spacing: .08em; }
+.tier-hd-white .tier-hd-name { color: var(--ink-60); }
+.tier-hd-green .tier-hd-name, .tier-hd-black .tier-hd-name { color: rgba(255,255,255,.8); }
+.tier-hd-sub { font-size: 10px; }
+.tier-hd-white .tier-hd-sub { color: #aaa; }
+.tier-hd-green .tier-hd-sub, .tier-hd-black .tier-hd-sub { color: rgba(255,255,255,.45); }
+
+/* Tier tabs (detail) */
+.tier-tabs { display: flex; gap: 0; border-bottom: 2px solid var(--border); margin-bottom: 20px; overflow-x: auto; }
+.tier-tab-btn {
+  padding: 10px 22px; font-size: 13px; font-weight: 600; cursor: pointer;
+  border: none; border-bottom: 2.5px solid transparent; margin-bottom: -2px;
+  white-space: nowrap; background: none; font-family: inherit;
+  color: var(--ink-60); transition: color .15s;
+}
+.tier-tab-btn:hover { color: var(--ink); }
+.tier-tab-btn.active-white { border-bottom-color: #888; color: var(--ink); }
+.tier-tab-btn.active-green { border-bottom-color: #2d5e3e; color: #2d5e3e; }
+.tier-tab-btn.active-black { border-bottom-color: #1a1a1a; color: #1a1a1a; }
+.tier-tab-pane { display: none; }
+.tier-tab-pane.active { display: block; }
+.tier-benefit-group { margin-bottom: 22px; }
+.tier-bg-title {
+  font-size: 11px; font-weight: 700; letter-spacing: .1em; text-transform: uppercase;
+  color: var(--ink-60); margin-bottom: 10px; padding-bottom: 6px;
+  border-bottom: 1px solid var(--border);
+}
+.tier-blist { list-style: none; display: flex; flex-direction: column; gap: 8px; }
+.tier-bitem { display: flex; gap: 10px; align-items: flex-start; font-size: 13.5px; line-height: 1.7; color: var(--ink); }
+.tier-bdot { width: 6px; height: 6px; border-radius: 50%; margin-top: 7px; flex-shrink: 0; }
+.tier-bdot-white { background: #aaa; }
+.tier-bdot-green { background: #2d5e3e; }
+.tier-bdot-black { background: #1a1a1a; }
+.tier-badge-pill {
+  display: inline-block; font-size: 10px; font-weight: 700; letter-spacing: .06em;
+  padding: 2px 8px; border-radius: 20px; vertical-align: middle; margin-left: 6px;
+}
+.tier-badge-white { background: #eee; color: #555; }
+.tier-badge-green { background: #d4efe1; color: #1a5c35; }
+.tier-badge-black { background: #222; color: #d4ad6a; }
+.tier-upgrade-hint {
+  background: var(--paper); border-radius: 10px; padding: 14px 16px;
+  font-size: 13px; color: var(--ink-60); line-height: 1.7; margin-top: 16px;
+}
+.tier-upgrade-hint strong { color: var(--gold); }
+@media(max-width:600px){
+  .terms-body { padding: 20px 16px 28px; }
+  .tier-tab-btn { padding: 10px 14px; font-size: 12px; }
+}
 </style>
 <script src="https://cdn.jsdelivr.net/npm/jsbarcode@3.11.5/dist/JsBarcode.all.min.js"></script>
 </head>
@@ -2426,6 +2539,13 @@ footer {
           </div>
           <div class="mc-list-arrow">›</div>
         </div>
+        <div class="mc-list-item" onclick="openMemberTerms()">
+          <div class="mc-list-item-left">
+            <div class="mc-list-item-title">會員權益與服務條款</div>
+            <div class="mc-list-item-sub">白卡・綠卡・黑卡 等級說明與條款</div>
+          </div>
+          <div class="mc-list-arrow">›</div>
+        </div>
       </div>
 
     </div><!-- /mc-main-view -->
@@ -2670,6 +2790,192 @@ footer {
   </div>
 </div>
 
+<!-- ── 會員權益與服務條款 Modal ── -->
+<div class="terms-overlay" id="memberTermsOverlay" onclick="handleTermsOverlayClick(event)">
+  <div class="terms-sheet">
+    <div class="terms-header">
+      <div class="terms-header-title">會員權益與服務條款</div>
+      <button class="terms-close" onclick="closeMemberTerms()">×</button>
+    </div>
+    <div class="terms-body">
+
+      <!-- 加入會員 -->
+      <div class="terms-section-title">加入會員</div>
+      <p class="terms-para">即日起於本平台完成會員註冊，立即成為<strong>白卡會員</strong>，享有各通路會員權益、消費累點等服務。<br>依照累計消費金額自動升等為綠卡或黑卡會員，享有更多專屬權益。</p>
+
+      <!-- 會員優惠與權益對照表 -->
+      <div class="terms-section-title">會員優惠與權益</div>
+      <div class="tier-compare-wrap">
+        <table class="tier-compare-table">
+          <thead>
+            <tr>
+              <th>卡別</th>
+              <th>
+                <div class="tier-hd-card tier-hd-white" style="margin:0 auto;">
+                  <div class="tier-hd-dot"></div>
+                  <div class="tier-hd-name">白卡</div>
+                  <div class="tier-hd-sub">White</div>
+                </div>
+              </th>
+              <th>
+                <div class="tier-hd-card tier-hd-green" style="margin:0 auto;">
+                  <div class="tier-hd-dot"></div>
+                  <div class="tier-hd-name">綠卡</div>
+                  <div class="tier-hd-sub">Green</div>
+                </div>
+              </th>
+              <th>
+                <div class="tier-hd-card tier-hd-black" style="margin:0 auto;">
+                  <div class="tier-hd-dot"></div>
+                  <div class="tier-hd-name">黑卡</div>
+                  <div class="tier-hd-sub">Black</div>
+                </div>
+              </th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr><td>升等門檻（累計消費）</td><td class="tier-val">—（新會員）</td><td class="tier-val">滿 $6,000</td><td class="tier-val">滿 $20,000</td></tr>
+            <tr class="tier-group-row"><td colspan="4">入會禮</td></tr>
+            <tr><td>線上 $50 優惠券（滿$500可抵用）</td><td><span class="tier-check">✓</span></td><td><span class="tier-dash">—</span></td><td><span class="tier-dash">—</span></td></tr>
+            <tr class="tier-group-row"><td colspan="4">生日禮</td></tr>
+            <tr><td>線上優惠券</td><td class="tier-val">$50<br><small style="font-weight:400;color:var(--ink-60);">(滿$499可抵)</small></td><td class="tier-val">$100<br><small style="font-weight:400;color:var(--ink-60);">(滿$1,000可抵)</small></td><td class="tier-val">$150<br><small style="font-weight:400;color:var(--ink-60);">(滿$1,500可抵)</small></td></tr>
+            <tr><td>生日當月升等抽獎</td><td><span class="tier-check">✓</span></td><td><span class="tier-dash">—</span></td><td><span class="tier-dash">—</span></td></tr>
+            <tr><td>門市85折優惠券（2張）</td><td><span class="tier-dash">—</span></td><td><span class="tier-check">✓</span></td><td><span class="tier-check">✓</span></td></tr>
+            <tr><td>實體書店 $100 優惠券</td><td><span class="tier-dash">—</span></td><td><span class="tier-dash">—</span></td><td><span class="tier-check">✓</span></td></tr>
+            <tr class="tier-group-row"><td colspan="4">通路優惠</td></tr>
+            <tr><td>週一/三/五 滿$777享9折起</td><td><span class="tier-check">✓</span></td><td><span class="tier-check">✓</span></td><td><span class="tier-check">✓</span></td></tr>
+            <tr><td>電影票優惠 NT$250/張（限4張）</td><td><span class="tier-check">✓</span></td><td><span class="tier-check">✓</span></td><td><span class="tier-check">✓</span></td></tr>
+            <tr><td>空間預約專屬折扣</td><td><span class="tier-dash">—</span></td><td class="tier-val">95折</td><td class="tier-val">9折</td></tr>
+            <tr class="tier-group-row"><td colspan="4">點數回饋</td></tr>
+            <tr><td>消費點數回饋率</td><td class="tier-val">每$10得1點</td><td class="tier-val">每$10得1.5點</td><td class="tier-val">每$10得2點</td></tr>
+            <tr><td>專屬客服</td><td><span class="tier-dash">—</span></td><td><span class="tier-dash">—</span></td><td><span class="tier-check">✓</span></td></tr>
+          </tbody>
+        </table>
+      </div>
+
+      <!-- 各等級詳細說明 -->
+      <div class="terms-section-title">會員各等級權益說明</div>
+      <div class="tier-tabs">
+        <button class="tier-tab-btn active-white" id="ttab-white" onclick="switchTierTab('white')">白卡會員</button>
+        <button class="tier-tab-btn" id="ttab-green" onclick="switchTierTab('green')">綠卡會員</button>
+        <button class="tier-tab-btn" id="ttab-black" onclick="switchTierTab('black')">黑卡會員</button>
+      </div>
+
+      <!-- 白卡 -->
+      <div class="tier-tab-pane active" id="tpane-white">
+        <div class="tier-benefit-group">
+          <div class="tier-bg-title">【免費申辦，立享優惠】</div>
+          <ul class="tier-blist">
+            <li class="tier-bitem"><span class="tier-bdot tier-bdot-white"></span><span>線上申辦：於本平台完成會員註冊，即成為白卡會員。</span></li>
+            <li class="tier-bitem"><span class="tier-bdot tier-bdot-white"></span><span>累計期限：白卡會員於白卡會籍有效期間，消費累計滿 <strong>$6,000（含）</strong>即可升等為綠卡會員。</span></li>
+            <li class="tier-bitem"><span class="tier-bdot tier-bdot-white"></span><span>帳戶連續 5 年（含）無消費紀錄，會籍資格將自動終止；點數或優惠券請於終止前兌換使用。</span></li>
+          </ul>
+        </div>
+        <div class="tier-benefit-group">
+          <div class="tier-bg-title">【通路優惠，聰明消費】</div>
+          <ul class="tier-blist">
+            <li class="tier-bitem"><span class="tier-bdot tier-bdot-white"></span><span>每週一/三/五單筆消費滿 NT$777（含）以上享 9折起優惠。</span></li>
+            <li class="tier-bitem"><span class="tier-bdot tier-bdot-white"></span><span>電影票優惠 NT$250/張（單場限購4張）。</span></li>
+            <li class="tier-bitem"><span class="tier-bdot tier-bdot-white"></span><span>新會員入會禮：<strong>$50 線上優惠券</strong>（滿$500可抵用）。</span></li>
+          </ul>
+        </div>
+        <div class="tier-benefit-group">
+          <div class="tier-bg-title">【生日禮】</div>
+          <ul class="tier-blist">
+            <li class="tier-bitem"><span class="tier-bdot tier-bdot-white"></span><span>生日當月享 <strong>$50 線上優惠券</strong>（滿$499可抵用）。</span></li>
+            <li class="tier-bitem"><span class="tier-bdot tier-bdot-white"></span><span>生日當月消費享「升等綠卡」抽獎資格。</span></li>
+          </ul>
+        </div>
+        <div class="tier-benefit-group">
+          <div class="tier-bg-title">【點數回饋】</div>
+          <ul class="tier-blist">
+            <li class="tier-bitem"><span class="tier-bdot tier-bdot-white"></span><span>每消費 NT$10 累積 <strong>1 點</strong>，點數可於結帳時折抵消費。</span></li>
+          </ul>
+        </div>
+        <div class="tier-upgrade-hint">升等提示：累計消費達 <strong>$6,000</strong> 自動升等為綠卡會員，享有更多回饋與優惠。</div>
+      </div>
+
+      <!-- 綠卡 -->
+      <div class="tier-tab-pane" id="tpane-green">
+        <div class="tier-benefit-group">
+          <div class="tier-bg-title">【升等資格】</div>
+          <ul class="tier-blist">
+            <li class="tier-bitem"><span class="tier-bdot tier-bdot-green"></span><span>白卡會籍有效期間累計消費達 <strong>$6,000（含）</strong> 自動升等。</span></li>
+            <li class="tier-bitem"><span class="tier-bdot tier-bdot-green"></span><span>綠卡有效期限：升等起算 <strong>2 年</strong>；期間累計消費未達黑卡門檻，續卡須重新累積至$6,000。</span></li>
+          </ul>
+        </div>
+        <div class="tier-benefit-group">
+          <div class="tier-bg-title">【通路優惠】</div>
+          <ul class="tier-blist">
+            <li class="tier-bitem"><span class="tier-bdot tier-bdot-green"></span><span>每週一/三/五單筆消費滿 NT$777（含）以上享 9折起優惠。</span></li>
+            <li class="tier-bitem"><span class="tier-bdot tier-bdot-green"></span><span>電影票優惠 NT$250/張（單場限購4張）。</span></li>
+            <li class="tier-bitem"><span class="tier-bdot tier-bdot-green"></span><span>空間預約享 <strong>95折</strong> 專屬折扣。</span></li>
+          </ul>
+        </div>
+        <div class="tier-benefit-group">
+          <div class="tier-bg-title">【生日禮】</div>
+          <ul class="tier-blist">
+            <li class="tier-bitem"><span class="tier-bdot tier-bdot-green"></span><span>生日當月享 <strong>$100 線上優惠券</strong>（滿$1,000可抵用）。</span></li>
+            <li class="tier-bitem"><span class="tier-bdot tier-bdot-green"></span><span>門市 85折優惠券 2 張。</span></li>
+          </ul>
+        </div>
+        <div class="tier-benefit-group">
+          <div class="tier-bg-title">【點數回饋】</div>
+          <ul class="tier-blist">
+            <li class="tier-bitem"><span class="tier-bdot tier-bdot-green"></span><span>每消費 NT$10 累積 <strong>1.5 點</strong>，點數可於結帳時折抵消費。</span></li>
+          </ul>
+        </div>
+        <div class="tier-upgrade-hint">升等提示：累計消費達 <strong>$20,000</strong> 自動升等為黑卡會員，享頂級尊榮服務。</div>
+      </div>
+
+      <!-- 黑卡 -->
+      <div class="tier-tab-pane" id="tpane-black">
+        <div class="tier-benefit-group">
+          <div class="tier-bg-title">【升等資格】</div>
+          <ul class="tier-blist">
+            <li class="tier-bitem"><span class="tier-bdot tier-bdot-black"></span><span>綠卡有效期間累計消費達 <strong>$20,000（含）</strong> 自動升等為黑卡會員。</span></li>
+            <li class="tier-bitem"><span class="tier-bdot tier-bdot-black"></span><span>黑卡有效期限：升等起算 <strong>2 年</strong>，期間續卡條件為重新累積消費達$20,000。</span></li>
+          </ul>
+        </div>
+        <div class="tier-benefit-group">
+          <div class="tier-bg-title">【通路優惠】</div>
+          <ul class="tier-blist">
+            <li class="tier-bitem"><span class="tier-bdot tier-bdot-black"></span><span>每週一/三/五單筆消費滿 NT$777（含）以上享 9折起優惠。</span></li>
+            <li class="tier-bitem"><span class="tier-bdot tier-bdot-black"></span><span>電影票優惠 NT$250/張（單場限購4張）。</span></li>
+            <li class="tier-bitem"><span class="tier-bdot tier-bdot-black"></span><span>空間預約享 <strong>9折</strong> 頂級專屬折扣。</span></li>
+            <li class="tier-bitem"><span class="tier-bdot tier-bdot-black"></span><span>專屬客服優先服務通道。</span></li>
+          </ul>
+        </div>
+        <div class="tier-benefit-group">
+          <div class="tier-bg-title">【生日禮】</div>
+          <ul class="tier-blist">
+            <li class="tier-bitem"><span class="tier-bdot tier-bdot-black"></span><span>生日當月享 <strong>$150 線上優惠券</strong>（滿$1,500可抵用）。</span></li>
+            <li class="tier-bitem"><span class="tier-bdot tier-bdot-black"></span><span>門市 85折優惠券 2 張。</span></li>
+            <li class="tier-bitem"><span class="tier-bdot tier-bdot-black"></span><span>實體書店 <strong>$100 專屬優惠券</strong>。</span></li>
+          </ul>
+        </div>
+        <div class="tier-benefit-group">
+          <div class="tier-bg-title">【點數回饋】</div>
+          <ul class="tier-blist">
+            <li class="tier-bitem"><span class="tier-bdot tier-bdot-black"></span><span>每消費 NT$10 累積 <strong>2 點</strong>，最高回饋率，點數可於結帳時折抵消費。</span></li>
+          </ul>
+        </div>
+        <div class="tier-upgrade-hint" style="background:#1a1a1a;color:rgba(255,255,255,0.75);">您已是頂級 <strong style="color:var(--gold);">黑卡會員</strong>，感謝您的長期支持與信任。</div>
+      </div>
+
+      <!-- 服務條款 -->
+      <div class="terms-section-title">服務條款</div>
+      <p class="terms-para"><strong>一、會籍管理</strong><br>本平台保留修改、終止會員資格之權利，如有重大違規行為（惡意刷單、盜用帳號等），本平台得立即終止會籍並沒收點數及優惠券。</p>
+      <p class="terms-para"><strong>二、點數使用</strong><br>點數不可轉讓、不可兌換現金。點數有效期限依本平台規定，逾期點數自動歸零。每筆消費之點數將於發票開立後 2 個工作日內歸戶。</p>
+      <p class="terms-para"><strong>三、優惠券規範</strong><br>優惠券限會員本人使用，不得轉售或轉讓。各優惠券使用限制以券面標示為準，逾期不補發。</p>
+      <p class="terms-para"><strong>四、升等規則</strong><br>升等以實際消費金額（不含點數折抵、優惠券折抵部分）為計算基準。跨等級時，舊等級剩餘點數及優惠券保留至有效期限為止。</p>
+      <p class="terms-para"><strong>五、條款修改</strong><br>本平台得依業務需要修改本服務條款，修改後將公告於官網及 APP，修改後繼續使用本服務，視為同意修改後之條款。</p>
+      <p class="terms-para" style="color:var(--ink-60);font-size:12px;">最後更新日期：2026年4月19日</p>
+
+    </div>
+  </div>
+</div>
+
 <footer id="site-footer">
   <div class="footer-main">
     <div>
@@ -2715,7 +3021,7 @@ footer {
       <div id="footerText">© 2026 空間預約系統 · 版權所有</div>
       <div style="display:flex;gap:20px;">
         <span style="cursor:pointer;transition:color .15s;" onmouseover="this.style.color='var(--gold)'" onmouseout="this.style.color=''">隱私權政策</span>
-        <span style="cursor:pointer;transition:color .15s;" onmouseover="this.style.color='var(--gold)'" onmouseout="this.style.color=''">服務條款</span>
+        <span onclick="openMemberTerms()" style="cursor:pointer;transition:color .15s;" onmouseover="this.style.color='var(--gold)'" onmouseout="this.style.color=''">會員權益與服務條款</span>
       </div>
     </div>
   </div>
@@ -4240,6 +4546,7 @@ function requireLogin(fn) {
 
 function scrollToBooking(e) {
   if (e) e.preventDefault();
+  if (!_currentMember) { openAuthModal('login'); return; }
   const wrapper = document.getElementById('booking-form-wrapper');
   if (wrapper) wrapper.style.display = '';
   const el = document.getElementById('booking-section-anchor');
@@ -4295,6 +4602,8 @@ function updateMemberUI() {
   } else {
     if (loginBtn) loginBtn.style.display = '';
     if (loggedInEl) loggedInEl.style.display = 'none';
+    const wrapper = document.getElementById('booking-form-wrapper');
+    if (wrapper) wrapper.style.display = 'none';
   }
   _updateHomepageAuthState();
   _updateMbnAvatar();
@@ -4732,6 +5041,27 @@ function closeMcPanel() {
   const mainView = document.getElementById('mc-main-view');
   if (mainView) mainView.style.display = '';
   document.querySelectorAll('.mc-panel').forEach(p => p.classList.remove('open'));
+}
+
+function openMemberTerms() {
+  document.getElementById('memberTermsOverlay').classList.add('open');
+  document.body.style.overflow = 'hidden';
+  switchTierTab('white');
+}
+function closeMemberTerms() {
+  document.getElementById('memberTermsOverlay').classList.remove('open');
+  document.body.style.overflow = '';
+}
+function handleTermsOverlayClick(e) {
+  if (e.target === document.getElementById('memberTermsOverlay')) closeMemberTerms();
+}
+function switchTierTab(tier) {
+  ['white','green','black'].forEach(t => {
+    const btn = document.getElementById('ttab-' + t);
+    const pane = document.getElementById('tpane-' + t);
+    if (btn) { btn.className = 'tier-tab-btn'; if (t === tier) btn.classList.add('active-' + t); }
+    if (pane) pane.classList.toggle('active', t === tier);
+  });
 }
 
 async function _loadMcStats() {

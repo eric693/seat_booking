@@ -1759,7 +1759,7 @@ footer {
 .rdm-empty {
   text-align:center;padding:48px 20px;color:var(--ink-60);
 }
-.rdm-empty-icon { font-size:40px;margin-bottom:12px; }
+.rdm-empty-icon { margin-bottom:12px;line-height:1;color:var(--ink-60); }
 /* 兌換紀錄 */
 .rdm-hist-item {
   display:flex;align-items:center;gap:12px;
@@ -6225,7 +6225,7 @@ async function loadRedemptionItems(category) {
     ).join('');
     // 渲染商品
     if (!_rdmItems.length) {
-      gridEl.innerHTML = '<div class="rdm-empty"><div class="rdm-empty-icon">🎁</div><div>暫無可兌換商品</div></div>';
+      gridEl.innerHTML = '<div class="rdm-empty"><div class="rdm-empty-icon"><svg width="48" height="48" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.2" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 12 20 22 4 22 4 12"/><rect x="2" y="7" width="20" height="5"/><path d="M12 22V7"/><path d="M12 7H7.5a2.5 2.5 0 010-5C11 2 12 7 12 7z"/><path d="M12 7h4.5a2.5 2.5 0 000-5C13 2 12 7 12 7z"/></svg></div><div>暫無可兌換商品</div></div>';
       return;
     }
     const pts = _currentMember ? (_currentMember.points || 0) : 0;
@@ -6290,7 +6290,7 @@ async function loadRedemptionHistory() {
     const res = await fetch(`${API}/api/redemption/history`, { credentials: 'include' });
     const records = await res.json();
     if (!records.length) {
-      el.innerHTML = `<div class="rdm-empty"><div class="rdm-empty-icon">📋</div><div>尚無點數兌換紀錄</div></div>`;
+      el.innerHTML = `<div class="rdm-empty"><div class="rdm-empty-icon"><svg width="48" height="48" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.2" stroke-linecap="round" stroke-linejoin="round"><path d="M9 5H7a2 2 0 0 0-2 2v12a2 2 0 0 0 2 2h10a2 2 0 0 0 2-2V7a2 2 0 0 0-2-2h-2"/><rect x="9" y="3" width="6" height="4" rx="1"/><line x1="9" y1="12" x2="15" y2="12"/><line x1="9" y1="16" x2="13" y2="16"/></svg></div><div>尚無點數兌換紀錄</div></div>`;
       return;
     }
     const statusMap = { pending: '處理中', completed: '已完成', cancelled: '已取消' };

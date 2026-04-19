@@ -1188,7 +1188,7 @@ footer {
 }
 .mc-icon-btn:hover { background: var(--paper); }
 .mc-icon-btn:active { background: var(--gold-light); }
-.mc-icon { font-size: 26px; line-height: 1; }
+.mc-icon { width:44px;height:44px;border-radius:12px;background:var(--teal-light);display:flex;align-items:center;justify-content:center;flex-shrink:0; }
 .mc-label { font-size: 11px; color: var(--ink); font-weight: 500; }
 .mc-badge {
   position: absolute; top: 12px; right: calc(50% - 20px);
@@ -1474,7 +1474,7 @@ footer {
   width:46px;height:46px;border-radius:12px;
   background:var(--teal-light);display:flex;
   align-items:center;justify-content:center;
-  font-size:24px;flex-shrink:0;
+  flex-shrink:0;
 }
 .mc-submenu-info { flex:1; }
 .mc-submenu-title { font-size:15px;font-weight:700;color:var(--ink); }
@@ -1507,7 +1507,7 @@ footer {
             <div class="md-name" id="dd-name">—</div>
             <div class="md-email" id="dd-email">—</div>
           </div>
-          <div class="member-dropdown-item" onclick="openMemberCenter()">🏠 會員中心</div>
+          <div class="member-dropdown-item" onclick="openMemberCenter()"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="vertical-align:-2px;margin-right:5px;"><path d="M20 21v-2a4 4 0 00-4-4H8a4 4 0 00-4 4v2"/><circle cx="12" cy="7" r="4"/></svg>會員中心</div>
           <div class="member-dropdown-item" onclick="openMemberProfile()">帳號設定</div>
           <div class="member-dropdown-item danger" onclick="memberLogout()">登出</div>
         </div>
@@ -1764,7 +1764,7 @@ footer {
     <!-- Phone Verify Panel -->
     <div class="auth-panel" id="panel-phone-verify">
       <div style="text-align:center;margin-bottom:20px;">
-        <div style="width:60px;height:60px;background:var(--teal-light);border-radius:50%;display:flex;align-items:center;justify-content:center;margin:0 auto 16px;font-size:28px;">📱</div>
+        <div style="width:60px;height:60px;background:var(--teal-light);border-radius:50%;display:flex;align-items:center;justify-content:center;margin:0 auto 16px;"><svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="var(--teal)" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><rect x="5" y="2" width="14" height="20" rx="2"/><line x1="12" y1="18" x2="12.01" y2="18" stroke-width="2.5"/></svg></div>
         <h3 style="font-family:'DM Serif Display',serif;font-size:22px;margin-bottom:8px;">手機號碼驗證</h3>
         <p style="font-size:14px;color:var(--ink-60);">驗證碼已發送至您的手機，請輸入 6 位數驗證碼。</p>
       </div>
@@ -1909,20 +1909,20 @@ footer {
     <!-- Icon Grid -->
     <div class="mc-icon-grid" id="mc-icon-grid">
       <button class="mc-icon-btn" onclick="openMcPanel('coupons')">
-        <div class="mc-icon">🎟️</div>
+        <div class="mc-icon"><svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="var(--teal)" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><path d="M2 9a1 1 0 011-1h18a1 1 0 011 1v1.5a2.5 2.5 0 000 5V17a1 1 0 01-1 1H3a1 1 0 01-1-1v-1.5a2.5 2.5 0 000-5V9z"/><line x1="9" y1="8" x2="9" y2="16" stroke-dasharray="2 2"/></svg></div>
         <div class="mc-label">優惠券</div>
         <span class="mc-badge" id="mc-badge-coupons" style="display:none;"></span>
       </button>
       <button class="mc-icon-btn" onclick="openMcPanel('points')">
-        <div class="mc-icon">💰</div>
+        <div class="mc-icon"><svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="var(--teal)" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><polygon points="12 2 22 8.5 22 15.5 12 22 2 15.5 2 8.5"/><line x1="2" y1="8.5" x2="22" y2="8.5"/><line x1="12" y1="2" x2="12" y2="22"/></svg></div>
         <div class="mc-label">點數專區</div>
       </button>
       <button class="mc-icon-btn" onclick="openMcPanel('consumption')">
-        <div class="mc-icon">🧾</div>
+        <div class="mc-icon"><svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="var(--teal)" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><path d="M4 2v20l2-1 2 1 2-1 2 1 2-1 2 1 2-1V2l-2 1-2-1-2 1-2-1-2 1-2-1z"/><line x1="8" y1="9" x2="16" y2="9"/><line x1="8" y1="13" x2="16" y2="13"/><line x1="8" y1="17" x2="12" y2="17"/></svg></div>
         <div class="mc-label">消費紀錄</div>
       </button>
       <button class="mc-icon-btn" onclick="openMcPanel('bookings')">
-        <div class="mc-icon">📅</div>
+        <div class="mc-icon"><svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="var(--teal)" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="4" width="18" height="18" rx="2"/><line x1="3" y1="9" x2="21" y2="9"/><line x1="8" y1="2" x2="8" y2="6"/><line x1="16" y1="2" x2="16" y2="6"/></svg></div>
         <div class="mc-label">預約系統</div>
       </button>
     </div>
@@ -2028,7 +2028,7 @@ footer {
       </div>
       <!-- 點數卡 -->
       <div class="pts-hero">
-        <div class="pts-hero-bg">★</div>
+        <div class="pts-hero-bg"><svg width="80" height="80" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="0.8"><polygon points="12 2 22 8.5 22 15.5 12 22 2 15.5 2 8.5"/><line x1="2" y1="8.5" x2="22" y2="8.5"/><line x1="12" y1="2" x2="12" y2="22"/><line x1="2" y1="15.5" x2="12" y2="8.5"/><line x1="22" y1="15.5" x2="12" y2="8.5"/></svg></div>
         <div class="pts-hero-logo">
           <div style="width:16px;height:16px;background:var(--teal);border-radius:3px;display:flex;align-items:center;justify-content:center;font-size:8px;font-weight:800;color:#fff;">M</div>
           <span>會員點數</span>
@@ -2054,10 +2054,10 @@ footer {
       <!-- 動作按鈕 -->
       <div class="pts-action-row">
         <div class="pts-action-btn">
-          <span>🎁</span> 點數兌換
+          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 12 20 22 4 22 4 12"/><rect x="2" y="7" width="20" height="5"/><path d="M12 22V7"/><path d="M12 7H7.5a2.5 2.5 0 010-5C11 2 12 7 12 7z"/><path d="M12 7h4.5a2.5 2.5 0 000-5C13 2 12 7 12 7z"/></svg> 點數兌換
         </div>
         <div class="pts-action-btn">
-          <span>👥</span> 點數轉移
+          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M17 21v-2a4 4 0 00-4-4H5a4 4 0 00-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 00-3-3.87"/><path d="M16 3.13a4 4 0 010 7.75"/></svg> 點數轉移
         </div>
       </div>
       <!-- 日期篩選 -->
@@ -2112,7 +2112,7 @@ footer {
       </div>
       <div class="mc-submenu">
         <div class="mc-submenu-item" onclick="goToBooking()">
-          <div class="mc-submenu-icon">🏢</div>
+          <div class="mc-submenu-icon"><svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="var(--teal)" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="3" width="7" height="7" rx="1"/><rect x="14" y="3" width="7" height="7" rx="1"/><rect x="3" y="14" width="7" height="7" rx="1"/><path d="M14 14h.01M14 18h.01M18 14h.01M18 18h.01"/></svg></div>
           <div class="mc-submenu-info">
             <div class="mc-submenu-title">空間預約</div>
             <div class="mc-submenu-desc">選擇空間、日期與時段立即預約</div>
@@ -2120,7 +2120,7 @@ footer {
           <div class="mc-submenu-arrow">›</div>
         </div>
         <div class="mc-submenu-item" onclick="openMcSubPanel('mybookings')">
-          <div class="mc-submenu-icon">📋</div>
+          <div class="mc-submenu-icon"><svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="var(--teal)" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><path d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2"/><rect x="9" y="3" width="6" height="4" rx="1"/><line x1="9" y1="12" x2="15" y2="12"/><line x1="9" y1="16" x2="13" y2="16"/></svg></div>
           <div class="mc-submenu-info">
             <div class="mc-submenu-title">我的預約</div>
             <div class="mc-submenu-desc">查看預約記錄、確認狀態</div>

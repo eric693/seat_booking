@@ -740,6 +740,12 @@ input[list]::-webkit-calendar-picker-indicator { display: none !important; }
     <div class="nav-item" onclick="showPage('coupons',this)">
       <span class="nav-icon"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><path d="M2 9a1 1 0 011-1h18a1 1 0 011 1v1.5a2.5 2.5 0 000 5V17a1 1 0 01-1 1H3a1 1 0 01-1-1v-1.5a2.5 2.5 0 000-5V9z"/><line x1="9" y1="8" x2="9" y2="16" stroke-dasharray="2 2"/></svg></span> 優惠券管理
     </div>
+    <div class="nav-item" onclick="showPage('points',this)">
+      <span class="nav-icon"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><polygon points="12 2 22 8.5 22 15.5 12 22 2 15.5 2 8.5"/><line x1="2" y1="8.5" x2="22" y2="8.5"/><line x1="12" y1="2" x2="12" y2="22"/></svg></span> 點數專區
+    </div>
+    <div class="nav-item" onclick="showPage('consumption',this)">
+      <span class="nav-icon"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><path d="M4 2v20l2-1 2 1 2-1 2 1 2-1 2 1 2-1V2l-2 1-2-1-2 1-2-1-2 1-2-1z"/><line x1="8" y1="9" x2="16" y2="9"/><line x1="8" y1="13" x2="16" y2="13"/><line x1="8" y1="17" x2="12" y2="17"/></svg></span> 消費紀錄
+    </div>
     <div class="nav-item" onclick="showPage('scan',this)">
       <span class="nav-icon"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"><rect x="3" y="10" width="3" height="7"/><rect x="7" y="6" width="1.5" height="11"/><rect x="10" y="10" width="2" height="7"/><rect x="13.5" y="6" width="1.5" height="11"/><rect x="16.5" y="10" width="3" height="7"/><line x1="1" y1="3" x2="1" y2="8" stroke-width="2"/><line x1="1" y1="3" x2="6" y2="3" stroke-width="2"/><line x1="23" y1="3" x2="23" y2="8" stroke-width="2"/><line x1="23" y1="3" x2="18" y2="3" stroke-width="2"/><line x1="1" y1="21" x2="1" y2="16" stroke-width="2"/><line x1="1" y1="21" x2="6" y2="21" stroke-width="2"/><line x1="23" y1="21" x2="23" y2="16" stroke-width="2"/><line x1="23" y1="21" x2="18" y2="21" stroke-width="2"/></svg></span> 掃碼累點
     </div>
@@ -1183,7 +1189,7 @@ input[list]::-webkit-calendar-picker-indicator { display: none !important; }
           <div class="card" style="margin-bottom:20px;">
             <div class="card-head">
               <h2 class="card-title">掃碼累點</h2>
-              <span id="scan-rate-badge" style="font-size:12px;background:var(--teal-light);color:var(--teal);padding:4px 10px;border-radius:20px;font-weight:600;">每消費 NT$10 = 1 點</span>
+              <span id="scan-rate-badge" style="display:none;font-size:12px;background:var(--teal-light);color:var(--teal);padding:4px 10px;border-radius:20px;font-weight:600;">每消費 NT$10 = 1 點</span>
             </div>
             <div class="card-body">
               <div style="margin-bottom:16px;">
@@ -1337,6 +1343,126 @@ input[list]::-webkit-calendar-picker-indicator { display: none !important; }
         <div class="modal-footer">
           <button class="btn btn-outline" onclick="closeCouponModal()">取消</button>
           <button class="btn btn-primary" onclick="saveCoupon()">儲存</button>
+        </div>
+      </div>
+    </div>
+
+    <!-- ── POINTS ── -->
+    <div class="page" id="page-points">
+      <!-- Summary cards -->
+      <div style="display:grid;grid-template-columns:repeat(3,1fr);gap:16px;margin-bottom:20px;">
+        <div class="card" style="padding:20px;">
+          <div style="font-size:12px;color:var(--ink-60);text-transform:uppercase;letter-spacing:.08em;margin-bottom:6px;">流通點數總計</div>
+          <div style="font-size:28px;font-weight:700;color:var(--teal)" id="pts-total-balance">—</div>
+        </div>
+        <div class="card" style="padding:20px;">
+          <div style="font-size:12px;color:var(--ink-60);text-transform:uppercase;letter-spacing:.08em;margin-bottom:6px;">本月累點筆數</div>
+          <div style="font-size:28px;font-weight:700;color:var(--ink)" id="pts-month-count">—</div>
+        </div>
+        <div class="card" style="padding:20px;">
+          <div style="font-size:12px;color:var(--ink-60);text-transform:uppercase;letter-spacing:.08em;margin-bottom:6px;">累點兌換率</div>
+          <div style="font-size:28px;font-weight:700;color:var(--gold)" id="pts-rate-display">NT$10 = 1點</div>
+        </div>
+      </div>
+      <!-- 手動調整點數 -->
+      <div class="card" style="margin-bottom:20px;">
+        <div class="card-head">
+          <h2 class="card-title">手動調整點數</h2>
+        </div>
+        <div class="card-body">
+          <div style="display:grid;grid-template-columns:1fr 1fr 1fr auto;gap:12px;align-items:end;">
+            <div>
+              <label style="font-size:12px;font-weight:600;color:var(--ink-60);display:block;margin-bottom:4px;">會員（輸入名稱/Email搜尋）</label>
+              <input class="finput" id="pts-adj-member" placeholder="搜尋會員..." style="font-size:13px;" oninput="searchPtsMember()" autocomplete="off">
+              <div id="pts-member-suggest" style="position:relative;">
+                <div id="pts-suggest-list" style="display:none;position:absolute;top:2px;left:0;right:0;background:#fff;border:1px solid var(--border);border-radius:6px;box-shadow:0 4px 12px rgba(0,0,0,0.1);z-index:100;max-height:180px;overflow-y:auto;"></div>
+              </div>
+              <input type="hidden" id="pts-adj-member-id">
+            </div>
+            <div>
+              <label style="font-size:12px;font-weight:600;color:var(--ink-60);display:block;margin-bottom:4px;">點數（負數=扣除）</label>
+              <input class="finput" type="number" id="pts-adj-amount" placeholder="例：100 或 -50" style="font-size:13px;">
+            </div>
+            <div>
+              <label style="font-size:12px;font-weight:600;color:var(--ink-60);display:block;margin-bottom:4px;">備註說明</label>
+              <input class="finput" id="pts-adj-desc" placeholder="後台調整" style="font-size:13px;">
+            </div>
+            <button class="btn btn-primary" onclick="doAdjustPoints()">調整</button>
+          </div>
+          <div id="pts-adj-msg" style="display:none;margin-top:10px;padding:8px 12px;border-radius:6px;font-size:13px;"></div>
+        </div>
+      </div>
+      <!-- 點數明細 -->
+      <div class="card">
+        <div class="card-head">
+          <h2 class="card-title">點數明細</h2>
+          <div style="display:flex;gap:8px;align-items:center;">
+            <input class="finput" id="pts-filter-member" placeholder="篩選會員名稱..." style="font-size:13px;padding:6px 10px;width:180px;" oninput="loadPointsPage()">
+            <select class="filter-select" id="pts-filter-type" onchange="loadPointsPage()" style="font-size:13px;padding:6px 10px;">
+              <option value="">全部類型</option>
+              <option value="earn">累點</option>
+              <option value="adjust">後台調整</option>
+              <option value="redeem">兌換</option>
+            </select>
+            <button class="btn btn-outline btn-sm" onclick="document.getElementById('pts-filter-member').value='';document.getElementById('pts-filter-type').value='';loadPointsPage();">清除</button>
+          </div>
+        </div>
+        <div class="table-wrap">
+          <table class="data-table">
+            <thead><tr>
+              <th>時間</th><th>會員</th><th>會員號碼</th><th>類型</th><th>點數</th><th>說明</th>
+            </tr></thead>
+            <tbody id="pts-tbody"></tbody>
+          </table>
+        </div>
+      </div>
+    </div>
+
+    <!-- ── CONSUMPTION ── -->
+    <div class="page" id="page-consumption">
+      <!-- Summary -->
+      <div style="display:grid;grid-template-columns:repeat(4,1fr);gap:16px;margin-bottom:20px;" id="consumption-summary-cards">
+        <div class="card" style="padding:20px;">
+          <div style="font-size:12px;color:var(--ink-60);text-transform:uppercase;letter-spacing:.08em;margin-bottom:6px;">查詢區間總收入</div>
+          <div style="font-size:26px;font-weight:700;color:var(--teal)" id="cons-total-revenue">NT$ —</div>
+        </div>
+        <div class="card" style="padding:20px;">
+          <div style="font-size:12px;color:var(--ink-60);text-transform:uppercase;letter-spacing:.08em;margin-bottom:6px;">已確認筆數</div>
+          <div style="font-size:26px;font-weight:700;" id="cons-confirmed-count">—</div>
+        </div>
+        <div class="card" style="padding:20px;">
+          <div style="font-size:12px;color:var(--ink-60);text-transform:uppercase;letter-spacing:.08em;margin-bottom:6px;">已完成筆數</div>
+          <div style="font-size:26px;font-weight:700;" id="cons-completed-count">—</div>
+        </div>
+        <div class="card" style="padding:20px;">
+          <div style="font-size:12px;color:var(--ink-60);text-transform:uppercase;letter-spacing:.08em;margin-bottom:6px;">平均單筆金額</div>
+          <div style="font-size:26px;font-weight:700;" id="cons-avg-price">NT$ —</div>
+        </div>
+      </div>
+      <!-- Filter + Table -->
+      <div class="card">
+        <div class="card-head">
+          <h2 class="card-title">消費紀錄</h2>
+          <div style="display:flex;gap:8px;align-items:center;flex-wrap:wrap;">
+            <input class="finput" type="date" id="cons-date-from" style="font-size:13px;padding:6px 10px;" onchange="loadConsumptionPage()">
+            <span style="font-size:13px;color:var(--ink-60);">—</span>
+            <input class="finput" type="date" id="cons-date-to" style="font-size:13px;padding:6px 10px;" onchange="loadConsumptionPage()">
+            <select class="filter-select" id="cons-status" onchange="loadConsumptionPage()" style="font-size:13px;padding:6px 10px;">
+              <option value="">全部狀態</option>
+              <option value="confirmed">已確認</option>
+              <option value="completed">已完成</option>
+              <option value="pending">待審核</option>
+            </select>
+            <button class="btn btn-outline btn-sm" onclick="clearConsFilters()">清除</button>
+          </div>
+        </div>
+        <div class="table-wrap">
+          <table class="data-table">
+            <thead><tr>
+              <th>預約編號</th><th>日期</th><th>時段</th><th>空間</th><th>聯絡人</th><th>金額</th><th>狀態</th>
+            </tr></thead>
+            <tbody id="cons-tbody"></tbody>
+          </table>
         </div>
       </div>
     </div>
@@ -1948,25 +2074,27 @@ function showPage(id, navEl) {
   document.getElementById(`page-${id}`).classList.add('active');
   document.querySelectorAll('.nav-item').forEach(n => n.classList.remove('active'));
   if (navEl) navEl.classList.add('active');
-  const titles = { dashboard:'儀表板', bookings:'預約管理', rooms:'會議室管理', content:'文字內容編輯', photos:'照片管理', formfields:'表單欄位管理', blocked:'封鎖時段管理', lineusers:'LINE 用戶管理', members:'會員管理', coupons:'優惠券管理', scan:'掃碼累點', chat:'聊天記錄', lineqa:'QA 問答設定', payment:'付款設定', accounts:'帳號管理', logs:'登入紀錄' };
+  const titles = { dashboard:'儀表板', bookings:'預約管理', rooms:'會議室管理', content:'文字內容編輯', photos:'照片管理', formfields:'表單欄位管理', blocked:'封鎖時段管理', lineusers:'LINE 用戶管理', members:'會員管理', coupons:'優惠券管理', points:'點數專區', consumption:'消費紀錄', scan:'掃碼累點', chat:'聊天記錄', lineqa:'QA 問答設定', payment:'付款設定', accounts:'帳號管理', logs:'登入紀錄' };
   document.getElementById('topbarTitle').textContent = titles[id] || '';
   switch(id) {
-    case 'dashboard': initFloorDate(); loadDashboard(); loadFloorStatus(); break;
-    case 'bookings':  loadBookings(); break;
-    case 'rooms':     loadRoomsAdmin(); break;
-    case 'content':   loadContent(); break;
-    case 'photos':    loadPhotos(); break;
-    case 'formfields':loadFormFields(); break;
-    case 'blocked':   loadBlockedSlots(); loadTimeConfigRoomBtns(); break;
-    case 'accounts':  loadAccounts(); break;
-    case 'lineusers':  loadLineUsers(); break;
-    case 'members':    loadMembers(); break;
-    case 'coupons':    loadCoupons(); break;
-    case 'scan':       initScanPage(); break;
-    case 'chat':       loadChatSessions(); break;
-    case 'lineqa':     loadLineQA(); break;
-    case 'payment':   loadPaymentSettings(); break;
-    case 'logs':      loadLoginLogs(); break;
+    case 'dashboard':   initFloorDate(); loadDashboard(); loadFloorStatus(); break;
+    case 'bookings':    loadBookings(); break;
+    case 'rooms':       loadRoomsAdmin(); break;
+    case 'content':     loadContent(); break;
+    case 'photos':      loadPhotos(); break;
+    case 'formfields':  loadFormFields(); break;
+    case 'blocked':     loadBlockedSlots(); loadTimeConfigRoomBtns(); break;
+    case 'accounts':    loadAccounts(); break;
+    case 'lineusers':   loadLineUsers(); break;
+    case 'members':     loadMembers(); break;
+    case 'coupons':     loadCoupons(); break;
+    case 'points':      loadPointsPage(); break;
+    case 'consumption': loadConsumptionPage(); break;
+    case 'scan':        initScanPage(); break;
+    case 'chat':        loadChatSessions(); break;
+    case 'lineqa':      loadLineQA(); break;
+    case 'payment':     loadPaymentSettings(); break;
+    case 'logs':        loadLoginLogs(); break;
   }
 }
 
@@ -3961,6 +4089,188 @@ async function openMemberBookings(mid, name) {
   }
 }
 
+// ── POINTS ──────────────────────────────────────────────
+
+let _allMembersCache = null;
+
+async function loadPointsPage() {
+  const tbody = document.getElementById('pts-tbody');
+  if (!tbody) return;
+  tbody.innerHTML = '<tr><td colspan="6" style="text-align:center;padding:20px;color:var(--ink-60);">載入中...</td></tr>';
+
+  // Load config for rate display
+  try {
+    const cr = await fetch('/admin/api/scan/config', { headers: H });
+    const cd = await cr.json();
+    const rateEl = document.getElementById('pts-rate-display');
+    if (rateEl && cd.points_per_amount) rateEl.textContent = `NT$${cd.points_per_amount} = 1點`;
+  } catch(e) {}
+
+  // Load all members to sum total balance
+  try {
+    const mr = await fetch('/admin/api/members', { headers: H });
+    const members = await mr.json();
+    _allMembersCache = members;
+    const total = members.reduce((s, m) => s + (m.points || 0), 0);
+    const el = document.getElementById('pts-total-balance');
+    if (el) el.textContent = total.toLocaleString() + ' 點';
+  } catch(e) {}
+
+  // Load transactions
+  try {
+    const res = await fetch('/admin/api/points/transactions', { headers: H });
+    const txs = await res.json();
+
+    // Month count
+    const now = new Date();
+    const monthPfx = now.toISOString().slice(0, 7);
+    const monthCount = txs.filter(t => t.created_at && t.created_at.startsWith(monthPfx)).length;
+    const mc = document.getElementById('pts-month-count');
+    if (mc) mc.textContent = monthCount;
+
+    // Filter
+    const nameFilter = (document.getElementById('pts-filter-member')?.value || '').toLowerCase();
+    const typeFilter = document.getElementById('pts-filter-type')?.value || '';
+    const filtered = txs.filter(t => {
+      if (nameFilter && !t.member_name.toLowerCase().includes(nameFilter)) return false;
+      if (typeFilter && t.type !== typeFilter) return false;
+      return true;
+    });
+
+    const typeLabel = { earn:'累點', adjust:'後台調整', redeem:'兌換', scan:'掃碼累點' };
+    const typeColor = { earn:'var(--green)', adjust:'var(--teal)', redeem:'var(--gold)', scan:'var(--teal)' };
+    tbody.innerHTML = filtered.length ? filtered.map(t => `
+      <tr>
+        <td style="font-size:12px;color:var(--ink-60);">${t.created_at}</td>
+        <td style="font-weight:600;">${t.member_name}</td>
+        <td style="font-size:12px;color:var(--ink-60);font-family:monospace;">${t.member_number}</td>
+        <td><span style="background:${(typeColor[t.type]||'var(--ink)')}22;color:${typeColor[t.type]||'var(--ink)'};padding:2px 8px;border-radius:4px;font-size:12px;font-weight:600;">${typeLabel[t.type]||t.type}</span></td>
+        <td style="font-weight:700;color:${t.points>0?'var(--green)':'var(--red)'};">${t.points>0?'+':''}${t.points}</td>
+        <td style="font-size:12px;color:var(--ink-60);">${t.description}</td>
+      </tr>`).join('') : '<tr><td colspan="6" style="text-align:center;padding:30px;color:var(--ink-60);">尚無點數記錄</td></tr>';
+  } catch(e) {
+    tbody.innerHTML = '<tr><td colspan="6" style="color:var(--red);text-align:center;padding:20px;">載入失敗</td></tr>';
+  }
+}
+
+let _ptsMemberSearchTimer = null;
+function searchPtsMember() {
+  clearTimeout(_ptsMemberSearchTimer);
+  _ptsMemberSearchTimer = setTimeout(async () => {
+    const q = document.getElementById('pts-adj-member').value.trim().toLowerCase();
+    const list = document.getElementById('pts-suggest-list');
+    if (!list) return;
+    if (!q) { list.style.display = 'none'; return; }
+    try {
+      let members = _allMembersCache;
+      if (!members) {
+        const r = await fetch('/admin/api/members', { headers: H });
+        members = await r.json();
+        _allMembersCache = members;
+      }
+      const matched = members.filter(m =>
+        m.name?.toLowerCase().includes(q) ||
+        m.email?.toLowerCase().includes(q) ||
+        m.phone?.includes(q)
+      ).slice(0, 8);
+      if (!matched.length) { list.style.display = 'none'; return; }
+      list.innerHTML = matched.map(m => `
+        <div onclick="selectPtsMember(${m.id},'${(m.name||'').replace(/'/g,'')} (${m.email||m.phone||''})')"
+          style="padding:8px 12px;cursor:pointer;font-size:13px;border-bottom:1px solid var(--border);"
+          onmouseover="this.style.background='var(--teal-light)'" onmouseout="this.style.background=''">
+          <span style="font-weight:600;">${m.name}</span>
+          <span style="color:var(--ink-60);font-size:12px;"> · ${m.email||m.phone||''}</span>
+          <span style="color:var(--ink-60);font-size:11px;"> · ${(m.points||0)}點</span>
+        </div>`).join('');
+      list.style.display = 'block';
+    } catch(e) {}
+  }, 200);
+}
+
+function selectPtsMember(id, label) {
+  document.getElementById('pts-adj-member').value = label;
+  document.getElementById('pts-adj-member-id').value = id;
+  document.getElementById('pts-suggest-list').style.display = 'none';
+}
+
+async function doAdjustPoints() {
+  const mid = document.getElementById('pts-adj-member-id').value;
+  const pts = parseInt(document.getElementById('pts-adj-amount').value);
+  const desc = document.getElementById('pts-adj-desc').value.trim() || '後台調整';
+  const msg = document.getElementById('pts-adj-msg');
+  if (!mid) { msg.textContent = '請選擇會員'; msg.style.background='#fff0ee'; msg.style.color='var(--red)'; msg.style.display='block'; return; }
+  if (!pts || isNaN(pts)) { msg.textContent = '請輸入有效點數'; msg.style.background='#fff0ee'; msg.style.color='var(--red)'; msg.style.display='block'; return; }
+  try {
+    const res = await fetch(`/admin/api/members/${mid}/points`, {
+      method: 'POST', headers: { ...H, 'Content-Type': 'application/json' },
+      body: JSON.stringify({ points: pts, description: desc })
+    });
+    const data = await res.json();
+    if (res.ok) {
+      msg.textContent = `調整成功！目前餘額：${data.balance} 點`;
+      msg.style.background = '#f0fff4'; msg.style.color = 'var(--green)'; msg.style.display = 'block';
+      document.getElementById('pts-adj-member').value = '';
+      document.getElementById('pts-adj-member-id').value = '';
+      document.getElementById('pts-adj-amount').value = '';
+      document.getElementById('pts-adj-desc').value = '';
+      _allMembersCache = null;
+      setTimeout(() => loadPointsPage(), 500);
+    } else {
+      msg.textContent = data.error || '調整失敗'; msg.style.background='#fff0ee'; msg.style.color='var(--red)'; msg.style.display='block';
+    }
+  } catch(e) { msg.textContent = '網路錯誤'; msg.style.background='#fff0ee'; msg.style.color='var(--red)'; msg.style.display='block'; }
+}
+
+// ── CONSUMPTION ──────────────────────────────────────────
+
+function clearConsFilters() {
+  document.getElementById('cons-date-from').value = '';
+  document.getElementById('cons-date-to').value = '';
+  document.getElementById('cons-status').value = '';
+  loadConsumptionPage();
+}
+
+async function loadConsumptionPage() {
+  const tbody = document.getElementById('cons-tbody');
+  if (!tbody) return;
+  tbody.innerHTML = '<tr><td colspan="7" style="text-align:center;padding:20px;color:var(--ink-60);">載入中...</td></tr>';
+  const dateFrom = document.getElementById('cons-date-from')?.value || '';
+  const dateTo   = document.getElementById('cons-date-to')?.value || '';
+  const status   = document.getElementById('cons-status')?.value || '';
+  const params = new URLSearchParams();
+  if (dateFrom) params.set('date_from', dateFrom);
+  if (dateTo)   params.set('date_to', dateTo);
+  if (status)   params.set('status', status);
+  try {
+    const res = await fetch(`/admin/api/consumption?${params}`, { headers: H });
+    const data = await res.json();
+
+    // Update summary
+    const statusMap = { pending:'待審核', confirmed:'已確認', cancelled:'已取消', completed:'已完成' };
+    const statusColor = { pending:'var(--gold)', confirmed:'var(--teal)', cancelled:'var(--red)', completed:'var(--ink-60)' };
+    const confirmed = data.records.filter(r => r.status === 'confirmed').length;
+    const completed = data.records.filter(r => r.status === 'completed').length;
+    const avg = data.count > 0 ? Math.round(data.total_revenue / data.count) : 0;
+    document.getElementById('cons-total-revenue').textContent = 'NT$ ' + (data.total_revenue || 0).toLocaleString();
+    document.getElementById('cons-confirmed-count').textContent = confirmed;
+    document.getElementById('cons-completed-count').textContent = completed;
+    document.getElementById('cons-avg-price').textContent = 'NT$ ' + avg.toLocaleString();
+
+    tbody.innerHTML = data.records.length ? data.records.map(r => `
+      <tr>
+        <td style="font-family:monospace;font-size:12px;">${r.booking_number}</td>
+        <td>${r.date}</td>
+        <td style="font-size:13px;">${r.start_time}–${r.end_time}</td>
+        <td style="font-weight:600;">${r.room_name||'—'}</td>
+        <td>${r.customer_name||'—'}</td>
+        <td style="font-weight:700;color:var(--teal);">NT$ ${(r.total_price||0).toLocaleString()}</td>
+        <td><span style="font-size:12px;font-weight:600;color:${statusColor[r.status]||''};">${statusMap[r.status]||r.status}</span></td>
+      </tr>`).join('') : '<tr><td colspan="7" style="text-align:center;padding:30px;color:var(--ink-60);">此區間無消費紀錄</td></tr>';
+  } catch(e) {
+    tbody.innerHTML = '<tr><td colspan="7" style="color:var(--red);text-align:center;padding:20px;">載入失敗</td></tr>';
+  }
+}
+
 // ── COUPONS ──────────────────────────────────────────────
 
 async function loadCoupons() {
@@ -4557,8 +4867,10 @@ function applyPermissions(perms) {
     'blocked':    "showPage('blocked'",
     'lineusers':  "showPage('lineusers'",
     'members':    "showPage('members'",
-    'coupons':    "showPage('coupons'",
-    'chat':       "showPage('chat'",
+    'coupons':     "showPage('coupons'",
+    'points':      "showPage('points'",
+    'consumption': "showPage('consumption'",
+    'chat':        "showPage('chat'",
     'lineqa':     "showPage('lineqa'",
     'accounts':   "showPage('accounts'",
     'payment':    "showPage('payment'",

@@ -5373,6 +5373,51 @@ def admin_adjust_points(mid):
     return jsonify({'success': True, 'balance': m.points})
 
 
+@app.route('/admin/api/points/transactions', methods=['GET'])
+def admin_points_transactions():
+    err = check_admin()
+    if err: return err
+    mid = request.args.get('member_id')
+    q = PointTransaction.query
+    if mid:
+        q = q.filter_by(member_id=int(mid))
+    txs = q.order_by(PointTransaction.created_at.desc()).limit(200).all()
+    result = []
+    for t in txs:
+        m = Member.query.get(t.member_id)
+        result.append({
+            'id': t.id,
+            'member_id': t.member_id,
+            'member_name': m.name if m else '—',
+            'member_number': str(m.id).zfill(10) if m else '—',
+            'type': t.type,
+            'points': t.points,
+            'description': t.description or '',
+            'created_at': t.created_at.strftime('%Y-%m-%d %H:%M') if t.created_at else '—',
+        })
+    return jsonify(result)
+
+
+@app.route('/admin/api/consumption', methods=['GET'])
+def admin_consumption():
+    err = check_admin()
+    if err: return err
+    date_from = request.args.get('date_from', '')
+    date_to   = request.args.get('date_to', '')
+    status    = request.args.get('status', '')
+    q = Booking.query.filter(Booking.status != 'cancelled')
+    if date_from: q = q.filter(Booking.date >= date_from)
+    if date_to:   q = q.filter(Booking.date <= date_to)
+    if status:    q = q.filter_by(status=status)
+    bookings = q.order_by(Booking.date.desc(), Booking.start_time.desc()).all()
+    total_revenue = sum(b.total_price or 0 for b in bookings)
+    return jsonify({
+        'total_revenue': total_revenue,
+        'count': len(bookings),
+        'records': [b.to_dict() for b in bookings],
+    })
+
+
 # ─────────────────────────────────────────────
 # 掃碼累點 API
 # ─────────────────────────────────────────────

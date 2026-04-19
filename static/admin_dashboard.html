@@ -1689,14 +1689,7 @@ input[list]::-webkit-calendar-picker-indicator { display: none !important; }
                     <label class="cs-label">門市生日折扣（%，例：85 代表85折）</label>
                     <input class="finput" type="number" id="t-store_discount" min="1" max="100" step="1" placeholder="85">
                   </div>
-                  <div class="cs-field">
-                    <label class="cs-label">電影票優惠價（NT$/張）</label>
-                    <input class="finput" type="number" id="t-movie_ticket_price" min="0" step="10" placeholder="250">
-                  </div>
-                  <div class="cs-field">
-                    <label class="cs-label">電影票單場限購（張）</label>
-                    <input class="finput" type="number" id="t-movie_ticket_limit" min="1" step="1" placeholder="4">
-                  </div>
+
                   <div class="cs-field">
                     <label class="cs-label">綠卡空間預約折扣（%，例：95 代表95折）</label>
                     <input class="finput" type="number" id="t-green_booking_discount" min="1" max="100" step="1" placeholder="95">
@@ -5659,9 +5652,9 @@ async function doScanEarnPoints() {
     msgEl.style.background = '#fff0ee'; msgEl.style.color = 'var(--red)';
     msgEl.style.display = 'block'; return;
   }
-  const pts = Math.floor(amount / 10);
+  const pts = Math.floor(amount / (_scanPointsRate || 10));
   if (pts <= 0) {
-    msgEl.textContent = `金額 NT$${amount} 不足獲得點數（需滿 NT$10）`;
+    msgEl.textContent = `金額 NT$${amount} 不足獲得點數（需滿 NT$${_scanPointsRate || 10}）`;
     msgEl.style.background = '#fff0ee'; msgEl.style.color = 'var(--red)';
     msgEl.style.display = 'block'; return;
   }
@@ -5674,7 +5667,9 @@ async function doScanEarnPoints() {
     });
     const data = await res.json();
     if (data.success) {
-      msgEl.textContent = `✅ 已為「${data.member_name}」累積 +${data.earned} 點，目前共 ${data.new_balance} 點`;
+      const tierMap = {white:'白卡',green:'綠卡',black:'黑卡'};
+      const tierStr = data.tier ? `（${tierMap[data.tier]||data.tier} x${data.tier_rate}）` : '';
+      msgEl.textContent = `已為「${data.member_name}」累積 +${data.earned} 點${tierStr}，目前共 ${data.new_balance} 點`;
       msgEl.style.background = '#f0fff4'; msgEl.style.color = 'var(--green)';
       msgEl.style.display = 'block';
       // Update displayed points
@@ -5937,7 +5932,6 @@ const _TIER_KEYS = [
   'green_booking_discount','black_booking_discount',
   'green_validity_years','black_validity_years','white_inactive_years',
   'store_discount','weekly_discount_min',
-  'movie_ticket_price','movie_ticket_limit',
   'join_desc',
   'terms_management','terms_points','terms_coupons','terms_upgrade','terms_modification',
   'tbl_sec_join_gift','tbl_sec_bday_gift','tbl_sec_channel','tbl_sec_pts',

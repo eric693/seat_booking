@@ -4082,19 +4082,24 @@ def admin_confirm_booking(bid):
         return jsonify({'error': '只有待審核的預約可以確認'}), 400
     b.status = 'confirmed'
     db.session.commit()
-    # 點數累積：依後台「每幾元得 1 點」設定計算
+    # 點數累積：依後台比率 × 會員等級倍率計算
     try:
         _per = float(SiteContent.get('points_per_amount') or '10') or 10
-        earned = max(0, int((b.total_price or 0) // _per))
-        if earned > 0:
+        _base = max(0, int((b.total_price or 0) // _per))
+        if _base > 0:
             member = Member.query.filter_by(phone=b.customer_phone).first()
             if not member and b.customer_email:
                 member = Member.query.filter_by(email=b.customer_email).first()
             if member:
+                _tier = _calc_member_tier(member)
+                _rate = _get_tier_pts_rate(_tier)
+                earned = max(0, int(_base * _rate))
                 member.points = (member.points or 0) + earned
+                tier_label = {'white': '白卡', 'green': '綠卡', 'black': '黑卡'}.get(_tier, '')
                 db.session.add(PointTransaction(
                     member_id=member.id, type='earn', points=earned,
-                    description=f'預約確認 #{b.booking_number}', booking_id=b.id))
+                    description=f'預約確認 #{b.booking_number}（{tier_label} x{_rate}）',
+                    booking_id=b.id))
                 db.session.commit()
     except Exception as _pe:
         print(f'[points earn error] {_pe}')
@@ -5778,6 +5783,31 @@ _TIER_DEFAULTS = {
 def _get_all_tier_settings():
     return {k.replace('tier_', ''): SiteContent.get(k) or v for k, v in _TIER_DEFAULTS.items()}
 
+def _calc_member_tier(member):
+    """依累計確認消費金額計算會員等級（white/green/black）。"""
+    ts = _get_all_tier_settings()
+    green_thresh = float(ts.get('green_threshold') or 6000)
+    black_thresh = float(ts.get('black_threshold') or 20000)
+    cond = []
+    if member.phone: cond.append(Booking.customer_phone == member.phone)
+    if member.email: cond.append(Booking.customer_email == member.email)
+    if not cond:
+        return 'white'
+    from sqlalchemy import or_
+    total = db.session.query(func.sum(Booking.total_price)).filter(
+        or_(*cond), Booking.status == 'confirmed'
+    ).scalar() or 0
+    if total >= black_thresh:
+        return 'black'
+    if total >= green_thresh:
+        return 'green'
+    return 'white'
+
+def _get_tier_pts_rate(tier):
+    """取得該等級的點數倍率。"""
+    ts = _get_all_tier_settings()
+    return float(ts.get(f'pts_rate_{tier}') or 1)
+
 @app.route('/api/tier-settings', methods=['GET'])
 def public_tier_settings():
     return jsonify(_get_all_tier_settings())
@@ -5907,10 +5937,15 @@ def scan_earn_points():
     if not m:
         return jsonify({'error': '查無此會員'}), 404
     per = float(SiteContent.get('points_per_amount') or '10') or 10
-    pts = int(amount // per)
-    if pts <= 0:
+    base_pts = int(amount // per)
+    if base_pts <= 0:
         return jsonify({'error': f'消費金額 NT${amount:.0f} 不足以獲得點數（每 NT${per:.0f} = 1 點）'}), 400
-    desc = f'掃碼累點 NT${amount:.0f}' + (f'（{note}）' if note else '')
+    tier = _calc_member_tier(m)
+    rate = _get_tier_pts_rate(tier)
+    pts  = max(0, int(base_pts * rate))
+    tier_label = {'white': '白卡', 'green': '綠卡', 'black': '黑卡'}.get(tier, '')
+    admin_name = session.get('admin_username', '管理員')
+    desc = f'掃碼累點 NT${amount:.0f}（{tier_label} x{rate}，操作：{admin_name}）' + (f'【{note}】' if note else '')
     m.points = (m.points or 0) + pts
     db.session.add(PointTransaction(
         member_id=m.id, type='earn', points=pts, description=desc
@@ -5923,6 +5958,8 @@ def scan_earn_points():
         'new_balance': m.points,
         'description': desc,
         'points_rate': per,
+        'tier': tier,
+        'tier_rate': rate,
     })
 
 

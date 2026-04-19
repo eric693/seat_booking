@@ -1257,6 +1257,52 @@ footer {
 .cr-status.cancelled { background: var(--red-light);   color: var(--red); }
 .cr-status.completed { background: var(--teal-light);  color: var(--teal); }
 
+/* ── 手機條碼載具 Modal ── */
+.carrier-modal-overlay {
+  display:none;position:fixed;inset:0;z-index:600;
+  background:rgba(0,0,0,0.5);align-items:center;justify-content:center;padding:24px;
+}
+.carrier-modal-overlay.open { display:flex; }
+.carrier-modal {
+  background:#fff;border-radius:18px;padding:32px 28px 24px;
+  width:100%;max-width:380px;position:relative;
+  animation:slideUp .25s ease;
+}
+.carrier-modal-title { font-size:18px;font-weight:700;text-align:center;margin-bottom:6px; }
+.carrier-modal-sub { font-size:13px;color:var(--ink-60);text-align:center;margin-bottom:20px; }
+.carrier-input-wrap {
+  border:2px solid var(--gold);border-radius:10px;overflow:hidden;margin-bottom:14px;
+}
+.carrier-input-wrap input {
+  width:100%;padding:14px 16px;font-size:20px;font-weight:700;
+  border:none;outline:none;text-align:center;letter-spacing:4px;
+  font-family:'DM Mono',monospace;text-transform:uppercase;
+}
+.carrier-hint {
+  font-size:11px;color:var(--ink-60);text-align:center;margin-bottom:16px;line-height:1.7;
+}
+.carrier-save-btn {
+  width:100%;padding:14px;background:#aaa;color:#fff;
+  border:none;border-radius:10px;font-size:15px;font-weight:700;cursor:pointer;
+  transition:background .2s;
+}
+.carrier-save-btn.ready { background:var(--teal); }
+.carrier-clear-btn {
+  width:100%;padding:10px;background:none;border:none;
+  color:var(--red);font-size:13px;cursor:pointer;margin-top:4px;
+}
+/* Carrier barcode section */
+.carrier-barcode-section {
+  background:#f5f5f5;border-radius:12px;padding:14px 12px 10px;
+  margin-bottom:10px;text-align:center;
+}
+.carrier-barcode-label {
+  font-size:11px;color:var(--ink-60);margin-bottom:8px;
+  display:flex;align-items:center;justify-content:space-between;
+}
+.carrier-edit-link {
+  font-size:11px;color:var(--teal);cursor:pointer;text-decoration:underline;
+}
 /* ── 會員卡面板 ── */
 .mc-card-btn {
   display:flex;align-items:center;justify-content:center;gap:6px;
@@ -1925,10 +1971,22 @@ footer {
           <div>4. 點數可於結帳時折抵消費</div>
         </div>
       </div>
-      <!-- 載具按鈕 -->
-      <div style="padding:12px 16px;background:var(--ink);color:#fff;border-radius:10px;font-size:13px;font-weight:600;display:flex;align-items:center;justify-content:center;gap:8px;cursor:default;opacity:0.85;">
-        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><rect x="3" y="9" width="3" height="6"/><rect x="7" y="5" width="1" height="14"/><rect x="9" y="9" width="2" height="6"/><rect x="12" y="5" width="1" height="14"/><rect x="14" y="9" width="3" height="6"/><rect x="18" y="5" width="1" height="14"/><rect x="20" y="9" width="1" height="6"/></svg>
-        手機條碼載具
+      <!-- 手機條碼載具 -->
+      <div id="mc-carrier-section">
+        <!-- 已設定：顯示載具條碼 -->
+        <div class="carrier-barcode-section" id="mc-carrier-barcode-wrap" style="display:none;">
+          <div class="carrier-barcode-label">
+            <span>手機條碼載具</span>
+            <span class="carrier-edit-link" onclick="openCarrierModal()">編輯</span>
+          </div>
+          <svg id="carrier-barcode" style="width:100%;max-width:280px;height:60px;display:block;margin:0 auto;"></svg>
+          <div style="font-size:13px;font-family:monospace;font-weight:700;letter-spacing:3px;margin-top:6px;" id="mc-carrier-code-display"></div>
+        </div>
+        <!-- 未設定：按鈕 -->
+        <button id="mc-carrier-btn" onclick="openCarrierModal()" style="width:100%;padding:12px 16px;background:var(--ink);color:#fff;border-radius:10px;font-size:13px;font-weight:600;display:flex;align-items:center;justify-content:center;gap:8px;border:none;cursor:pointer;opacity:0.85;">
+          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><rect x="3" y="9" width="3" height="6"/><rect x="7" y="5" width="1" height="14"/><rect x="9" y="9" width="2" height="6"/><rect x="12" y="5" width="1" height="14"/><rect x="14" y="9" width="3" height="6"/><rect x="18" y="5" width="1" height="14"/><rect x="20" y="9" width="1" height="6"/></svg>
+          手機條碼載具
+        </button>
       </div>
     </div>
 
@@ -2069,6 +2127,28 @@ footer {
           </div>
           <div class="mc-submenu-arrow">›</div>
         </div>
+      </div>
+    </div>
+
+    <!-- 手機條碼載具 Modal（浮層）-->
+    <div class="carrier-modal-overlay" id="carrierModalOverlay" onclick="handleCarrierOverlayClick(event)">
+      <div class="carrier-modal">
+        <button onclick="closeCarrierModal()" style="position:absolute;top:14px;right:16px;background:none;border:none;font-size:22px;color:var(--ink-60);cursor:pointer;line-height:1;">×</button>
+        <div class="carrier-modal-title">手機條碼載具</div>
+        <div class="carrier-modal-sub">請輸入您的手機條碼載具</div>
+        <div class="carrier-input-wrap">
+          <input id="carrier-code-input" type="text" maxlength="8"
+            placeholder="/XXXXXXX"
+            autocomplete="off" spellcheck="false"
+            oninput="onCarrierInput()" onkeydown="if(event.key==='Enter')saveCarrierCode()">
+        </div>
+        <div class="carrier-hint">
+          格式：<strong>/</strong> 開頭 + 7 碼英數（例：<code>/ABC1234</code>）<br>
+          可於<a href="https://www.einvoice.nat.gov.tw" target="_blank" rel="noopener" style="color:var(--teal);">財政部電子發票平台</a>申請
+        </div>
+        <div id="carrier-error" style="display:none;font-size:12px;color:var(--red);text-align:center;margin-bottom:10px;"></div>
+        <button class="carrier-save-btn" id="carrier-save-btn" onclick="saveCarrierCode()">儲存</button>
+        <button class="carrier-clear-btn" id="carrier-clear-btn" onclick="clearCarrierCode()" style="display:none;">移除載具設定</button>
       </div>
     </div>
 
@@ -4057,6 +4137,97 @@ function renderMemberCard() {
       });
     } catch(e) {}
   }
+  // Render carrier barcode if set
+  _renderCarrierOnCard(m.carrier_code || '');
+}
+
+// ── 手機條碼載具 ──────────────────────────────────────────
+
+function openCarrierModal() {
+  const code = _currentMember?.carrier_code || '';
+  const input = document.getElementById('carrier-code-input');
+  input.value = code;
+  document.getElementById('carrier-error').style.display = 'none';
+  document.getElementById('carrier-clear-btn').style.display = code ? 'block' : 'none';
+  _updateCarrierSaveBtn(code);
+  document.getElementById('carrierModalOverlay').classList.add('open');
+  setTimeout(() => input.focus(), 80);
+}
+
+function closeCarrierModal() {
+  document.getElementById('carrierModalOverlay').classList.remove('open');
+}
+
+function handleCarrierOverlayClick(e) {
+  if (e.target === document.getElementById('carrierModalOverlay')) closeCarrierModal();
+}
+
+function onCarrierInput() {
+  const val = document.getElementById('carrier-code-input').value;
+  document.getElementById('carrier-error').style.display = 'none';
+  _updateCarrierSaveBtn(val);
+}
+
+function _updateCarrierSaveBtn(val) {
+  const btn = document.getElementById('carrier-save-btn');
+  const ready = /^\/[0-9A-Za-z\.\-\+]{7}$/.test(val) || val === '';
+  btn.classList.toggle('ready', ready);
+}
+
+async function saveCarrierCode() {
+  const raw = document.getElementById('carrier-code-input').value.trim().toUpperCase();
+  const errEl = document.getElementById('carrier-error');
+  errEl.style.display = 'none';
+  if (raw !== '' && !/^\/[0-9A-Z\.\-\+]{7}$/.test(raw)) {
+    errEl.textContent = '格式錯誤，請輸入 / 開頭的 8 碼（例：/ABC1234）';
+    errEl.style.display = 'block'; return;
+  }
+  try {
+    const res = await fetch(`${API}/api/member/carrier`, {
+      method: 'POST', credentials: 'include',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ carrier_code: raw })
+    });
+    const data = await res.json();
+    if (data.success) {
+      if (_currentMember) _currentMember.carrier_code = data.carrier_code;
+      closeCarrierModal();
+      _renderCarrierOnCard(data.carrier_code);
+    } else {
+      errEl.textContent = data.error || '儲存失敗'; errEl.style.display = 'block';
+    }
+  } catch(e) {
+    errEl.textContent = '網路錯誤，請稍後再試'; errEl.style.display = 'block';
+  }
+}
+
+async function clearCarrierCode() {
+  if (!confirm('確定要移除手機條碼載具設定？')) return;
+  document.getElementById('carrier-code-input').value = '';
+  await saveCarrierCode();
+}
+
+function _renderCarrierOnCard(code) {
+  const wrap = document.getElementById('mc-carrier-barcode-wrap');
+  const btn  = document.getElementById('mc-carrier-btn');
+  if (!code) {
+    if (wrap) wrap.style.display = 'none';
+    if (btn)  btn.style.display  = 'flex';
+    return;
+  }
+  if (wrap) {
+    wrap.style.display = 'block';
+    document.getElementById('mc-carrier-code-display').textContent = code;
+    if (typeof JsBarcode !== 'undefined') {
+      try {
+        JsBarcode('#carrier-barcode', code, {
+          format: 'CODE128', width: 2, height: 56,
+          displayValue: false, background: 'transparent', lineColor: '#333', margin: 0
+        });
+      } catch(e) {}
+    }
+  }
+  if (btn) btn.style.display = 'none';
 }
 
 // ── 螢幕亮度提升 ──

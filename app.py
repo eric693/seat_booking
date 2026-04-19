@@ -1602,6 +1602,7 @@ class Member(db.Model):
     reset_token_expires   = db.Column(db.DateTime)
     line_user_id          = db.Column(db.String(100))
     points                = db.Column(db.Integer, default=0)
+    carrier_code          = db.Column(db.String(20), default='')
     created_at            = db.Column(db.DateTime, default=tw_now)
     last_login            = db.Column(db.DateTime)
 
@@ -1616,6 +1617,7 @@ class Member(db.Model):
             'id': self.id, 'name': self.name,
             'phone': self.phone, 'email': self.email,
             'member_number': str(self.id).zfill(10),
+            'carrier_code': self.carrier_code or '',
             'is_verified_email': self.is_verified_email,
             'is_verified_phone': self.is_verified_phone,
             'is_blocked': self.is_blocked,
@@ -4271,6 +4273,7 @@ with app.app_context():
                 'is_verified_phone':      'ALTER TABLE members ADD COLUMN is_verified_phone BOOLEAN DEFAULT FALSE',
                 'block_reason':           "ALTER TABLE members ADD COLUMN block_reason VARCHAR(200) DEFAULT ''",
                 'points':                 'ALTER TABLE members ADD COLUMN points INTEGER DEFAULT 0',
+                'carrier_code':           "ALTER TABLE members ADD COLUMN carrier_code VARCHAR(20) DEFAULT ''",
             }
             for col, sql in _member_cols.items():
                 if col not in _mb_cols:
@@ -5373,6 +5376,22 @@ def admin_adjust_points(mid):
 # ─────────────────────────────────────────────
 # 掃碼累點 API
 # ─────────────────────────────────────────────
+
+@app.route('/api/member/carrier', methods=['GET', 'POST'])
+def member_carrier():
+    m = _get_current_member()
+    if not m:
+        return jsonify({'error': '請先登入'}), 401
+    if request.method == 'GET':
+        return jsonify({'carrier_code': m.carrier_code or ''})
+    d = request.get_json() or {}
+    code = d.get('carrier_code', '').strip().upper()
+    if code and not __import__('re').match(r'^/[0-9A-Z\.\-\+]{7}$', code):
+        return jsonify({'error': '格式錯誤，請輸入 / 開頭的 8 碼（例：/ABC1234）'}), 400
+    m.carrier_code = code
+    db.session.commit()
+    return jsonify({'success': True, 'carrier_code': m.carrier_code or ''})
+
 
 @app.route('/admin/api/scan/config', methods=['GET'])
 def scan_get_config():

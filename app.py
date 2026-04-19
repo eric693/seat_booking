@@ -2036,7 +2036,8 @@ def get_site_content():
             'service_hours', 'contact_phone', 'contact_email', 'footer_text',
             'notice_1', 'notice_2', 'notice_3', 'notice_4', 'notice_5', 'logo_url',
             'reg_show_email', 'reg_show_phone', 'show_chat_widget',
-            'points_per_amount', 'barcode_instructions']
+            'points_per_amount', 'barcode_instructions',
+            'label_booked', 'label_cleaning', 'label_blocked']
 
     data = {k: SiteContent.get(k) for k in keys}
     # 預設隱藏聊天視窗（後台可開啟）

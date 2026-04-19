@@ -2438,8 +2438,8 @@ footer {
         <div class="time-legend">
           <div class="tl-item"><div class="tl-dot tl-avail"></div>可預約</div>
           <div class="tl-item"><div class="tl-dot tl-sel"></div>已選取</div>
-          <div class="tl-item"><div class="tl-dot tl-booked"></div>已預約（不可選）</div>
-          <div class="tl-item"><div class="tl-dot tl-booked" style="background:repeating-linear-gradient(45deg,#b0b0b0,#b0b0b0 3px,#d8d8d8 3px,#d8d8d8 6px);"></div>無開放（封鎖）</div>
+          <div class="tl-item"><div class="tl-dot tl-booked"></div><span id="legend-booked">已預約（不可選）</span></div>
+          <div class="tl-item"><div class="tl-dot tl-booked" style="background:repeating-linear-gradient(45deg,#b0b0b0,#b0b0b0 3px,#d8d8d8 3px,#d8d8d8 6px);"></div><span id="legend-blocked">無開放（封鎖）</span></div>
         </div>
 
         <!-- Time grid rendered by JS -->
@@ -3618,6 +3618,9 @@ async function loadContent() {
       renderFormFields((fields && fields.length) ? fields : _FF_DEFAULT);
     } catch(e2) { renderFormFields(_FF_DEFAULT); }
 
+    if (c.label_booked)   { _slotLabelBooked   = c.label_booked;   const el = document.getElementById('legend-booked');  if (el) el.textContent = c.label_booked + '（不可選）'; }
+    if (c.label_cleaning) { _slotLabelCleaning = c.label_cleaning; }
+    if (c.label_blocked)  { _slotLabelBlocked  = c.label_blocked;  const el = document.getElementById('legend-blocked'); if (el) el.textContent = c.label_blocked + '（封鎖）'; }
     // 累點比率 & 條碼說明（動態更新）
     _applyPointsConfig(c);
   } catch (e) { console.warn('Content load failed', e); }
@@ -3957,6 +3960,9 @@ let adminBlockedSlots     = new Set();
 let timeConfigBlockedSlots = new Set();  // time_config 非開放時段
 let _hasTimeConfig = false;
 let _openPeriods          = [];  // 來自 time_config 的開放時段
+let _slotLabelBooked   = '已預約';
+let _slotLabelCleaning = '清潔中';
+let _slotLabelBlocked  = '無開放';
 
 let dragStart  = -1;
 let dragEnd    = -1;
@@ -4021,7 +4027,7 @@ function buildTimeGrid() {
                  ontouchstart="tsTouchStart(event,${i})"
                  ontouchmove="tsTouchMove(event)"
                `}
-          >${timeConfigBlockedSlots.has(i) ? '無開放' : (adminBlockedSlots.has(i) ? '無開放' : (cleaningSlots.has(i) ? '清潔中' : (isBlocked ? '已預約' : '')))}</div>
+          >${timeConfigBlockedSlots.has(i) ? _slotLabelBlocked : (adminBlockedSlots.has(i) ? _slotLabelBlocked : (cleaningSlots.has(i) ? _slotLabelCleaning : (isBlocked ? _slotLabelBooked : '')))}</div>
           <div class="time-axis" style="text-align:left;padding-left:8px;padding-right:0;">${endT}</div>
         </div>`;
     }

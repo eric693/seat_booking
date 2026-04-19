@@ -1008,6 +1008,16 @@ input[list]::-webkit-calendar-picker-indicator { display: none !important; }
                 </div>
               </div>
             </div>
+
+            <!-- 時段格標籤 -->
+            <div class="content-section" style="grid-column:1/-1;">
+              <div class="cs-head">時段格標籤文字</div>
+              <div class="cs-body">
+                <div class="cs-field"><label class="cs-label">已預約 標籤</label><input class="finput" type="text" id="c-label_booked" placeholder="已預約"></div>
+                <div class="cs-field"><label class="cs-label">清潔中 標籤</label><input class="finput" type="text" id="c-label_cleaning" placeholder="清潔中"></div>
+                <div class="cs-field"><label class="cs-label">無開放 標籤</label><input class="finput" type="text" id="c-label_blocked" placeholder="無開放"></div>
+              </div>
+            </div>
           </div>
           <div style="margin-top:20px;text-align:right;"><button class="btn btn-primary" onclick="saveContent()" style="padding:12px 28px;font-size:15px;">儲存所有變更</button></div>
           <div style="margin-top:28px;padding:20px;background:var(--paper);border-radius:8px;border:1px solid var(--border);">
@@ -3054,7 +3064,7 @@ async function loadContent() {
   try {
     const res = await fetch('/admin/api/site-content', { headers: H });
     const data = await res.json();
-    const keys = ['site_title','hero_title','hero_badge','site_subtitle','site_description','step1_title','step2_title','step3_title','service_hours','contact_phone','contact_email','footer_text','notice_1','notice_2','notice_3','notice_4','notice_5'];
+    const keys = ['site_title','hero_title','hero_badge','site_subtitle','site_description','step1_title','step2_title','step3_title','service_hours','contact_phone','contact_email','footer_text','notice_1','notice_2','notice_3','notice_4','notice_5','label_booked','label_cleaning','label_blocked'];
     keys.forEach(k => { const el = document.getElementById(`c-${k}`); if (el && data[k] !== undefined) el.value = data[k]; });
     // 載入 toggle 開關
     setSwitchState('c-show_chat_widget', data.show_chat_widget !== '0');

@@ -995,35 +995,7 @@ input[list]::-webkit-calendar-picker-indicator { display: none !important; }
                 <button type="button" onclick="addQuickReplyRow()" style="background:var(--teal-light);color:var(--teal);border:1px solid var(--teal);border-radius:6px;padding:6px 16px;font-size:13px;cursor:pointer;font-family:inherit;font-weight:500;">＋ 新增按鈕</button>
               </div>
             </div>
-            <!-- 累點設定 -->
-            <div class="content-section" style="grid-column:1/-1;">
-              <div class="cs-head">會員條碼累點設定</div>
-              <div class="cs-body">
-                <div class="fgrid">
-                  <div class="cs-field">
-                    <label class="cs-label">累點比率（每幾元 NT$ 累積 1 點）</label>
-                    <div style="display:flex;align-items:center;gap:8px;">
-                      <span style="font-size:14px;font-weight:600;color:var(--ink-60);">每</span>
-                      <input class="finput" type="number" id="c-points_per_amount" placeholder="10" min="1" step="1" style="width:100px;text-align:center;font-size:16px;font-weight:700;">
-                      <span style="font-size:14px;font-weight:600;color:var(--ink-60);">元 累積 1 點</span>
-                    </div>
-                    <p style="font-size:11px;color:var(--ink-60);margin-top:6px;">例：填 10 → 消費 NT$100 得 10 點；填 20 → 消費 NT$100 得 5 點</p>
-                  </div>
-                  <div class="cs-field">
-                    <label class="cs-label">預覽</label>
-                    <div style="background:var(--paper);border-radius:8px;padding:14px 16px;border:1px solid var(--border);">
-                      <div style="font-size:13px;color:var(--ink-60);">依目前設定：</div>
-                      <div id="points-rate-preview" style="font-size:15px;font-weight:700;margin-top:6px;color:var(--teal);">每 NT$10 消費 = 1 點</div>
-                    </div>
-                  </div>
-                </div>
-                <div class="cs-field" style="margin-top:12px;">
-                  <label class="cs-label">會員卡使用說明（前台條碼頁顯示）</label>
-                  <textarea class="ftarea" id="c-barcode_instructions" rows="4" placeholder="例：&#10;1. 在收銀台出示此條碼給服務人員&#10;2. 服務人員掃描後輸入消費金額&#10;3. 每消費 NT$10 自動累積 1 點&#10;4. 點數可於結帳時折抵消費"></textarea>
-                  <p style="font-size:11px;color:var(--ink-60);margin-top:4px;">每行一條說明，前台自動逐條顯示。留空則使用系統預設文字。</p>
-                </div>
-              </div>
-            </div>
+            <!-- 累點設定已移至「掃碼累點」頁籤 -->
             <div class="content-section" style="grid-column:1/-1;">
               <div class="cs-head">預約須知（最多 5 條）</div>
               <div class="cs-body">
@@ -1278,6 +1250,37 @@ input[list]::-webkit-calendar-picker-indicator { display: none !important; }
 
         <!-- 右欄：近期紀錄 -->
         <div>
+          <!-- 累點設定 -->
+          <div class="card" style="margin-bottom:20px;">
+            <div class="card-head">
+              <h2 class="card-title">累點設定</h2>
+              <button class="btn btn-primary btn-sm" onclick="saveScanConfig()">儲存</button>
+            </div>
+            <div class="card-body" style="display:flex;flex-direction:column;gap:14px;">
+              <div>
+                <label class="cs-label">累點比率（每幾元 NT$ 累積 1 點）</label>
+                <div style="display:flex;align-items:center;gap:8px;margin-top:6px;">
+                  <span style="font-size:14px;font-weight:600;color:var(--ink-60);">每</span>
+                  <input class="finput" type="number" id="c-points_per_amount" placeholder="10" min="1" step="1"
+                    style="width:100px;text-align:center;font-size:16px;font-weight:700;" oninput="_updatePointsRatePreview()">
+                  <span style="font-size:14px;font-weight:600;color:var(--ink-60);">元 累積 1 點</span>
+                  <div style="flex:1;background:var(--paper);border-radius:8px;padding:10px 14px;border:1px solid var(--border);margin-left:8px;">
+                    <div style="font-size:11px;color:var(--ink-60);">預覽：</div>
+                    <div id="points-rate-preview" style="font-size:14px;font-weight:700;color:var(--teal);margin-top:2px;">每 NT$10 消費 = 1 點</div>
+                  </div>
+                </div>
+                <p style="font-size:11px;color:var(--ink-60);margin-top:6px;">填 10 → 消費 NT$100 得 10 點；填 20 → 消費 NT$100 得 5 點</p>
+              </div>
+              <div>
+                <label class="cs-label">會員卡使用說明（前台條碼頁顯示）</label>
+                <textarea class="ftarea" id="c-barcode_instructions" rows="4"
+                  placeholder="例：&#10;1. 在收銀台出示此條碼給服務人員&#10;2. 服務人員掃描後輸入消費金額&#10;3. 每消費 NT$10 自動累積 1 點&#10;4. 點數可於結帳時折抵消費"
+                  style="margin-top:6px;"></textarea>
+                <p style="font-size:11px;color:var(--ink-60);margin-top:4px;">每行一條說明，前台自動逐條顯示。留空則使用系統預設文字。</p>
+              </div>
+            </div>
+          </div>
+
           <div class="card">
             <div class="card-head">
               <h2 class="card-title">近期掃碼紀錄</h2>
@@ -1605,7 +1608,7 @@ input[list]::-webkit-calendar-picker-indicator { display: none !important; }
                   <label class="cs-label">黑卡 每 NT$<span id="t-base-rate-preview3">10</span> 得幾點</label>
                   <input class="finput" type="number" id="t-pts_rate_black" min="0.1" step="0.1" placeholder="2">
                 </div>
-                <p style="font-size:11px;color:var(--ink-60);grid-column:1/-1;">基礎累點比率（每幾元1點）在「文字內容編輯 → 會員條碼累點設定」中調整。</p>
+                <p style="font-size:11px;color:var(--ink-60);grid-column:1/-1;">基礎累點比率（每幾元1點）在左側「<a href="#" onclick="showPage('scan',null);return false;" style="color:var(--teal);">掃碼累點 → 累點設定</a>」中調整。</p>
               </div>
             </div>
 
@@ -2950,9 +2953,8 @@ async function loadContent() {
   try {
     const res = await fetch('/admin/api/site-content', { headers: H });
     const data = await res.json();
-    const keys = ['site_title','hero_title','hero_badge','site_subtitle','site_description','step1_title','step2_title','step3_title','service_hours','contact_phone','contact_email','footer_text','notice_1','notice_2','notice_3','notice_4','notice_5','points_per_amount','barcode_instructions'];
+    const keys = ['site_title','hero_title','hero_badge','site_subtitle','site_description','step1_title','step2_title','step3_title','service_hours','contact_phone','contact_email','footer_text','notice_1','notice_2','notice_3','notice_4','notice_5'];
     keys.forEach(k => { const el = document.getElementById(`c-${k}`); if (el && data[k] !== undefined) el.value = data[k]; });
-    _updatePointsRatePreview();
     // 載入 toggle 開關
     setSwitchState('c-show_chat_widget', data.show_chat_widget !== '0');
     setSwitchState('c-reg_show_email', data.reg_show_email !== '0');
@@ -2973,7 +2975,7 @@ async function loadContent() {
 
 async function saveContent() {
   if (!_contentLoaded) { toast('設定尚未載入完成，請稍候再儲存', 'error'); return; }
-  const keys = ['site_title','hero_title','hero_badge','site_subtitle','site_description','step1_title','step2_title','step3_title','service_hours','contact_phone','contact_email','footer_text','notice_1','notice_2','notice_3','notice_4','notice_5','points_per_amount','barcode_instructions'];
+  const keys = ['site_title','hero_title','hero_badge','site_subtitle','site_description','step1_title','step2_title','step3_title','service_hours','contact_phone','contact_email','footer_text','notice_1','notice_2','notice_3','notice_4','notice_5'];
   const payload = {};
   keys.forEach(k => { const el = document.getElementById(`c-${k}`); if (el) payload[k] = el.value.trim(); });
   // 儲存 toggle 開關
@@ -5347,17 +5349,41 @@ let _scanPointsRate = 10;
 async function initScanPage() {
   clearScan();
   loadScanHistory();
-  // Load current points rate from config
+  // Load current points rate + barcode settings from config
   try {
     const res = await fetch('/admin/api/scan/config', { headers: H });
     if (res.ok) {
       const cfg = await res.json();
       _scanPointsRate = cfg.points_per_amount || 10;
       const rateEl = document.getElementById('scan-rate-badge');
-      if (rateEl) rateEl.textContent = `每消費 NT$${_scanPointsRate} = 1 點`;
+      if (rateEl) { rateEl.textContent = `每消費 NT$${_scanPointsRate} = 1 點`; rateEl.style.display = ''; }
+      // Populate settings form
+      const rateFld = document.getElementById('c-points_per_amount');
+      if (rateFld) { rateFld.value = _scanPointsRate; _updatePointsRatePreview(); }
+      const instrFld = document.getElementById('c-barcode_instructions');
+      if (instrFld) instrFld.value = cfg.barcode_instructions || '';
     }
   } catch(e) {}
   setTimeout(() => document.getElementById('scan-barcode-input')?.focus(), 100);
+}
+
+async function saveScanConfig() {
+  const per = parseFloat(document.getElementById('c-points_per_amount')?.value || 10);
+  if (!per || per <= 0) { toast('累點比率必須大於 0', 'error'); return; }
+  const instr = document.getElementById('c-barcode_instructions')?.value?.trim() || '';
+  try {
+    const res = await fetch('/admin/api/site-content', {
+      method: 'POST', headers: { ...H, 'Content-Type': 'application/json' },
+      body: JSON.stringify({ points_per_amount: String(per), barcode_instructions: instr })
+    });
+    if (res.ok) {
+      _scanPointsRate = per;
+      const rateEl = document.getElementById('scan-rate-badge');
+      if (rateEl) { rateEl.textContent = `每消費 NT$${per} = 1 點`; rateEl.style.display = ''; }
+      _updatePointsRatePreview();
+      toast('累點設定已儲存');
+    } else { toast('儲存失敗', 'error'); }
+  } catch(e) { toast('儲存失敗', 'error'); }
 }
 
 function clearScan() {

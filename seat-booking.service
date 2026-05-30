@@ -1,0 +1,21 @@
+[Unit]
+Description=Seat Booking Flask App
+After=network.target
+
+[Service]
+User=root
+WorkingDirectory=/root/seat-booking/seat_booking
+Environment="SECRET_KEY=change-me-to-random-secret"
+Environment="ADMIN_PASSWORD=admin123"
+Environment="SITE_URL=https://seat-booking.crownai.ink"
+Environment="LIFF_ID=2009193434-BpOSKuw9"
+Environment="LIFF_URL=https://liff.line.me/2009193434-BpOSKuw9"
+# DATABASE_URL=postgresql+psycopg://user:pass@host/dbname
+# LINE_CHANNEL_ACCESS_TOKEN=...
+# LINE_CHANNEL_SECRET=...
+ExecStart=/root/seat-booking/seat_booking/venv/bin/gunicorn app:app --bind 127.0.0.1:8000 --workers 2 --timeout 120
+Restart=always
+RestartSec=5
+
+[Install]
+WantedBy=multi-user.target

@@ -15,8 +15,8 @@ services:
         sync: false
       - key: LINE_CHANNEL_SECRET
         sync: false
-      - key: SITE_URL              # 你的 Render 網址，例：https://seat-booking-rlf2.onrender.com
-        sync: false
+      - key: SITE_URL              # https://seat-booking.crownai.ink
+        value: https://seat-booking.crownai.ink
       - key: LIFF_ID                 # LINE LIFF App ID
         value: 2009193434-BpOSKuw9
       - key: LIFF_URL

@@ -1693,6 +1693,11 @@ class Coupon(db.Model):
     start_date     = db.Column(db.String(20))
     end_date       = db.Column(db.String(20))
     is_active      = db.Column(db.Boolean, default=True)
+    min_tier       = db.Column(db.String(20), default='')    # '' = all tiers; 'silver','gold','platinum'
+    first_booking_only = db.Column(db.Boolean, default=False)
+    room_ids       = db.Column(db.Text, default='')          # comma-separated room IDs, '' = all rooms
+    valid_time_from = db.Column(db.String(5), default='')    # 'HH:MM', '' = no restriction
+    valid_time_to   = db.Column(db.String(5), default='')
     created_at     = db.Column(db.DateTime, default=tw_now)
 
     def to_dict(self):
@@ -1707,6 +1712,11 @@ class Coupon(db.Model):
             'start_date': self.start_date or '',
             'end_date': self.end_date or '',
             'is_active': self.is_active,
+            'min_tier': self.min_tier or '',
+            'first_booking_only': self.first_booking_only or False,
+            'room_ids': self.room_ids or '',
+            'valid_time_from': self.valid_time_from or '',
+            'valid_time_to': self.valid_time_to or '',
             'created_at': self.created_at.strftime('%Y-%m-%d') if self.created_at else '',
         }
 
@@ -2262,6 +2272,35 @@ def create_booking():
         if _coupon_code:
             _c = Coupon.query.filter_by(code=_coupon_code, is_active=True).first()
             if _c:
+                # min_tier check
+                if _c.min_tier:
+                    _booking_member = Member.query.filter(
+                        (Member.phone == data.get('customer_phone', data.get('phone', ''))) |
+                        (Member.email == data.get('customer_email', data.get('email', '')))
+                    ).first()
+                    _member_tier = _calc_member_tier(_booking_member) if _booking_member else 'normal'
+                    _tier_order = {'normal': 0, 'silver': 1, 'gold': 2, 'platinum': 3}
+                    if _tier_order.get(_member_tier, 0) < _tier_order.get(_c.min_tier, 0):
+                        _tier_label = {'silver': '銀卡', 'gold': '金卡', 'platinum': '白金'}.get(_c.min_tier, _c.min_tier)
+                        return jsonify({'success': False, 'error': f'此優惠券限{_tier_label}以上會員使用'}), 400
+                # first_booking_only check
+                if _c.first_booking_only:
+                    _existing = Booking.query.filter(
+                        (Booking.customer_phone == data.get('customer_phone', data.get('phone', ''))) |
+                        (Booking.customer_email == data.get('customer_email', data.get('email', '')))
+                    ).filter(Booking.status != 'cancelled').count()
+                    if _existing > 0:
+                        return jsonify({'success': False, 'error': '此優惠券僅限首次預約使用'}), 400
+                # room_ids check
+                if _c.room_ids:
+                    _allowed_rooms = [r.strip() for r in _c.room_ids.split(',') if r.strip()]
+                    if str(data.get('room_id', '')) not in _allowed_rooms:
+                        return jsonify({'success': False, 'error': '此優惠券不適用於所選會議室'}), 400
+                # valid_time check
+                if _c.valid_time_from and _c.valid_time_to:
+                    _bk_start = data.get('start_time', '')
+                    if _bk_start and not (_c.valid_time_from <= _bk_start <= _c.valid_time_to):
+                        return jsonify({'success': False, 'error': f'此優惠券僅限 {_c.valid_time_from}–{_c.valid_time_to} 時段使用'}), 400
                 today_str = tw_now().strftime('%Y-%m-%d')
                 _ok = (not _c.start_date or today_str >= _c.start_date) and \
                       (not _c.end_date or today_str <= _c.end_date) and \
@@ -4163,7 +4202,7 @@ def admin_confirm_booking(bid):
                 _rate = _get_tier_pts_rate(_tier)
                 earned = max(0, int(_base * _rate))
                 member.points = (member.points or 0) + earned
-                tier_label = {'white': '白卡', 'green': '綠卡', 'black': '黑卡'}.get(_tier, '')
+                tier_label = {'normal': '一般', 'silver': '銀卡', 'gold': '金卡', 'platinum': '白金'}.get(_tier, '')
                 db.session.add(PointTransaction(
                     member_id=member.id, type='earn', points=earned,
                     amount=b.total_price or 0,
@@ -4626,6 +4665,31 @@ with app.app_context():
                         print(f'[migrate] bookings.{col} 略過：{_ce}')
     except Exception as e:
         print(f'[migrate] bookings 欄位略過：{e}')
+    # ── coupons 欄位補齊（min_tier, first_booking_only, room_ids, valid_time） ──
+    try:
+        _is_pg = 'sqlite' not in str(db.engine.url)
+        _cp_q  = ("SELECT column_name FROM information_schema.columns WHERE table_name='coupons'"
+                  if _is_pg else "PRAGMA table_info(coupons)")
+        with db.engine.connect() as _conn:
+            _cp_cols = ([r[0] for r in _conn.execute(db.text(_cp_q)).fetchall()] if _is_pg
+                        else [r[1] for r in _conn.execute(db.text(_cp_q)).fetchall()])
+            _cp_new = {
+                'min_tier':          "ALTER TABLE coupons ADD COLUMN min_tier VARCHAR(20) DEFAULT ''",
+                'first_booking_only':"ALTER TABLE coupons ADD COLUMN first_booking_only BOOLEAN DEFAULT FALSE",
+                'room_ids':          "ALTER TABLE coupons ADD COLUMN room_ids TEXT DEFAULT ''",
+                'valid_time_from':   "ALTER TABLE coupons ADD COLUMN valid_time_from VARCHAR(5) DEFAULT ''",
+                'valid_time_to':     "ALTER TABLE coupons ADD COLUMN valid_time_to VARCHAR(5) DEFAULT ''",
+            }
+            for col, sql in _cp_new.items():
+                if col not in _cp_cols:
+                    try:
+                        _conn.execute(db.text(sql))
+                        _conn.commit()
+                        print(f'[migrate] 新增 coupons.{col} 欄位')
+                    except Exception as _ce:
+                        print(f'[migrate] coupons.{col} 略過：{_ce}')
+    except Exception as e:
+        print(f'[migrate] coupons 欄位略過：{e}')
     # ── point_transactions.amount 欄位補齊 ──
     try:
         _is_pg = 'sqlite' not in str(db.engine.url)
@@ -5728,6 +5792,11 @@ def admin_create_coupon():
         start_date=d.get('start_date') or None,
         end_date=d.get('end_date') or None,
         is_active=bool(d.get('is_active', True)),
+        min_tier=d.get('min_tier', ''),
+        first_booking_only=bool(d.get('first_booking_only', False)),
+        room_ids=d.get('room_ids', ''),
+        valid_time_from=d.get('valid_time_from', ''),
+        valid_time_to=d.get('valid_time_to', ''),
     )
     db.session.add(c)
     db.session.commit()
@@ -5739,7 +5808,7 @@ def admin_update_coupon(cid):
     if err: return err
     c = Coupon.query.get_or_404(cid)
     d = request.get_json() or {}
-    for f in ['name','description','discount_type','discount_value','min_spend','max_uses','start_date','end_date','is_active']:
+    for f in ['name','description','discount_type','discount_value','min_spend','max_uses','start_date','end_date','is_active','min_tier','first_booking_only','room_ids','valid_time_from','valid_time_to']:
         if f in d: setattr(c, f, d[f])
     db.session.commit()
     return jsonify({'success': True, 'coupon': c.to_dict()})
@@ -5850,29 +5919,37 @@ def admin_consumption():
 # ─────────────────────────────────────────────
 
 _TIER_DEFAULTS = {
-    'tier_green_threshold':        '6000',
-    'tier_black_threshold':        '20000',
-    'tier_pts_rate_white':         '1',
-    'tier_pts_rate_green':         '1.5',
-    'tier_pts_rate_black':         '2',
-    'tier_join_coupon_amount':     '50',
-    'tier_join_coupon_min':        '500',
-    'tier_bday_white_amount':      '50',
-    'tier_bday_white_min':         '499',
-    'tier_bday_green_amount':      '100',
-    'tier_bday_green_min':         '1000',
-    'tier_bday_black_amount':      '150',
-    'tier_bday_black_min':         '1500',
-    'tier_green_booking_discount': '95',
-    'tier_black_booking_discount': '90',
-    'tier_green_validity_years':   '2',
-    'tier_black_validity_years':   '2',
-    'tier_white_inactive_years':   '5',
-    'tier_store_discount':         '85',
-    'tier_weekly_discount_min':    '777',
-    'tier_movie_ticket_price':     '250',
-    'tier_movie_ticket_limit':     '4',
-    'tier_join_desc':              '即日起於本平台完成會員註冊，立即成為白卡會員，享有各通路會員權益、消費累點等服務。依照累計消費金額自動升等為綠卡或黑卡會員，享有更多專屬權益。',
+    'tier_silver_threshold':          '6000',
+    'tier_gold_threshold':            '20000',
+    'tier_platinum_threshold':        '50000',
+    'tier_pts_rate_normal':           '1',
+    'tier_pts_rate_silver':           '1.5',
+    'tier_pts_rate_gold':             '2',
+    'tier_pts_rate_platinum':         '3',
+    'tier_join_coupon_amount':        '50',
+    'tier_join_coupon_min':           '500',
+    'tier_bday_normal_amount':        '50',
+    'tier_bday_normal_min':           '499',
+    'tier_bday_silver_amount':        '100',
+    'tier_bday_silver_min':           '1000',
+    'tier_bday_gold_amount':          '150',
+    'tier_bday_gold_min':             '1500',
+    'tier_bday_platinum_amount':      '200',
+    'tier_bday_platinum_min':         '2000',
+    'tier_silver_booking_discount':   '95',
+    'tier_gold_booking_discount':     '90',
+    'tier_platinum_booking_discount': '85',
+    'tier_silver_validity_years':     '2',
+    'tier_gold_validity_years':       '2',
+    'tier_platinum_validity_years':   '2',
+    'tier_normal_inactive_years':     '5',
+    'tier_store_discount':            '85',
+    'tier_weekly_discount_min':       '777',
+    'tier_movie_ticket_price':        '250',
+    'tier_movie_ticket_limit':        '4',
+    'tier_points_expiry_months':      '24',
+    'tier_points_redeem_rate':        '100',
+    'tier_join_desc':              '即日起於本平台完成會員註冊，立即成為一般會員，享有各通路會員權益、消費累點等服務。依照累計消費金額自動升等為銀卡、金卡或白金會員，享有更多專屬權益。',
     'tier_terms_management':       '本平台保留修改、終止會員資格之權利，如有重大違規行為（惡意刷單、盜用帳號等），本平台得立即終止會籍並沒收點數及優惠券。',
     'tier_terms_points':           '點數不可轉讓、不可兌換現金。點數有效期限依本平台規定，逾期點數自動歸零。每筆消費之點數將於發票開立後 2 個工作日內歸戶。',
     'tier_terms_coupons':          '優惠券限會員本人使用，不得轉售或轉讓。各優惠券使用限制以券面標示為準，逾期不補發。',
@@ -5884,12 +5961,13 @@ def _get_all_tier_settings():
     return {k.replace('tier_', ''): SiteContent.get(k) or v for k, v in _TIER_DEFAULTS.items()}
 
 def _calc_member_tier(member):
-    """依累計消費金額計算會員等級（white/green/black）。
+    """依累計消費金額計算會員等級（normal/silver/gold/platinum）。
     來源：①確認預約金額 ②掃碼累點的 amount 欄位。
     """
     ts = _get_all_tier_settings()
-    green_thresh = float(ts.get('green_threshold') or 6000)
-    black_thresh = float(ts.get('black_threshold') or 20000)
+    silver_thresh   = float(ts.get('silver_threshold')   or 6000)
+    gold_thresh     = float(ts.get('gold_threshold')     or 20000)
+    platinum_thresh = float(ts.get('platinum_threshold') or 50000)
 
     # ① 確認預約消費
     from sqlalchemy import or_
@@ -5911,11 +5989,13 @@ def _calc_member_tier(member):
     ).scalar() or 0
 
     total = booking_total + scan_total
-    if total >= black_thresh:
-        return 'black'
-    if total >= green_thresh:
-        return 'green'
-    return 'white'
+    if total >= platinum_thresh:
+        return 'platinum'
+    if total >= gold_thresh:
+        return 'gold'
+    if total >= silver_thresh:
+        return 'silver'
+    return 'normal'
 
 def _get_tier_pts_rate(tier):
     """取得該等級的點數倍率。"""
@@ -5953,29 +6033,33 @@ def admin_tier_settings():
 def admin_membership_stats():
     err = check_admin()
     if err: return err
-    green_th = int(SiteContent.get('tier_green_threshold') or '6000')
-    black_th = int(SiteContent.get('tier_black_threshold') or '20000')
+    silver_th   = int(SiteContent.get('tier_silver_threshold')   or '6000')
+    gold_th     = int(SiteContent.get('tier_gold_threshold')     or '20000')
+    platinum_th = int(SiteContent.get('tier_platinum_threshold') or '50000')
 
     members = Member.query.filter_by(is_blocked=False).all()
-    white_count = green_count = black_count = 0
+    normal_count = silver_count = gold_count = platinum_count = 0
     for m in members:
         bookings = Booking.query.filter(
             Booking.customer_email == m.email,
             Booking.status.in_(['confirmed', 'completed'])
         ).all()
         total = sum(b.total_price or 0 for b in bookings)
-        if total >= black_th:
-            black_count += 1
-        elif total >= green_th:
-            green_count += 1
+        if total >= platinum_th:
+            platinum_count += 1
+        elif total >= gold_th:
+            gold_count += 1
+        elif total >= silver_th:
+            silver_count += 1
         else:
-            white_count += 1
+            normal_count += 1
 
     return jsonify({
-        'white': white_count,
-        'green': green_count,
-        'black': black_count,
-        'total': len(members),
+        'normal':   normal_count,
+        'silver':   silver_count,
+        'gold':     gold_count,
+        'platinum': platinum_count,
+        'total':    len(members),
     })
 
 
@@ -6057,7 +6141,7 @@ def scan_earn_points():
     tier = _calc_member_tier(m)
     rate = _get_tier_pts_rate(tier)
     pts  = max(0, int(base_pts * rate))
-    tier_label = {'white': '白卡', 'green': '綠卡', 'black': '黑卡'}.get(tier, '')
+    tier_label = {'normal': '一般', 'silver': '銀卡', 'gold': '金卡', 'platinum': '白金'}.get(tier, '')
     admin_name = session.get('admin_username', '管理員')
     desc = f'掃碼累點 NT${amount:.0f}（{tier_label} x{rate}，操作：{admin_name}）' + (f'【{note}】' if note else '')
     m.points = (m.points or 0) + pts
